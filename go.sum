@@ -1,0 +1,4 @@
+github.com/go-sql-driver/mysql v1.6.0 h1:BCTh4TKNUYmOmMUcQ3IipzF5prigylS7XXjEkfCHuOE=
+github.com/go-sql-driver/mysql v1.6.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
+github.com/kovey/logger-go v0.0.1 h1:oXbfCfw/9MIDn6jieCA5Uxe+KFcAIHWSGgqzuaX0+n0=
+github.com/kovey/logger-go v0.0.1/go.mod h1:x7AnVVx/y5tYjV5UzxU+X3CaJLtB7/Fk6ghuzkN84pA=
