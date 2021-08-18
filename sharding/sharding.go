@@ -27,6 +27,24 @@ func NewMysql(isMaster bool) *Mysql {
 	return &Mysql{connections: make(map[int]*db.Mysql, 0), isMaster: isMaster}
 }
 
+func (m *Mysql) AddSharding(key interface{}) *Mysql {
+	k := m.GetShardingKey(key)
+	if _, ok := m.connections[k]; ok {
+		return m
+	}
+
+	var database *db.Mysql
+	if m.isMaster {
+		database = db.NewSharding(masters[k])
+	} else {
+		database = db.NewSharding(slaves[k])
+	}
+
+	m.connections[k] = database
+
+	return m
+}
+
 func (m *Mysql) GetShardingKey(key interface{}) int {
 	k, ok := key.(string)
 	if ok {
@@ -52,13 +70,14 @@ func (m *Mysql) GetShardingKey(key interface{}) int {
 func Init(mas []config.Mysql, sls []config.Mysql) {
 	mNodeCount = len(mas)
 	sNodeCount = len(sls)
-	masters = make([]*sql.DB, 0, mNodeCount)
-	slaves = make([]*sql.DB, 0, sNodeCount)
+	masters = make([]*sql.DB, mNodeCount)
+	slaves = make([]*sql.DB, sNodeCount)
 
 	for key, value := range mas {
 		value.Dbname = fmt.Sprintf("%s_%d", value.Dbname, key)
 		database, err := db.OpenDB(value)
 		if err != nil {
+			logger.Error("open master database failure, error: %s", err)
 			continue
 		}
 
@@ -69,6 +88,7 @@ func Init(mas []config.Mysql, sls []config.Mysql) {
 		value.Dbname = fmt.Sprintf("%s_%d", value.Dbname, key)
 		database, err := db.OpenDB(value)
 		if err != nil {
+			logger.Error("open slave database failure, error: %s", err)
 			continue
 		}
 
@@ -107,6 +127,7 @@ func (m *Mysql) Begin() error {
 
 	begins := make([]int, 0)
 	for index, connection := range m.connections {
+		logger.Debug("connections[%d] begin transaction: %v", index, connection)
 		err := connection.Begin()
 		if err != nil {
 			m.rollBack(begins)

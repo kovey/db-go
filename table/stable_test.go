@@ -2,39 +2,32 @@ package table
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/kovey/config-go/config"
-	"github.com/kovey/db-go/db"
+	"github.com/kovey/db-go/sharding"
 )
 
 var (
-	table *Table
-	mysql *db.Mysql
+	shardTable *TableSharding
+	shardDb    *sharding.Mysql
 )
 
-type Product struct {
-	Id      int
-	Name    string
-	Date    string
-	Time    string
-	Sex     int
-	Content string
-}
+func ssetup() {
+	mas := make([]config.Mysql, 2)
 
-func setup() {
-	conf := config.Mysql{
+	mas[0] = config.Mysql{
 		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "123456", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
 	}
-	err := db.Init(conf)
-	if err != nil {
-		fmt.Printf("init mysql error: %s", err)
+	mas[1] = config.Mysql{
+		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "123456", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
 	}
 
-	mysql = db.NewMysql()
-	sql := []string{"CREATE TABLE `test`.`product` (",
+	sharding.Init(mas, mas)
+
+	shardDb = sharding.NewMysql(true)
+	sql := []string{"CREATE TABLE `{table}` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
 		"`date` DATE NOT NULL DEFAULT '1970-01-01' COMMENT '日期',",
@@ -44,21 +37,26 @@ func setup() {
 		"PRIMARY KEY (`id`))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
 	}
 
-	e := mysql.Exec(strings.Join(sql, ""))
+	shardDb.AddSharding(0).AddSharding(1)
+
+	e := shardDb.Exec(0, strings.Replace(strings.Join(sql, ""), "{table}", "product_0", 1))
 	if e != nil {
 		fmt.Printf("init table error: %s", e)
 	}
 
-	ssetup()
+	e = shardDb.Exec(1, strings.Replace(strings.Join(sql, ""), "{table}", "product_1", 1))
+	if e != nil {
+		fmt.Printf("init table error: %s", e)
+	}
 }
 
-func teardown() {
-	mysql.Exec("drop table product")
-	steardown()
+func steardown() {
+	shardDb.Exec(0, "drop table product_0")
+	shardDb.Exec(1, "drop table product_1")
 }
 
-func TestTableInsert(t *testing.T) {
-	table = NewTable("product")
+func TestTableShardingInsert(t *testing.T) {
+	shardTable = NewTableSharding("product", true)
 	data := make(map[string]interface{}, 5)
 	data["name"] = "kovey"
 	data["date"] = "2021-01-01"
@@ -66,7 +64,7 @@ func TestTableInsert(t *testing.T) {
 	data["sex"] = 1
 	data["content"] = "{\"a\":3}"
 
-	a, err := table.Insert(data)
+	a, err := shardTable.Insert(0, data)
 
 	if err != nil {
 		t.Errorf("err: %s", err)
@@ -76,7 +74,7 @@ func TestTableInsert(t *testing.T) {
 
 	where := make(map[string]interface{})
 	where["id"] = 1
-	row, e := table.FetchRow(where, Product{})
+	row, e := shardTable.FetchRow(0, where, Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
@@ -84,21 +82,21 @@ func TestTableInsert(t *testing.T) {
 	t.Logf("product: %v", row.(Product))
 }
 
-func TestTableUpdate(t *testing.T) {
-	table = NewTable("product")
+func TestTableShardingUpdate(t *testing.T) {
+	shardTable = NewTableSharding("product", true)
 	data := make(map[string]interface{})
 	data["name"] = "test"
 	where := make(map[string]interface{})
 	where["id"] = 1
 
-	a, err := table.Update(data, where)
+	a, err := shardTable.Update(0, data, where)
 	if err != nil {
 		t.Errorf("update error: %s", err)
 	}
 
 	t.Logf("affected: %d", a)
 
-	row, e := table.FetchRow(where, Product{})
+	row, e := shardTable.FetchRow(0, where, Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
@@ -106,29 +104,22 @@ func TestTableUpdate(t *testing.T) {
 	t.Logf("product: %v", row.(Product))
 }
 
-func TestTableDelete(t *testing.T) {
-	table = NewTable("product")
+func TestTableShardingDelete(t *testing.T) {
+	shardTable = NewTableSharding("product", true)
 	where := make(map[string]interface{})
 	where["id"] = 1
 
-	a, err := table.Delete(where)
+	a, err := shardTable.Delete(0, where)
 	if err != nil {
 		t.Errorf("delete error: %s", err)
 	}
 
 	t.Logf("affected: %d", a)
 
-	row, e := table.FetchRow(where, Product{})
+	row, e := shardTable.FetchRow(0, where, Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
 
 	t.Logf("product: %v", row.(Product))
-}
-
-func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	teardown()
-	os.Exit(code)
 }

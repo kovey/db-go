@@ -63,10 +63,13 @@ func setup() {
 	if e != nil {
 		fmt.Printf("init table error: %s", e)
 	}
+
+	ssetup()
 }
 
 func teardown() {
 	mysql.Exec("drop table product")
+	steardown()
 }
 
 func TestModelSave(t *testing.T) {

@@ -38,7 +38,7 @@ func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
 	data := make(map[string]interface{})
 	for i := 0; i < vValue.NumField(); i++ {
 		tField := vType.Field(i)
-		if tField.Name == "Base" {
+		if tField.Name == "BaseSharding" {
 			continue
 		}
 
@@ -96,7 +96,7 @@ func (b BaseSharding) FetchRow(key interface{}, where map[string]interface{}, t 
 	tmp.Set(vValue)
 
 	vValue.Set(reflect.ValueOf(row))
-	vValue.FieldByName("Base").Set(tmp.FieldByName("Base"))
+	vValue.FieldByName("BaseSharding").Set(tmp.FieldByName("BaseSharding"))
 
 	return nil
 }
