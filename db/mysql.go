@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/kovey/config-go/config"
 	"github.com/kovey/db-go/row"
 	ds "github.com/kovey/db-go/sql"
 	"github.com/kovey/logger-go/logger"
@@ -13,6 +14,7 @@ import (
 
 var (
 	database *sql.DB
+	dev      string
 )
 
 type Mysql struct {
@@ -25,22 +27,38 @@ func NewMysql() *Mysql {
 	return &Mysql{database: database, tx: nil, isInTransaction: false}
 }
 
-func Init(host string, port int, username string, password string, dbname string, charset string, maxActive int, maxConn int) error {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s", username, password, host, port, dbname, charset))
+func NewSharding(database *sql.DB) *Mysql {
+	return &Mysql{database: database, tx: nil, isInTransaction: false}
+}
+
+func Init(conf config.Mysql) error {
+	db, err := OpenDB(conf)
 	if err != nil {
 		return err
 	}
 
-	db.SetMaxIdleConns(maxActive)
-	db.SetMaxOpenConns(maxConn)
+	dev = conf.Dev
+	database = db
+	return nil
+}
+
+func OpenDB(conf config.Mysql) (*sql.DB, error) {
+	db, err := sql.Open("mysql", fmt.Sprintf(
+		"%s:%s@tcp(%s:%d)/%s?charset=%s", conf.Username, conf.Password, conf.Host, conf.Port, conf.Dbname, conf.Charset,
+	))
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxIdleConns(conf.ActiveMax)
+	db.SetMaxOpenConns(conf.ConnectionMax)
 
 	err = db.Ping()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	database = db
-	return nil
+	return db, nil
 }
 
 func (m *Mysql) Begin() error {
@@ -60,7 +78,9 @@ func (m *Mysql) Commit() error {
 	}
 
 	m.isInTransaction = false
-	return m.tx.Commit()
+	err := m.tx.Commit()
+	m.tx = nil
+	return err
 }
 
 func (m *Mysql) RollBack() error {
@@ -69,7 +89,9 @@ func (m *Mysql) RollBack() error {
 	}
 
 	m.isInTransaction = false
-	return m.tx.Rollback()
+	err := m.tx.Rollback()
+	m.tx = nil
+	return err
 }
 
 func (m *Mysql) InTransaction() bool {
@@ -229,8 +251,4 @@ func (m *Mysql) FetchAll(table string, where map[string]interface{}, t interface
 	logger.Debug("fetch all select: %s", sel)
 
 	return m.Query(sel.Prepare(), t, sel.Args()...)
-}
-
-func init() {
-	logger.SetLevel(logger.LOGGER_INFO)
 }

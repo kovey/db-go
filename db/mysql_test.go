@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kovey/config-go/config"
 	"github.com/kovey/db-go/sql"
 )
 
@@ -23,7 +24,10 @@ type Product struct {
 }
 
 func setup() {
-	err := Init("127.0.0.1", 3306, "root", "123456", "test", "utf8mb4", 10, 10)
+	conf := config.Mysql{
+		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "123456", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
+	}
+	err := Init(conf)
 	if err != nil {
 		fmt.Printf("init mysql error: %s", err)
 	}
