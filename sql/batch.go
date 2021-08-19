@@ -69,3 +69,7 @@ func (b *Batch) Prepare() string {
 func (b *Batch) String() string {
 	return String(b)
 }
+
+func (b *Batch) Inserts() []*Insert {
+	return b.ins
+}

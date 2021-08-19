@@ -3,16 +3,22 @@ package sql
 import "fmt"
 
 const (
-	deleteFormat string = "DELETE FROM %s %s"
+	deleteFormat   string = "DELETE FROM %s %s"
+	deleteCkFormat string = "ALTER TABLE %s DELETE %s"
 )
 
 type Delete struct {
-	table string
-	where *Where
+	table  string
+	where  *Where
+	format string
 }
 
 func NewDelete(table string) *Delete {
-	return &Delete{table: table, where: nil}
+	return &Delete{table: table, where: nil, format: deleteFormat}
+}
+
+func NewCkDelete(table string) *Delete {
+	return &Delete{table: table, where: nil, format: deleteCkFormat}
 }
 
 func (d *Delete) Where(w *Where) *Delete {
@@ -30,9 +36,9 @@ func (d *Delete) Args() []interface{} {
 
 func (d *Delete) Prepare() string {
 	if d.where == nil {
-		return fmt.Sprintf(deleteFormat, formatValue(d.table), "")
+		return fmt.Sprintf(d.format, formatValue(d.table), "")
 	}
-	return fmt.Sprintf(deleteFormat, formatValue(d.table), d.where.Prepare())
+	return fmt.Sprintf(d.format, formatValue(d.table), d.where.Prepare())
 }
 
 func (d *Delete) String() string {

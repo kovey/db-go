@@ -64,3 +64,14 @@ func (i *Insert) getFields() []string {
 func (i *Insert) String() string {
 	return String(i)
 }
+
+func (i *Insert) ParseValue(fields []string) {
+	i.args = make([]interface{}, len(fields))
+	for index, field := range fields {
+		i.args[index] = i.data[field]
+	}
+}
+
+func (i *Insert) Fields() []string {
+	return i.fields
+}

@@ -123,7 +123,6 @@ func TestBatchInsert(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-
 	sql := "select * from product"
 	rows, err := mysql.Query(sql, Product{})
 	if err != nil {
@@ -137,7 +136,6 @@ func TestQuery(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	mysql := NewMysql()
 	where := sql.NewWhere()
 	where.Eq("id", 1)
 	up := sql.NewUpdate("product")
@@ -162,7 +160,6 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	mysql := NewMysql()
 	where := sql.NewWhere()
 	where.Eq("id", 1)
 	del := sql.NewDelete("product")
@@ -187,7 +184,6 @@ func TestDelete(t *testing.T) {
 }
 
 func TestFatchAll(t *testing.T) {
-	mysql := NewMysql()
 	rows, err := mysql.FetchAll("product", make(map[string]interface{}), Product{})
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
@@ -200,7 +196,6 @@ func TestFatchAll(t *testing.T) {
 }
 
 func TestFatchRow(t *testing.T) {
-	mysql := NewMysql()
 	row, err := mysql.FetchRow("product", make(map[string]interface{}), Product{})
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)

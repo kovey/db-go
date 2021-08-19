@@ -16,11 +16,15 @@ type TableInterface interface {
 
 type Table struct {
 	table string
-	db    *db.Mysql
+	db    db.DbInterface
 }
 
 func NewTable(table string) *Table {
-	return &Table{db: db.NewMysql(), table: table}
+	return NewTableByDb(table, db.NewMysql())
+}
+
+func NewTableByDb(table string, database db.DbInterface) *Table {
+	return &Table{db: database, table: table}
 }
 
 func (t *Table) Insert(data map[string]interface{}) (int64, error) {

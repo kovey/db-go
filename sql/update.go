@@ -6,18 +6,24 @@ import (
 )
 
 const (
-	updateFormat string = "UPDATE %s SET %s %s"
+	updateFormat   string = "UPDATE %s SET %s %s"
+	updateCkFormat string = "ALTER TABLE %s UPDATE %s %s"
 )
 
 type Update struct {
-	table string
-	data  map[string]interface{}
-	args  []interface{}
-	where *Where
+	table  string
+	data   map[string]interface{}
+	args   []interface{}
+	where  *Where
+	format string
 }
 
 func NewUpdate(table string) *Update {
-	return &Update{table: table, data: make(map[string]interface{}), where: nil}
+	return &Update{table: table, data: make(map[string]interface{}), where: nil, format: updateFormat}
+}
+
+func NewCkUpdate(table string) *Update {
+	return &Update{table: table, data: make(map[string]interface{}), where: nil, format: updateCkFormat}
 }
 
 func (u *Update) Set(field string, value interface{}) *Update {
@@ -67,10 +73,10 @@ func (u *Update) getPlaceholder() []string {
 
 func (u *Update) Prepare() string {
 	if u.where == nil {
-		return fmt.Sprintf(updateFormat, formatValue(u.table), strings.Join(u.getPlaceholder(), ","), "")
+		return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), ","), "")
 	}
 
-	return fmt.Sprintf(updateFormat, formatValue(u.table), strings.Join(u.getPlaceholder(), ","), u.where.Prepare())
+	return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), ","), u.where.Prepare())
 }
 
 func (u *Update) Where(w *Where) *Update {

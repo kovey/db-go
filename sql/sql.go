@@ -17,6 +17,10 @@ type SqlInterface interface {
 	String() string
 }
 
+func FormatValue(field string) string {
+	return formatValue(field)
+}
+
 func formatString(value string) string {
 	return fmt.Sprintf(valueStringFormat, value)
 }
