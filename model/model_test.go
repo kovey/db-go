@@ -9,6 +9,7 @@ import (
 	"github.com/kovey/config-go/config"
 	"github.com/kovey/db-go/db"
 	"github.com/kovey/db-go/table"
+	"github.com/kovey/logger-go/logger"
 )
 
 var (
@@ -21,12 +22,12 @@ type ProTable struct {
 
 type Product struct {
 	Base
-	Id      int
-	Name    string
-	Date    string
-	Time    string
-	Sex     int
-	Content string
+	Id      int    `db:"id"`
+	Name    string `db:"name"`
+	Date    string `db:"date"`
+	Time    string `db:"time"`
+	Sex     int    `db:"sex"`
+	Content string `db:"content"`
 }
 
 func NewProTable() *ProTable {
@@ -34,7 +35,7 @@ func NewProTable() *ProTable {
 }
 
 func NewProduct() Product {
-	pro := Product{Base{table: NewProTable(), primaryId: "Id"}, 0, "", "", "", 0, "{}"}
+	pro := Product{NewBase(NewProTable(), "id"), 0, "", "", "", 0, "{}"}
 
 	return pro
 }
@@ -87,6 +88,13 @@ func TestModelSave(t *testing.T) {
 
 	t.Logf("id: %d", pro.Id)
 
+	pro1 := NewProduct()
+	where := make(map[string]interface{})
+	where["id"] = pro.Id
+
+	pro1.FetchRow(where, &pro1)
+	pro1.Name = "chelsea"
+	pro1.Save(&pro1)
 }
 
 func TestModelFetchRow(t *testing.T) {
@@ -121,6 +129,7 @@ func TestModelDelete(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	logger.SetLevel(logger.LOGGER_INFO)
 	setup()
 	code := m.Run()
 	teardown()

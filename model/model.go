@@ -3,7 +3,6 @@ package model
 import (
 	"errors"
 	"reflect"
-	"strings"
 
 	"github.com/kovey/db-go/table"
 	"github.com/kovey/logger-go/logger"
@@ -16,10 +15,11 @@ type ModelInterface interface {
 type Base struct {
 	table     table.TableInterface
 	primaryId string
+	isInsert  bool
 }
 
 func NewBase(tb table.TableInterface, primaryId string) Base {
-	return Base{table: tb, primaryId: primaryId}
+	return Base{table: tb, primaryId: primaryId, isInsert: true}
 }
 
 func (b Base) Save(t ModelInterface) error {
@@ -35,33 +35,42 @@ func (b Base) Save(t ModelInterface) error {
 	vType := vValue.Type()
 
 	var id int64 = 0
+	var name string
+
 	data := make(map[string]interface{})
 	for i := 0; i < vValue.NumField(); i++ {
 		tField := vType.Field(i)
-		if tField.Name == "Base" {
+		tag := tField.Tag.Get("db")
+		if len(tag) == 0 {
 			continue
 		}
 
 		vField := vValue.Field(i)
-		data[strings.ToLower(tField.Name)] = vField.Interface()
-		if tField.Name == b.primaryId {
+		if tag == b.primaryId {
 			id = vField.Int()
+			name = tField.Name
+			if id == 0 {
+				continue
+			}
 		}
+
+		data[tag] = vField.Interface()
 	}
 
-	if id > 0 {
+	if !b.isInsert {
 		where := make(map[string]interface{})
-		where[strings.ToLower(b.primaryId)] = id
+		where[b.primaryId] = id
 
 		_, err := b.table.Update(data, where)
 		return err
 	}
 
+	logger.Debug("insert data: %v", data)
 	var err error
 	id, err = b.table.Insert(data)
 	logger.Debug("save id: %d", id)
 	if err == nil {
-		vValue.FieldByName(b.primaryId).SetInt(id)
+		vValue.FieldByName(name).SetInt(id)
 	}
 
 	return err
@@ -75,7 +84,18 @@ func (b Base) Delete(t ModelInterface) error {
 		vValue = vValue.Elem()
 	}
 
-	data[strings.ToLower(b.primaryId)] = vValue.FieldByName(b.primaryId).Interface()
+	var name string
+
+	vType := vValue.Type()
+	for i := 0; i < vType.NumField(); i++ {
+		field := vType.Field(i)
+		if field.Tag.Get("db") == b.primaryId {
+			name = field.Name
+			break
+		}
+	}
+
+	data[b.primaryId] = vValue.FieldByName(name).Interface()
 
 	_, err := b.table.Delete(data)
 	return err
@@ -91,12 +111,11 @@ func (b Base) FetchRow(where map[string]interface{}, t ModelInterface) error {
 		return err
 	}
 
-	vValue := vt.Elem()
-	tmp := reflect.New(vValue.Type()).Elem()
-	tmp.Set(vValue)
+	b.isInsert = false
 
+	vValue := vt.Elem()
 	vValue.Set(reflect.ValueOf(row))
-	vValue.FieldByName("Base").Set(tmp.FieldByName("Base"))
+	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 
 	return nil
 }

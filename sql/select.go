@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	selectFormat string = "SELECT %s FROM %s AS %s %s %s %s %s %s %s"
+	selectFormat string = "SELECT %s FROM %s AS %s %s %s %s %s %s %s %s"
 	columnFormat string = "`%s`.`%s`"
 	orderFormat  string = "ORDER BY %s"
 	groupFormat  string = "GROUP BY %s"
@@ -18,17 +18,18 @@ const (
 )
 
 type Select struct {
-	table   string
-	alias   string
-	columns []string
-	where   *Where
-	orWhere *Where
-	limit   int
-	offset  int
-	orders  []string
-	groups  []string
-	having  *Having
-	joins   []string
+	table     string
+	alias     string
+	columns   []string
+	where     *Where
+	orWhere   *Where
+	limit     int
+	offset    int
+	orders    []string
+	groups    []string
+	having    *Having
+	joins     []string
+	forUpdate string
 }
 
 func NewSelect(table string, alias string) *Select {
@@ -38,7 +39,7 @@ func NewSelect(table string, alias string) *Select {
 
 	return &Select{
 		table: table, alias: alias, columns: make([]string, 0), where: nil, orWhere: nil, limit: 0, offset: 0,
-		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0),
+		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0), forUpdate: "",
 	}
 }
 
@@ -203,9 +204,10 @@ func (s *Select) getLimit() string {
 }
 
 func (s *Select) Prepare() string {
-	return fmt.Sprintf(
-		selectFormat, s.getColumns(), formatValue(s.table), formatValue(s.alias), s.getJoin(), s.getWhere(), s.getGroup(), s.getHaving(), s.getOrder(), s.getLimit(),
-	)
+	return strings.Trim(fmt.Sprintf(
+		selectFormat, s.getColumns(), formatValue(s.table), formatValue(s.alias), s.getJoin(), s.getWhere(), s.getGroup(), s.getHaving(),
+		s.getOrder(), s.getLimit(), s.forUpdate,
+	), " ")
 }
 
 func (s *Select) String() string {
@@ -233,5 +235,10 @@ func (s *Select) WhereByList(where []string) *Select {
 		s.where.Statement(value)
 	}
 
+	return s
+}
+
+func (s *Select) ForUpdate() *Select {
+	s.forUpdate = "FOR UPDATE"
 	return s
 }

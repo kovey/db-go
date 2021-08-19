@@ -20,12 +20,12 @@ type ProTableSharding struct {
 
 type ProductSharding struct {
 	BaseSharding
-	Id      int
-	Name    string
-	Date    string
-	Time    string
-	Sex     int
-	Content string
+	Id      int    `db:"id"`
+	Name    string `db:"name"`
+	Date    string `db:"date"`
+	Time    string `db:"time"`
+	Sex     int    `db:"sex"`
+	Content string `db:"content"`
 }
 
 func NewProTableSharding() *ProTableSharding {
@@ -33,7 +33,7 @@ func NewProTableSharding() *ProTableSharding {
 }
 
 func NewProductSharding() ProductSharding {
-	pro := ProductSharding{BaseSharding{table: NewProTableSharding(), primaryId: "Id"}, 0, "", "", "", 0, "{}"}
+	pro := ProductSharding{NewBaseSharding(NewProTableSharding(), "id"), 0, "", "", "", 0, "{}"}
 
 	return pro
 }
@@ -94,6 +94,13 @@ func TestModelShardingSave(t *testing.T) {
 
 	t.Logf("id: %d", pro.Id)
 
+	pro1 := NewProductSharding()
+	where := make(map[string]interface{})
+	where["id"] = pro.Id
+
+	pro1.FetchRow(0, where, &pro1)
+	pro1.Name = "chelsea"
+	pro1.Save(0, &pro1)
 }
 
 func TestModelShardingFetchRow(t *testing.T) {

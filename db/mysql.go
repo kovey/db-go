@@ -130,6 +130,7 @@ func (m *Mysql) Query(query string, t interface{}, args ...interface{}) ([]inter
 }
 
 func (m *Mysql) Exec(stament string) error {
+	logger.Debug("sql: %s", stament)
 	var result sql.Result
 	var err error
 
@@ -154,6 +155,7 @@ func (m *Mysql) Exec(stament string) error {
 }
 
 func (m *Mysql) prepare(pre ds.SqlInterface) (sql.Result, error) {
+	logger.Debug("sql: %s", pre)
 	var smt *sql.Stmt
 	var err error
 	if m.isInTransaction {
@@ -208,6 +210,7 @@ func (m *Mysql) BatchInsert(batch *ds.Batch) (int64, error) {
 }
 
 func (m *Mysql) Select(sel *ds.Select, t interface{}) ([]interface{}, error) {
+	logger.Debug("sql: %s", sel)
 	return m.Query(sel.Prepare(), t, sel.Args()...)
 }
 
@@ -221,6 +224,8 @@ func (m *Mysql) FetchRow(table string, where map[string]interface{}, t interface
 
 	sel := ds.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields()...).Limit(1)
+
+	logger.Debug("sql: %s", sel)
 
 	var result *sql.Row
 
@@ -249,7 +254,7 @@ func (m *Mysql) FetchAll(table string, where map[string]interface{}, t interface
 	sel := ds.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields()...)
 
-	logger.Debug("fetch all select: %s", sel)
+	logger.Debug("sql: %s", sel)
 
 	return m.Query(sel.Prepare(), t, sel.Args()...)
 }

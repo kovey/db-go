@@ -3,7 +3,6 @@ package row
 import (
 	"database/sql"
 	"reflect"
-	"strings"
 
 	"github.com/kovey/logger-go/logger"
 )
@@ -22,8 +21,8 @@ func New(t reflect.Type) *Row {
 
 	for i := 0; i < vType.NumField(); i++ {
 		field := value.Field(i)
-		name := vType.Field(i).Name
-		if len(name) == 0 || name == "" {
+		name := vType.Field(i).Tag.Get("db")
+		if len(name) == 0 {
 			continue
 		}
 
@@ -33,13 +32,8 @@ func New(t reflect.Type) *Row {
 			logger.Debug("field: %v", field)
 		}
 
-		if field.Kind() == reflect.Struct {
-			logger.Debug("name: %s", name)
-			continue
-		}
-
 		columns = append(columns, field.Addr().Interface())
-		fields = append(fields, strings.ToLower(name))
+		fields = append(fields, name)
 	}
 
 	logger.Debug("fields: %v", fields)

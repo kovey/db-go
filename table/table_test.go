@@ -16,12 +16,12 @@ var (
 )
 
 type Product struct {
-	Id      int
-	Name    string
-	Date    string
-	Time    string
-	Sex     int
-	Content string
+	Id      int    `db:"id"`
+	Name    string `db:"name"`
+	Date    string `db:"date"`
+	Time    string `db:"time"`
+	Sex     int    `db:"sex"`
+	Content string `db:"content"`
 }
 
 func setup() {
