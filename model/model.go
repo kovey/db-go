@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"errors"
 	"reflect"
 
@@ -16,6 +17,7 @@ type Base struct {
 	table     table.TableInterface
 	primaryId string
 	isInsert  bool
+	err       error
 }
 
 func NewBase(tb table.TableInterface, primaryId string) Base {
@@ -107,6 +109,7 @@ func (b Base) FetchRow(where map[string]interface{}, t ModelInterface) error {
 		return errors.New("params is not ptr")
 	}
 	row, err := b.table.FetchRow(where, t)
+	b.err = err
 	if err != nil {
 		return err
 	}
@@ -118,4 +121,8 @@ func (b Base) FetchRow(where map[string]interface{}, t ModelInterface) error {
 	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 
 	return nil
+}
+
+func (b Base) Empty() bool {
+	return b.err == sql.ErrNoRows
 }

@@ -145,7 +145,9 @@ func FetchRow(m ConnInterface, table string, where map[string]interface{}, t int
 		return nil, result.Err()
 	}
 
-	row.ConvertByRow(result)
+	if err := row.ConvertByRow(result); err != nil {
+		return nil, err
+	}
 
 	return row.Value(), nil
 }

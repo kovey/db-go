@@ -40,12 +40,12 @@ func New(t reflect.Type) *Row {
 	return &Row{columns: columns, value: value, fields: fields}
 }
 
-func (r *Row) Convert(rows *sql.Rows) {
-	rows.Scan(r.columns...)
+func (r *Row) Convert(rows *sql.Rows) error {
+	return rows.Scan(r.columns...)
 }
 
-func (r *Row) ConvertByRow(row *sql.Row) {
-	row.Scan(r.columns...)
+func (r *Row) ConvertByRow(row *sql.Row) error {
+	return row.Scan(r.columns...)
 }
 
 func (r *Row) Value() interface{} {
