@@ -207,3 +207,7 @@ func (ck *ClickHouse) RollBack() error {
 	ck.isInTransaction = false
 	return nil
 }
+
+func (ck *ClickHouse) FetchByPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
+	return db.FetchByPage(ck.getDb(), table, where, t, page, pageSize)
+}

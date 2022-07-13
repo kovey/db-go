@@ -140,3 +140,7 @@ func (m *Mysql) FetchRow(table string, where map[string]interface{}, t interface
 func (m *Mysql) FetchAll(table string, where map[string]interface{}, t interface{}) ([]interface{}, error) {
 	return FetchAll(m.getDb(), table, where, t)
 }
+
+func (m *Mysql) FetchByPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
+	return FetchByPage(m.getDb(), table, where, t, page, pageSize)
+}
