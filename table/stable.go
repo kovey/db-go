@@ -14,6 +14,9 @@ type TableShardingInterface interface {
 	BatchInsert(interface{}, []map[string]interface{}) (int64, error)
 	FetchRow(interface{}, map[string]interface{}, interface{}) (interface{}, error)
 	FetchAll(interface{}, map[string]interface{}, interface{}) ([]interface{}, error)
+	FetchAllByWhere(interface{}, *sql.Where, interface{}) ([]interface{}, error)
+	FetchPage(interface{}, map[string]interface{}, interface{}, int, int) ([]interface{}, error)
+	FetchPageByWhere(interface{}, *sql.Where, interface{}, int, int) ([]interface{}, error)
 }
 
 type TableSharding struct {
@@ -75,4 +78,16 @@ func (t *TableSharding) FetchRow(key interface{}, where map[string]interface{}, 
 
 func (t *TableSharding) FetchAll(key interface{}, where map[string]interface{}, mt interface{}) ([]interface{}, error) {
 	return t.db.FetchAll(key, t.GetTableName(key), where, mt)
+}
+
+func (t *TableSharding) FetchAllByWhere(key interface{}, where *sql.Where, mt interface{}) ([]interface{}, error) {
+	return t.db.FetchAllByWhere(key, t.GetTableName(key), where, mt)
+}
+
+func (t *TableSharding) FetchPage(key interface{}, where map[string]interface{}, mt interface{}, page, pageSize int) ([]interface{}, error) {
+	return t.db.FetchPage(key, t.GetTableName(key), where, mt, page, pageSize)
+}
+
+func (t *TableSharding) FetchPageByWhere(key interface{}, where *sql.Where, mt interface{}, page, pageSize int) ([]interface{}, error) {
+	return t.db.FetchPageByWhere(key, t.GetTableName(key), where, mt, page, pageSize)
 }

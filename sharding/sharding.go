@@ -216,3 +216,15 @@ func (m *Mysql) FetchRow(key interface{}, table string, where map[string]interfa
 func (m *Mysql) FetchAll(key interface{}, table string, where map[string]interface{}, t interface{}) ([]interface{}, error) {
 	return m.GetConnection(m.GetShardingKey(key)).FetchAll(table, where, t)
 }
+
+func (m *Mysql) FetchAllByWhere(key interface{}, table string, where *ds.Where, t interface{}) ([]interface{}, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchAllByWhere(table, where, t)
+}
+
+func (m *Mysql) FetchPage(key interface{}, table string, where map[string]interface{}, t interface{}, page, pageSize int) ([]interface{}, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPage(table, where, t, page, pageSize)
+}
+
+func (m *Mysql) FetchPageByWhere(key interface{}, table string, where *ds.Where, t interface{}, page, pageSize int) ([]interface{}, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhere(table, where, t, page, pageSize)
+}

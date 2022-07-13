@@ -203,11 +203,19 @@ func (ck *ClickHouse) FetchAll(table string, where map[string]interface{}, t int
 	return db.FetchAll(ck.getDb(), table, where, t)
 }
 
+func (ck *ClickHouse) FetchAllByWhere(table string, where *ds.Where, t interface{}) ([]interface{}, error) {
+	return db.FetchAllByWhere(ck.getDb(), table, where, t)
+}
+
 func (ck *ClickHouse) RollBack() error {
 	ck.isInTransaction = false
 	return nil
 }
 
-func (ck *ClickHouse) FetchByPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	return db.FetchByPage(ck.getDb(), table, where, t, page, pageSize)
+func (ck *ClickHouse) FetchPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
+	return db.FetchPage(ck.getDb(), table, where, t, page, pageSize)
+}
+
+func (ck *ClickHouse) FetchPageByWhere(table string, where *ds.Where, t interface{}, page int, pageSize int) ([]interface{}, error) {
+	return db.FetchPageByWhere(ck.getDb(), table, where, t, page, pageSize)
 }

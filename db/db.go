@@ -24,6 +24,9 @@ type DbInterface interface {
 	Select(*sql.Select, interface{}) ([]interface{}, error)
 	FetchRow(string, map[string]interface{}, interface{}) (interface{}, error)
 	FetchAll(string, map[string]interface{}, interface{}) ([]interface{}, error)
+	FetchAllByWhere(string, *sql.Where, interface{}) ([]interface{}, error)
+	FetchPage(string, map[string]interface{}, interface{}, int, int) ([]interface{}, error)
+	FetchPageByWhere(string, *sql.Where, interface{}, int, int) ([]interface{}, error)
 }
 
 type ConnInterface interface {
@@ -167,7 +170,22 @@ func FetchAll(m ConnInterface, table string, where map[string]interface{}, t int
 	return Query(m, sel.Prepare(), t, sel.Args()...)
 }
 
-func FetchByPage(m ConnInterface, table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
+func FetchAllByWhere(m ConnInterface, table string, where *sql.Where, t interface{}) ([]interface{}, error) {
+	vType := reflect.TypeOf(t)
+	if vType.Kind() == reflect.Ptr {
+		vType = vType.Elem()
+	}
+
+	row := row.New(vType)
+	sel := sql.NewSelect(table, "")
+	sel.Where(where).Columns(row.Fields()...)
+
+	logger.Debug("sql: %s", sel)
+
+	return Query(m, sel.Prepare(), t, sel.Args()...)
+}
+
+func FetchPage(m ConnInterface, table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
 	vType := reflect.TypeOf(t)
 	if vType.Kind() == reflect.Ptr {
 		vType = vType.Elem()
@@ -176,6 +194,21 @@ func FetchByPage(m ConnInterface, table string, where map[string]interface{}, t 
 	row := row.New(vType)
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields()...).Limit(pageSize).Offset((page - 1) * pageSize)
+
+	logger.Debug("sql: %s", sel)
+
+	return Query(m, sel.Prepare(), t, sel.Args()...)
+}
+
+func FetchPageByWhere(m ConnInterface, table string, where *sql.Where, t interface{}, page int, pageSize int) ([]interface{}, error) {
+	vType := reflect.TypeOf(t)
+	if vType.Kind() == reflect.Ptr {
+		vType = vType.Elem()
+	}
+
+	row := row.New(vType)
+	sel := sql.NewSelect(table, "")
+	sel.Where(where).Columns(row.Fields()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
 	logger.Debug("sql: %s", sel)
 

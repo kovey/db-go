@@ -12,6 +12,9 @@ type TableInterface interface {
 	BatchInsert([]map[string]interface{}) (int64, error)
 	FetchRow(map[string]interface{}, interface{}) (interface{}, error)
 	FetchAll(map[string]interface{}, interface{}) ([]interface{}, error)
+	FetchAllByWhere(*sql.Where, interface{}) ([]interface{}, error)
+	FetchPage(map[string]interface{}, interface{}, int, int) ([]interface{}, error)
+	FetchPageByWhere(*sql.Where, interface{}, int, int) ([]interface{}, error)
 }
 
 type Table struct {
@@ -73,4 +76,16 @@ func (t *Table) FetchRow(where map[string]interface{}, mt interface{}) (interfac
 
 func (t *Table) FetchAll(where map[string]interface{}, mt interface{}) ([]interface{}, error) {
 	return t.db.FetchAll(t.table, where, mt)
+}
+
+func (t *Table) FetchAllByWhere(where *sql.Where, mt interface{}) ([]interface{}, error) {
+	return t.db.FetchAllByWhere(t.table, where, mt)
+}
+
+func (t *Table) FetchPage(where map[string]interface{}, mt interface{}, page, pageSize int) ([]interface{}, error) {
+	return t.db.FetchPage(t.table, where, mt, page, pageSize)
+}
+
+func (t *Table) FetchPageByWhere(where *sql.Where, mt interface{}, page, pageSize int) ([]interface{}, error) {
+	return t.db.FetchPageByWhere(t.table, where, mt, page, pageSize)
 }

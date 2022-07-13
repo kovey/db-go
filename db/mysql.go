@@ -141,6 +141,14 @@ func (m *Mysql) FetchAll(table string, where map[string]interface{}, t interface
 	return FetchAll(m.getDb(), table, where, t)
 }
 
-func (m *Mysql) FetchByPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	return FetchByPage(m.getDb(), table, where, t, page, pageSize)
+func (m *Mysql) FetchAllByWhere(table string, where *ds.Where, t interface{}) ([]interface{}, error) {
+	return FetchAllByWhere(m.getDb(), table, where, t)
+}
+
+func (m *Mysql) FetchPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
+	return FetchPage(m.getDb(), table, where, t, page, pageSize)
+}
+
+func (m *Mysql) FetchPageByWhere(table string, where *ds.Where, t interface{}, page int, pageSize int) ([]interface{}, error) {
+	return FetchPageByWhere(m.getDb(), table, where, t, page, pageSize)
 }
