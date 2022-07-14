@@ -1,6 +1,8 @@
 package model
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type PrimaryIdType int
 
@@ -16,16 +18,22 @@ type PrimaryId struct {
 	StrValue string
 }
 
-func (p PrimaryId) Parse(value reflect.Value) {
+func NewPrimaryId(name string, t PrimaryIdType) *PrimaryId {
+	return &PrimaryId{Name: name, Type: t}
+}
+
+func (p *PrimaryId) Parse(value reflect.Value) {
 	switch p.Type {
 	case Int:
 		p.IntValue = int(value.Int())
+		break
 	case Str:
 		p.StrValue = value.String()
+		break
 	}
 }
 
-func (p PrimaryId) Value() interface{} {
+func (p *PrimaryId) Value() interface{} {
 	switch p.Type {
 	case Int:
 		return p.IntValue
@@ -36,6 +44,6 @@ func (p PrimaryId) Value() interface{} {
 	}
 }
 
-func (p PrimaryId) Null() bool {
+func (p *PrimaryId) Null() bool {
 	return p.IntValue == 0 && p.StrValue == ""
 }

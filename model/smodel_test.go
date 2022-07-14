@@ -33,7 +33,7 @@ func NewProTableSharding() *ProTableSharding {
 }
 
 func NewProductSharding() ProductSharding {
-	pro := ProductSharding{NewBaseSharding(NewProTableSharding(), PrimaryId{Name: "id", Type: Str}), 0, "", "", "", 0, "{}"}
+	pro := ProductSharding{NewBaseSharding(NewProTableSharding(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
 
 	return pro
 }

@@ -14,11 +14,11 @@ type ModelShardingInterface interface {
 
 type BaseSharding struct {
 	table     table.TableShardingInterface
-	primaryId PrimaryId
+	primaryId *PrimaryId
 	isInsert  bool
 }
 
-func NewBaseSharding(tb table.TableShardingInterface, primaryId PrimaryId) BaseSharding {
+func NewBaseSharding(tb table.TableShardingInterface, primaryId *PrimaryId) BaseSharding {
 	return BaseSharding{table: tb, primaryId: primaryId, isInsert: true}
 }
 

@@ -35,7 +35,7 @@ func NewProTable() *ProTable {
 }
 
 func NewProduct() Product {
-	pro := Product{NewBase(NewProTable(), PrimaryId{Name: "id", Type: Int}), 0, "", "", "", 0, "{}"}
+	pro := Product{NewBase(NewProTable(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
 
 	return pro
 }

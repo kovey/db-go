@@ -15,12 +15,12 @@ type ModelInterface interface {
 
 type Base struct {
 	table     table.TableInterface
-	primaryId PrimaryId
+	primaryId *PrimaryId
 	isInsert  bool
 	err       error
 }
 
-func NewBase(tb table.TableInterface, primaryId PrimaryId) Base {
+func NewBase(tb table.TableInterface, primaryId *PrimaryId) Base {
 	return Base{table: tb, primaryId: primaryId, isInsert: true}
 }
 
