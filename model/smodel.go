@@ -14,17 +14,17 @@ type ModelShardingInterface interface {
 
 type BaseSharding struct {
 	table     table.TableShardingInterface
-	primaryId string
+	primaryId PrimaryId
 	isInsert  bool
 }
 
-func NewBaseSharding(tb table.TableShardingInterface, primaryId string) BaseSharding {
+func NewBaseSharding(tb table.TableShardingInterface, primaryId PrimaryId) BaseSharding {
 	return BaseSharding{table: tb, primaryId: primaryId, isInsert: true}
 }
 
 func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
 	logger.Debug("b.save.table: %v", b.table)
-	logger.Debug("primaryId: %s", b.primaryId)
+	logger.Debug("primaryId: %s", b.primaryId.Name)
 	vt := reflect.ValueOf(t)
 
 	if vt.Kind() != reflect.Ptr {
@@ -34,7 +34,6 @@ func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
 	vValue := vt.Elem()
 	vType := vValue.Type()
 
-	var id int64 = 0
 	var name string
 	data := make(map[string]interface{})
 	for i := 0; i < vValue.NumField(); i++ {
@@ -45,10 +44,10 @@ func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
 		}
 
 		vField := vValue.Field(i)
-		if tag == b.primaryId {
-			id = vField.Int()
+		if tag == b.primaryId.Name {
+			b.primaryId.Parse(vField)
 			name = tField.Name
-			if id == 0 {
+			if b.primaryId.Null() {
 				continue
 			}
 		}
@@ -58,16 +57,16 @@ func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
 
 	if !b.isInsert {
 		where := make(map[string]interface{})
-		where[b.primaryId] = id
+		where[b.primaryId.Name] = b.primaryId.Value()
 
 		_, err := b.table.Update(key, data, where)
 		return err
 	}
 
 	var err error
-	id, err = b.table.Insert(key, data)
+	id, err := b.table.Insert(key, data)
 	logger.Debug("save id: %d", id)
-	if err == nil {
+	if err == nil && id > 0 {
 		vValue.FieldByName(name).SetInt(id)
 	}
 
@@ -86,13 +85,13 @@ func (b BaseSharding) Delete(key interface{}, t ModelShardingInterface) error {
 	vType := vValue.Type()
 	for i := 0; i < vType.NumField(); i++ {
 		field := vType.Field(i)
-		if field.Tag.Get("db") == b.primaryId {
+		if field.Tag.Get("db") == b.primaryId.Name {
 			name = field.Name
 			break
 		}
 	}
 
-	data[b.primaryId] = vValue.FieldByName(name).Interface()
+	data[b.primaryId.Name] = vValue.FieldByName(name).Interface()
 
 	_, err := b.table.Delete(key, data)
 	return err

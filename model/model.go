@@ -15,18 +15,18 @@ type ModelInterface interface {
 
 type Base struct {
 	table     table.TableInterface
-	primaryId string
+	primaryId PrimaryId
 	isInsert  bool
 	err       error
 }
 
-func NewBase(tb table.TableInterface, primaryId string) Base {
+func NewBase(tb table.TableInterface, primaryId PrimaryId) Base {
 	return Base{table: tb, primaryId: primaryId, isInsert: true}
 }
 
 func (b Base) Save(t ModelInterface) error {
 	logger.Debug("b.save.table: %v", b.table)
-	logger.Debug("primaryId: %s", b.primaryId)
+	logger.Debug("primaryId: %s", b.primaryId.Name)
 	vt := reflect.ValueOf(t)
 
 	if vt.Kind() != reflect.Ptr {
@@ -36,7 +36,6 @@ func (b Base) Save(t ModelInterface) error {
 	vValue := vt.Elem()
 	vType := vValue.Type()
 
-	var id int64 = 0
 	var name string
 
 	data := make(map[string]interface{})
@@ -48,10 +47,10 @@ func (b Base) Save(t ModelInterface) error {
 		}
 
 		vField := vValue.Field(i)
-		if tag == b.primaryId {
-			id = vField.Int()
+		if tag == b.primaryId.Name {
+			b.primaryId.Parse(vField)
 			name = tField.Name
-			if id == 0 {
+			if b.primaryId.Null() {
 				continue
 			}
 		}
@@ -61,17 +60,16 @@ func (b Base) Save(t ModelInterface) error {
 
 	if !b.isInsert {
 		where := make(map[string]interface{})
-		where[b.primaryId] = id
+		where[b.primaryId.Name] = b.primaryId.Value()
 
 		_, err := b.table.Update(data, where)
 		return err
 	}
 
 	logger.Debug("insert data: %v", data)
-	var err error
-	id, err = b.table.Insert(data)
+	id, err := b.table.Insert(data)
 	logger.Debug("save id: %d", id)
-	if err == nil {
+	if err == nil && id > 0 {
 		vValue.FieldByName(name).SetInt(id)
 	}
 
@@ -91,13 +89,13 @@ func (b Base) Delete(t ModelInterface) error {
 	vType := vValue.Type()
 	for i := 0; i < vType.NumField(); i++ {
 		field := vType.Field(i)
-		if field.Tag.Get("db") == b.primaryId {
+		if field.Tag.Get("db") == b.primaryId.Name {
 			name = field.Name
 			break
 		}
 	}
 
-	data[b.primaryId] = vValue.FieldByName(name).Interface()
+	data[b.primaryId.Name] = vValue.FieldByName(name).Interface()
 
 	_, err := b.table.Delete(data)
 	return err
