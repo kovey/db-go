@@ -52,15 +52,17 @@ func (u *Update) getPlaceholder() []string {
 			continue
 		}
 
-		prefix := t[0:2]
 		var value = t
 		var op = "="
-		if prefix == "+=" {
-			value = t[2:len(t)]
-			op = "+="
-		} else if prefix == "-=" {
-			value = t[2:len(t)]
-			op = "-="
+		if len(value) > 2 {
+			prefix := t[0:2]
+			if prefix == "+=" {
+				value = t[2:]
+				op = "+="
+			} else if prefix == "-=" {
+				value = t[2:]
+				op = "-="
+			}
 		}
 
 		u.args[index] = value
