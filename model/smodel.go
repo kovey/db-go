@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"errors"
 	"reflect"
 
@@ -16,6 +17,7 @@ type BaseSharding struct {
 	table     table.TableShardingInterface
 	primaryId *PrimaryId
 	isInsert  bool
+	err       error
 }
 
 func NewBaseSharding(tb table.TableShardingInterface, primaryId *PrimaryId) BaseSharding {
@@ -103,14 +105,20 @@ func (b BaseSharding) FetchRow(key interface{}, where map[string]interface{}, t 
 		return errors.New("params is not ptr")
 	}
 	row, err := b.table.FetchRow(key, where, t)
+	b.err = err
+	vValue := vt.Elem()
 	if err != nil {
+		vValue.FieldByName("BaseSharding").Set(reflect.ValueOf(b))
 		return err
 	}
 
 	b.isInsert = false
-	vValue := vt.Elem()
 	vValue.Set(reflect.ValueOf(row))
 	vValue.FieldByName("BaseSharding").Set(reflect.ValueOf(b))
 
 	return nil
+}
+
+func (b BaseSharding) Empty() bool {
+	return b.err == sql.ErrNoRows
 }
