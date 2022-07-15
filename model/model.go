@@ -108,15 +108,14 @@ func (b Base) FetchRow(where map[string]interface{}, t ModelInterface) error {
 	}
 	row, err := b.table.FetchRow(where, t)
 	b.err = err
+	vValue := vt.Elem()
+	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 	if err != nil {
 		return err
 	}
 
 	b.isInsert = false
-
-	vValue := vt.Elem()
 	vValue.Set(reflect.ValueOf(row))
-	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 
 	return nil
 }
