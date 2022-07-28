@@ -8,6 +8,7 @@ import (
 )
 
 type TableShardingInterface interface {
+	Database() *sharding.Mysql
 	Insert(interface{}, map[string]interface{}) (int64, error)
 	Update(interface{}, map[string]interface{}, map[string]interface{}) (int64, error)
 	Delete(interface{}, map[string]interface{}) (int64, error)
@@ -26,6 +27,10 @@ type TableSharding struct {
 
 func NewTableSharding(table string, isMaster bool) *TableSharding {
 	return &TableSharding{db: sharding.NewMysql(isMaster), table: table}
+}
+
+func (t *TableSharding) Database() *sharding.Mysql {
+	return t.db
 }
 
 func (t *TableSharding) GetTableName(key interface{}) string {

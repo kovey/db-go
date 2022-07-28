@@ -6,6 +6,7 @@ import (
 )
 
 type TableInterface interface {
+	Database() db.DbInterface
 	Insert(map[string]interface{}) (int64, error)
 	Update(map[string]interface{}, map[string]interface{}) (int64, error)
 	Delete(map[string]interface{}) (int64, error)
@@ -28,6 +29,10 @@ func NewTable(table string) *Table {
 
 func NewTableByDb(table string, database db.DbInterface) *Table {
 	return &Table{db: database, table: table}
+}
+
+func (t *Table) Database() db.DbInterface {
+	return t.db
 }
 
 func (t *Table) Insert(data map[string]interface{}) (int64, error) {
