@@ -10,6 +10,7 @@ type TableInterface interface {
 	Insert(map[string]interface{}) (int64, error)
 	Update(map[string]interface{}, map[string]interface{}) (int64, error)
 	Delete(map[string]interface{}) (int64, error)
+	DeleteWhere(*sql.Where) (int64, error)
 	BatchInsert([]map[string]interface{}) (int64, error)
 	FetchRow(map[string]interface{}, interface{}) (interface{}, error)
 	FetchAll(map[string]interface{}, interface{}) ([]interface{}, error)
@@ -58,6 +59,13 @@ func (t *Table) Update(data map[string]interface{}, where map[string]interface{}
 func (t *Table) Delete(where map[string]interface{}) (int64, error) {
 	del := sql.NewDelete(t.table)
 	del.WhereByMap(where)
+
+	return t.db.Delete(del)
+}
+
+func (t *Table) DeleteWhere(where *sql.Where) (int64, error) {
+	del := sql.NewDelete(t.table)
+	del.Where(where)
 
 	return t.db.Delete(del)
 }

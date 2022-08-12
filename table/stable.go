@@ -12,6 +12,7 @@ type TableShardingInterface interface {
 	Insert(interface{}, map[string]interface{}) (int64, error)
 	Update(interface{}, map[string]interface{}, map[string]interface{}) (int64, error)
 	Delete(interface{}, map[string]interface{}) (int64, error)
+	DeleteWhere(interface{}, *sql.Where) (int64, error)
 	BatchInsert(interface{}, []map[string]interface{}) (int64, error)
 	FetchRow(interface{}, map[string]interface{}, interface{}) (interface{}, error)
 	FetchAll(interface{}, map[string]interface{}, interface{}) ([]interface{}, error)
@@ -60,6 +61,13 @@ func (t *TableSharding) Update(key interface{}, data map[string]interface{}, whe
 func (t *TableSharding) Delete(key interface{}, where map[string]interface{}) (int64, error) {
 	del := sql.NewDelete(t.GetTableName(key))
 	del.WhereByMap(where)
+
+	return t.db.Delete(key, del)
+}
+
+func (t *TableSharding) DeleteWhere(key interface{}, where *sql.Where) (int64, error) {
+	del := sql.NewDelete(t.GetTableName(key))
+	del.Where(where)
 
 	return t.db.Delete(key, del)
 }
