@@ -15,12 +15,12 @@ const (
 )
 
 type Where struct {
-	fields []string
-	args   []interface{}
+	Fields []string      `json:"fields"`
+	Binds  []interface{} `json:"binds"`
 }
 
 func NewWhere() *Where {
-	return &Where{fields: make([]string, 0), args: make([]interface{}, 0)}
+	return &Where{Fields: make([]string, 0), Binds: make([]interface{}, 0)}
 }
 
 func (w *Where) Eq(field string, value interface{}) *Where {
@@ -28,8 +28,8 @@ func (w *Where) Eq(field string, value interface{}) *Where {
 }
 
 func (w *Where) set(op string, field string, value interface{}) *Where {
-	w.fields = append(w.fields, fmt.Sprintf("%s %s ?", formatValue(field), op))
-	w.args = append(w.args, value)
+	w.Fields = append(w.Fields, fmt.Sprintf("%s %s ?", formatValue(field), op))
+	w.Binds = append(w.Binds, value)
 	return w
 }
 
@@ -42,8 +42,8 @@ func (w *Where) Like(field string, value interface{}) *Where {
 }
 
 func (w *Where) Between(field string, from interface{}, to interface{}) *Where {
-	w.fields = append(w.fields, fmt.Sprintf(betweenFormat, formatValue(field), "?", "?"))
-	w.args = append(w.args, from, to)
+	w.Fields = append(w.Fields, fmt.Sprintf(betweenFormat, formatValue(field), "?", "?"))
+	w.Binds = append(w.Binds, from, to)
 	return w
 }
 
@@ -69,8 +69,8 @@ func (w *Where) setIn(format string, field string, value []interface{}) *Where {
 		placeholders[i] = "?"
 	}
 
-	w.fields = append(w.fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, ",")))
-	w.args = append(w.args, value...)
+	w.Fields = append(w.Fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, ",")))
+	w.Binds = append(w.Binds, value...)
 	return w
 }
 
@@ -83,7 +83,7 @@ func (w *Where) NotIn(field string, value []interface{}) *Where {
 }
 
 func (w *Where) setNull(format string, field string) *Where {
-	w.fields = append(w.fields, fmt.Sprintf(format, formatValue(field)))
+	w.Fields = append(w.Fields, fmt.Sprintf(format, formatValue(field)))
 	return w
 }
 
@@ -96,20 +96,20 @@ func (w *Where) IsNotNull(field string) *Where {
 }
 
 func (w *Where) Statement(statement string) *Where {
-	w.fields = append(w.fields, statement)
+	w.Fields = append(w.Fields, statement)
 	return w
 }
 
 func (w *Where) Args() []interface{} {
-	return w.args
+	return w.Binds
 }
 
 func (w *Where) prepare(op string) string {
-	if len(w.fields) == 0 {
+	if len(w.Fields) == 0 {
 		return ""
 	}
 
-	return fmt.Sprintf(whereFormat, strings.Join(w.fields, op))
+	return fmt.Sprintf(whereFormat, strings.Join(w.Fields, op))
 }
 
 func (w *Where) Prepare() string {
