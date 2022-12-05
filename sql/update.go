@@ -58,10 +58,10 @@ func (u *Update) getPlaceholder() []string {
 			prefix := t[0:2]
 			if prefix == "+=" {
 				value = t[2:]
-				op = "+="
+				op = "= field +"
 			} else if prefix == "-=" {
 				value = t[2:]
-				op = "-="
+				op = "= field -"
 			}
 		}
 
