@@ -58,10 +58,10 @@ func (u *Update) getPlaceholder() []string {
 			prefix := t[0:2]
 			if prefix == "+=" {
 				value = t[2:]
-				op = "= field +"
+				op = fmt.Sprintf("= %s +", field)
 			} else if prefix == "-=" {
 				value = t[2:]
-				op = "= field -"
+				op = fmt.Sprintf("= %s -", field)
 			}
 		}
 
