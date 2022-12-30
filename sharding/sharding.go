@@ -8,7 +8,7 @@ import (
 	"github.com/kovey/config-go/config"
 	"github.com/kovey/db-go/db"
 	ds "github.com/kovey/db-go/sql"
-	"github.com/kovey/logger-go/logger"
+	"github.com/kovey/debug-go/debug"
 )
 
 var (
@@ -77,7 +77,7 @@ func Init(mas []config.Mysql, sls []config.Mysql) {
 		value.Dbname = fmt.Sprintf("%s_%d", value.Dbname, key)
 		database, err := db.OpenDB(value)
 		if err != nil {
-			logger.Error("open master database failure, error: %s", err)
+			debug.Erro("open master database failure, error: %s", err)
 			continue
 		}
 
@@ -88,7 +88,7 @@ func Init(mas []config.Mysql, sls []config.Mysql) {
 		value.Dbname = fmt.Sprintf("%s_%d", value.Dbname, key)
 		database, err := db.OpenDB(value)
 		if err != nil {
-			logger.Error("open slave database failure, error: %s", err)
+			debug.Erro("open slave database failure, error: %s", err)
 			continue
 		}
 
@@ -97,7 +97,6 @@ func Init(mas []config.Mysql, sls []config.Mysql) {
 }
 
 func (m *Mysql) GetConnection(key int) *db.Mysql {
-	logger.Debug("sharding key: %d", key)
 	database, ok := m.connections[key]
 	if ok {
 		return database
@@ -127,7 +126,6 @@ func (m *Mysql) Begin() error {
 
 	begins := make([]int, 0)
 	for index, connection := range m.connections {
-		logger.Debug("connections[%d] begin transaction: %v", index, connection)
 		err := connection.Begin()
 		if err != nil {
 			m.rollBack(begins)

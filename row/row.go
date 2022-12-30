@@ -3,8 +3,6 @@ package row
 import (
 	"database/sql"
 	"reflect"
-
-	"github.com/kovey/logger-go/logger"
 )
 
 type Row struct {
@@ -27,16 +25,13 @@ func New(t reflect.Type) *Row {
 		}
 
 		if field.Kind() == reflect.Ptr {
-			logger.Debug("field[%s] is ptr", name)
 			field = field.Elem()
-			logger.Debug("field: %v", field)
 		}
 
 		columns = append(columns, field.Addr().Interface())
 		fields = append(fields, name)
 	}
 
-	logger.Debug("fields: %v", fields)
 	return &Row{columns: columns, value: value, fields: fields}
 }
 

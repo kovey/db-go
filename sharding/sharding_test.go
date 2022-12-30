@@ -8,7 +8,6 @@ import (
 
 	"github.com/kovey/config-go/config"
 	"github.com/kovey/db-go/sql"
-	"github.com/kovey/logger-go/logger"
 )
 
 var (
@@ -223,7 +222,6 @@ func TestFatchRow(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	logger.SetLevel(logger.LOGGER_INFO)
 	setup()
 	code := m.Run()
 	teardown()

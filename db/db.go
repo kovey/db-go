@@ -7,7 +7,7 @@ import (
 
 	"github.com/kovey/db-go/row"
 	"github.com/kovey/db-go/sql"
-	"github.com/kovey/logger-go/logger"
+	"github.com/kovey/debug-go/debug"
 )
 
 type DbInterface interface {
@@ -59,7 +59,7 @@ func Query(m ConnInterface, query string, t interface{}, args ...interface{}) ([
 }
 
 func Exec(m ConnInterface, stament string) error {
-	logger.Debug("sql: %s", stament)
+	debug.Info("sql: %s", stament)
 	result, err := m.Exec(stament)
 
 	if err != nil {
@@ -77,7 +77,7 @@ func Exec(m ConnInterface, stament string) error {
 }
 
 func prepare(m ConnInterface, pre sql.SqlInterface) (ds.Result, error) {
-	logger.Debug("sql: %s", pre)
+	debug.Info("sql: %s", pre)
 	smt, err := m.Prepare(pre.Prepare())
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
 }
 
 func Select(m ConnInterface, sel *sql.Select, t interface{}) ([]interface{}, error) {
-	logger.Debug("sql: %s", sel)
+	debug.Info("sql: %s", sel)
 	return Query(m, sel.Prepare(), t, sel.Args()...)
 }
 
@@ -140,7 +140,7 @@ func FetchRow(m ConnInterface, table string, where map[string]interface{}, t int
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields()...).Limit(1)
 
-	logger.Debug("sql: %s", sel)
+	debug.Info("sql: %s", sel)
 
 	result := m.QueryRow(sel.Prepare(), sel.Args()...)
 
@@ -165,7 +165,7 @@ func FetchAll(m ConnInterface, table string, where map[string]interface{}, t int
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields()...)
 
-	logger.Debug("sql: %s", sel)
+	debug.Info("sql: %s", sel)
 
 	return Query(m, sel.Prepare(), t, sel.Args()...)
 }
@@ -180,7 +180,7 @@ func FetchAllByWhere(m ConnInterface, table string, where *sql.Where, t interfac
 	sel := sql.NewSelect(table, "")
 	sel.Where(where).Columns(row.Fields()...)
 
-	logger.Debug("sql: %s", sel)
+	debug.Info("sql: %s", sel)
 
 	return Query(m, sel.Prepare(), t, sel.Args()...)
 }
@@ -195,7 +195,7 @@ func FetchPage(m ConnInterface, table string, where map[string]interface{}, t in
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	logger.Debug("sql: %s", sel)
+	debug.Info("sql: %s", sel)
 
 	return Query(m, sel.Prepare(), t, sel.Args()...)
 }
@@ -210,7 +210,7 @@ func FetchPageByWhere(m ConnInterface, table string, where *sql.Where, t interfa
 	sel := sql.NewSelect(table, "")
 	sel.Where(where).Columns(row.Fields()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	logger.Debug("sql: %s", sel)
+	debug.Info("sql: %s", sel)
 
 	return Query(m, sel.Prepare(), t, sel.Args()...)
 }

@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/kovey/db-go/table"
-	"github.com/kovey/logger-go/logger"
 )
 
 type ModelShardingInterface interface {
@@ -25,8 +24,6 @@ func NewBaseSharding(tb table.TableShardingInterface, primaryId *PrimaryId) Base
 }
 
 func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
-	logger.Debug("b.save.table: %v", b.table)
-	logger.Debug("primaryId: %s", b.primaryId.Name)
 	vt := reflect.ValueOf(t)
 
 	if vt.Kind() != reflect.Ptr {
@@ -67,7 +64,6 @@ func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
 
 	var err error
 	id, err := b.table.Insert(key, data)
-	logger.Debug("save id: %d", id)
 	if err == nil && id > 0 {
 		vValue.FieldByName(name).SetInt(id)
 	}

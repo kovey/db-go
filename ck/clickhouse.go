@@ -10,7 +10,7 @@ import (
 	"github.com/kovey/config-go/config"
 	"github.com/kovey/db-go/db"
 	ds "github.com/kovey/db-go/sql"
-	"github.com/kovey/logger-go/logger"
+	"github.com/kovey/debug-go/debug"
 )
 
 var (
@@ -40,7 +40,7 @@ func Init(conf config.ClickHouse) error {
 
 func OpenDB(conf config.ClickHouse) (*sql.DB, error) {
 	dsn := GetDSN(conf)
-	logger.Debug("clickhouse dsn: %s", dsn)
+	debug.Info("clickhouse dsn: %s", dsn)
 	db, err := sql.Open("clickhouse", dsn)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func (ck *ClickHouse) BatchInsert(batch *ds.Batch) (int64, error) {
 		insert.ParseValue(first.Fields())
 		_, err = smt.Exec(insert.Args()...)
 		if err != nil {
-			logger.Error("insert fail, error: %s", err)
+			debug.Erro("insert fail, error: %s", err)
 		}
 	}
 

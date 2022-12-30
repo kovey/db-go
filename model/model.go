@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/kovey/db-go/table"
-	"github.com/kovey/logger-go/logger"
 )
 
 type ModelInterface interface {
@@ -25,8 +24,6 @@ func NewBase(tb table.TableInterface, primaryId *PrimaryId) Base {
 }
 
 func (b Base) Save(t ModelInterface) error {
-	logger.Debug("b.save.table: %v", b.table)
-	logger.Debug("primaryId: %s", b.primaryId.Name)
 	vt := reflect.ValueOf(t)
 
 	if vt.Kind() != reflect.Ptr {
@@ -66,9 +63,7 @@ func (b Base) Save(t ModelInterface) error {
 		return err
 	}
 
-	logger.Debug("insert data: %v", data)
 	id, err := b.table.Insert(data)
-	logger.Debug("save id: %d", id)
 	if err == nil && id > 0 {
 		vValue.FieldByName(name).SetInt(id)
 	}
