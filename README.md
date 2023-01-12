@@ -15,7 +15,6 @@
         "github.com/kovey/config-go/config"
         "github.com/kovey/db-go/db"
         "github.com/kovey/db-go/table"
-        "github.com/kovey/logger-go/logger"
         "github.com/kovey/db-go/model"
     )
 
@@ -47,7 +46,6 @@
     }
 
     func TestMain(m *testing.M) {
-        logger.SetLevel(logger.LOGGER_INFO)
         setup()
         code := m.Run()
         teardown()
