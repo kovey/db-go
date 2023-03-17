@@ -19,19 +19,19 @@ type SqlInterface interface {
 
 type WhereInterface interface {
 	SqlInterface
-	Eq(field string, value any) WhereInterface
-	Neq(field string, value any) WhereInterface
-	Like(field string, value any) WhereInterface
-	Between(field string, from, to any) WhereInterface
-	Gt(field string, value any) WhereInterface
-	Ge(field string, value any) WhereInterface
-	Lt(field string, value any) WhereInterface
-	Le(field string, value any) WhereInterface
-	In(field string, value []any) WhereInterface
-	NotIn(field string, value []any) WhereInterface
-	IsNull(field string) WhereInterface
-	IsNotNull(field string) WhereInterface
-	Statement(statement string) WhereInterface
+	Eq(field string, value any)
+	Neq(field string, value any)
+	Like(field string, value any)
+	Between(field string, from, to any)
+	Gt(field string, value any)
+	Ge(field string, value any)
+	Lt(field string, value any)
+	Le(field string, value any)
+	In(field string, value []any)
+	NotIn(field string, value []any)
+	IsNull(field string)
+	IsNotNull(field string)
+	Statement(statement string)
 	OrPrepare() string
 }
 
