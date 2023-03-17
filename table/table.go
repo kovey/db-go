@@ -10,13 +10,13 @@ type TableInterface[T any] interface {
 	Insert(map[string]any) (int64, error)
 	Update(map[string]any, map[string]any) (int64, error)
 	Delete(map[string]any) (int64, error)
-	DeleteWhere(*sql.Where) (int64, error)
+	DeleteWhere(sql.WhereInterface) (int64, error)
 	BatchInsert([]map[string]any) (int64, error)
 	FetchRow(map[string]any, T) (T, error)
 	FetchAll(map[string]any, T) ([]T, error)
-	FetchAllByWhere(*sql.Where, T) ([]T, error)
+	FetchAllByWhere(sql.WhereInterface, T) ([]T, error)
 	FetchPage(map[string]any, T, int, int) ([]T, error)
-	FetchPageByWhere(*sql.Where, T, int, int) ([]T, error)
+	FetchPageByWhere(sql.WhereInterface, T, int, int) ([]T, error)
 }
 
 type Table[T any] struct {
@@ -63,7 +63,7 @@ func (t *Table[T]) Delete(where map[string]any) (int64, error) {
 	return t.db.Delete(del)
 }
 
-func (t *Table[T]) DeleteWhere(where *sql.Where) (int64, error) {
+func (t *Table[T]) DeleteWhere(where sql.WhereInterface) (int64, error) {
 	del := sql.NewDelete(t.table)
 	del.Where(where)
 
@@ -91,7 +91,7 @@ func (t *Table[T]) FetchAll(where map[string]any, model T) ([]T, error) {
 	return t.db.FetchAll(t.table, where, model)
 }
 
-func (t *Table[T]) FetchAllByWhere(where *sql.Where, model T) ([]T, error) {
+func (t *Table[T]) FetchAllByWhere(where sql.WhereInterface, model T) ([]T, error) {
 	return t.db.FetchAllByWhere(t.table, where, model)
 }
 
@@ -99,6 +99,6 @@ func (t *Table[T]) FetchPage(where map[string]any, model T, page, pageSize int) 
 	return t.db.FetchPage(t.table, where, model, page, pageSize)
 }
 
-func (t *Table[T]) FetchPageByWhere(where *sql.Where, model T, page, pageSize int) ([]T, error) {
+func (t *Table[T]) FetchPageByWhere(where sql.WhereInterface, model T, page, pageSize int) ([]T, error) {
 	return t.db.FetchPageByWhere(t.table, where, model, page, pageSize)
 }
