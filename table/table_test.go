@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	table *Table
-	mysql *db.Mysql
+	table *Table[*Product]
+	mysql *db.Mysql[*Product]
 )
 
 type Product struct {
@@ -33,7 +33,7 @@ func setup() {
 		fmt.Printf("init mysql error: %s", err)
 	}
 
-	mysql = db.NewMysql()
+	mysql = db.NewMysql[*Product]()
 	sql := []string{"CREATE TABLE `test`.`product` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
@@ -58,8 +58,8 @@ func teardown() {
 }
 
 func TestTableInsert(t *testing.T) {
-	table = NewTable("product")
-	data := make(map[string]interface{}, 5)
+	table = NewTable[*Product]("product")
+	data := make(map[string]any, 5)
 	data["name"] = "kovey"
 	data["date"] = "2021-01-01"
 	data["time"] = "2021-01-02 11:11:11"
@@ -74,21 +74,21 @@ func TestTableInsert(t *testing.T) {
 
 	t.Logf("id: %d", a)
 
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
-	row, e := table.FetchRow(where, Product{})
+	row, e := table.FetchRow(where, &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
 
-	t.Logf("product: %v", row.(Product))
+	t.Logf("product: %v", row)
 }
 
 func TestTableUpdate(t *testing.T) {
-	table = NewTable("product")
-	data := make(map[string]interface{})
+	table = NewTable[*Product]("product")
+	data := make(map[string]any)
 	data["name"] = "test"
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
 
 	a, err := table.Update(data, where)
@@ -98,17 +98,17 @@ func TestTableUpdate(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := table.FetchRow(where, Product{})
+	row, e := table.FetchRow(where, &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
 
-	t.Logf("product: %v", row.(Product))
+	t.Logf("product: %v", row)
 }
 
 func TestTableDelete(t *testing.T) {
-	table = NewTable("product")
-	where := make(map[string]interface{})
+	table = NewTable[*Product]("product")
+	where := make(map[string]any)
 	where["id"] = 1
 
 	a, err := table.Delete(where)
@@ -118,12 +118,12 @@ func TestTableDelete(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := table.FetchRow(where, Product{})
+	row, e := table.FetchRow(where, &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
 
-	t.Logf("product: %v", row.(Product))
+	t.Logf("product: %v", row)
 }
 
 func TestMain(m *testing.M) {

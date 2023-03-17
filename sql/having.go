@@ -11,54 +11,54 @@ const (
 
 type Having struct {
 	fields []string
-	args   []interface{}
+	args   []any
 }
 
 func NewHaving() *Having {
-	return &Having{fields: make([]string, 0), args: make([]interface{}, 0)}
+	return &Having{fields: make([]string, 0), args: make([]any, 0)}
 }
 
-func (w *Having) Eq(field string, value interface{}) *Having {
+func (w *Having) Eq(field string, value any) *Having {
 	return w.set("=", field, value)
 }
 
-func (w *Having) set(op string, field string, value interface{}) *Having {
+func (w *Having) set(op string, field string, value any) *Having {
 	w.fields = append(w.fields, fmt.Sprintf("%s %s ?", formatValue(field), op))
 	w.args = append(w.args, value)
 	return w
 }
 
-func (w *Having) Neq(field string, value interface{}) *Having {
+func (w *Having) Neq(field string, value any) *Having {
 	return w.set("<>", field, value)
 }
 
-func (w *Having) Like(field string, value interface{}) *Having {
+func (w *Having) Like(field string, value any) *Having {
 	return w.set("LIKE", field, value)
 }
 
-func (w *Having) Between(field string, from interface{}, to interface{}) *Having {
+func (w *Having) Between(field string, from any, to any) *Having {
 	w.fields = append(w.fields, fmt.Sprintf(betweenFormat, formatValue(field), "?", "?"))
 	w.args = append(w.args, from, to)
 	return w
 }
 
-func (w *Having) Gt(field string, value interface{}) *Having {
+func (w *Having) Gt(field string, value any) *Having {
 	return w.set(">", field, value)
 }
 
-func (w *Having) Ge(field string, value interface{}) *Having {
+func (w *Having) Ge(field string, value any) *Having {
 	return w.set(">=", field, value)
 }
 
-func (w *Having) Lt(field string, value interface{}) *Having {
+func (w *Having) Lt(field string, value any) *Having {
 	return w.set("<", field, value)
 }
 
-func (w *Having) Le(field string, value interface{}) *Having {
+func (w *Having) Le(field string, value any) *Having {
 	return w.set("<=", field, value)
 }
 
-func (w *Having) setIn(format string, field string, value []interface{}) *Having {
+func (w *Having) setIn(format string, field string, value []any) *Having {
 	placeholders := make([]string, len(value))
 	for i := 0; i < len(value); i++ {
 		placeholders[i] = "?"
@@ -69,11 +69,11 @@ func (w *Having) setIn(format string, field string, value []interface{}) *Having
 	return w
 }
 
-func (w *Having) In(field string, value []interface{}) *Having {
+func (w *Having) In(field string, value []any) *Having {
 	return w.setIn(inFormat, field, value)
 }
 
-func (w *Having) NotIn(field string, value []interface{}) *Having {
+func (w *Having) NotIn(field string, value []any) *Having {
 	return w.setIn(notInFormat, field, value)
 }
 
@@ -95,7 +95,7 @@ func (w *Having) Statement(statement string) *Having {
 	return w
 }
 
-func (w *Having) Args() []interface{} {
+func (w *Having) Args() []any {
 	return w.args
 }
 

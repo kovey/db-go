@@ -18,14 +18,14 @@ var (
 	dev      string
 )
 
-type ClickHouse struct {
+type ClickHouse[T any] struct {
 	database        *sql.DB
 	tx              *sql.Tx
 	isInTransaction bool
 }
 
-func NewClickHouse() *ClickHouse {
-	return &ClickHouse{database: database, tx: nil, isInTransaction: false}
+func NewClickHouse[T any]() *ClickHouse[T] {
+	return &ClickHouse[T]{database: database, tx: nil, isInTransaction: false}
 }
 
 func Init(conf config.ClickHouse) error {
@@ -103,7 +103,7 @@ func formatList(key string, servers []config.Addr) string {
 	return strings.Join(hosts, ",")
 }
 
-func (ck *ClickHouse) getDb() db.ConnInterface {
+func (ck *ClickHouse[T]) getDb() db.ConnInterface {
 	if ck.isInTransaction {
 		return ck.tx
 	}
@@ -111,7 +111,7 @@ func (ck *ClickHouse) getDb() db.ConnInterface {
 	return ck.database
 }
 
-func (ck *ClickHouse) Begin() error {
+func (ck *ClickHouse[T]) Begin() error {
 	tx, err := ck.database.Begin()
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func (ck *ClickHouse) Begin() error {
 	return nil
 }
 
-func (ck *ClickHouse) Commit() error {
+func (ck *ClickHouse[T]) Commit() error {
 	if ck.tx == nil {
 		return fmt.Errorf("transaction is not open or close")
 	}
@@ -133,33 +133,33 @@ func (ck *ClickHouse) Commit() error {
 	return err
 }
 
-func (ck *ClickHouse) InTransaction() bool {
+func (ck *ClickHouse[T]) InTransaction() bool {
 	return ck.isInTransaction
 }
 
-func (ck *ClickHouse) Query(query string, t interface{}, args ...interface{}) ([]interface{}, error) {
+func (ck *ClickHouse[T]) Query(query string, t any, args ...any) ([]any, error) {
 	return db.Query(ck.getDb(), query, t)
 }
 
-func (ck *ClickHouse) Exec(statement string) error {
+func (ck *ClickHouse[T]) Exec(statement string) error {
 	return db.Exec(ck.getDb(), statement)
 }
 
-func (ck *ClickHouse) Insert(insert *ds.Insert) (int64, error) {
+func (ck *ClickHouse[T]) Insert(insert *ds.Insert) (int64, error) {
 	return 0, errors.New("insert statement supported only in the batch mode (use begin/commit)")
 }
 
-func (ck *ClickHouse) Update(update *ds.Update) (int64, error) {
+func (ck *ClickHouse[T]) Update(update *ds.Update) (int64, error) {
 	db.Update(ck.getDb(), update)
 	return 1, nil
 }
 
-func (ck *ClickHouse) Delete(del *ds.Delete) (int64, error) {
+func (ck *ClickHouse[T]) Delete(del *ds.Delete) (int64, error) {
 	db.Delete(ck.getDb(), del)
 	return 1, nil
 }
 
-func (ck *ClickHouse) BatchInsert(batch *ds.Batch) (int64, error) {
+func (ck *ClickHouse[T]) BatchInsert(batch *ds.Batch) (int64, error) {
 	ins := batch.Inserts()
 	count := int64(len(ins))
 	if count == 0 {
@@ -191,31 +191,31 @@ func (ck *ClickHouse) BatchInsert(batch *ds.Batch) (int64, error) {
 	return count, err
 }
 
-func (ck *ClickHouse) Select(sel *ds.Select, t interface{}) ([]interface{}, error) {
-	return db.Select(ck.getDb(), sel, t)
+func (ck *ClickHouse[T]) Select(sel *ds.Select, model T) ([]T, error) {
+	return db.Select(ck.getDb(), sel, model)
 }
 
-func (ck *ClickHouse) FetchRow(table string, where map[string]interface{}, t interface{}) (interface{}, error) {
-	return db.FetchRow(ck.getDb(), table, where, t)
+func (ck *ClickHouse[T]) FetchRow(table string, where map[string]any, model T) (any, error) {
+	return db.FetchRow(ck.getDb(), table, where, model)
 }
 
-func (ck *ClickHouse) FetchAll(table string, where map[string]interface{}, t interface{}) ([]interface{}, error) {
-	return db.FetchAll(ck.getDb(), table, where, t)
+func (ck *ClickHouse[T]) FetchAll(table string, where map[string]any, model T) ([]T, error) {
+	return db.FetchAll(ck.getDb(), table, where, model)
 }
 
-func (ck *ClickHouse) FetchAllByWhere(table string, where *ds.Where, t interface{}) ([]interface{}, error) {
-	return db.FetchAllByWhere(ck.getDb(), table, where, t)
+func (ck *ClickHouse[T]) FetchAllByWhere(table string, where *ds.Where, model T) ([]T, error) {
+	return db.FetchAllByWhere(ck.getDb(), table, where, model)
 }
 
-func (ck *ClickHouse) RollBack() error {
+func (ck *ClickHouse[T]) RollBack() error {
 	ck.isInTransaction = false
 	return nil
 }
 
-func (ck *ClickHouse) FetchPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	return db.FetchPage(ck.getDb(), table, where, t, page, pageSize)
+func (ck *ClickHouse[T]) FetchPage(table string, where map[string]any, model T, page int, pageSize int) ([]T, error) {
+	return db.FetchPage(ck.getDb(), table, where, model, page, pageSize)
 }
 
-func (ck *ClickHouse) FetchPageByWhere(table string, where *ds.Where, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	return db.FetchPageByWhere(ck.getDb(), table, where, t, page, pageSize)
+func (ck *ClickHouse[T]) FetchPageByWhere(table string, where *ds.Where, model T, page int, pageSize int) ([]T, error) {
+	return db.FetchPageByWhere(ck.getDb(), table, where, model, page, pageSize)
 }

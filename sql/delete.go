@@ -9,7 +9,7 @@ const (
 
 type Delete struct {
 	table  string
-	where  *Where
+	where  WhereInterface
 	format string
 }
 
@@ -21,14 +21,14 @@ func NewCkDelete(table string) *Delete {
 	return &Delete{table: table, where: nil, format: deleteCkFormat}
 }
 
-func (d *Delete) Where(w *Where) *Delete {
+func (d *Delete) Where(w WhereInterface) *Delete {
 	d.where = w
 	return d
 }
 
-func (d *Delete) Args() []interface{} {
+func (d *Delete) Args() []any {
 	if d.where == nil {
-		return []interface{}{}
+		return []any{}
 	}
 
 	return d.where.Args()
@@ -45,7 +45,7 @@ func (d *Delete) String() string {
 	return String(d)
 }
 
-func (d *Delete) WhereByMap(where map[string]interface{}) *Delete {
+func (d *Delete) WhereByMap(where map[string]any) *Delete {
 	if d.where == nil {
 		d.where = NewWhere()
 	}

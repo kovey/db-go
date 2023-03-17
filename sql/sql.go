@@ -12,9 +12,27 @@ const (
 )
 
 type SqlInterface interface {
-	Args() []interface{}
+	Args() []any
 	Prepare() string
 	String() string
+}
+
+type WhereInterface interface {
+	SqlInterface
+	Eq(field string, value any) WhereInterface
+	Neq(field string, value any) WhereInterface
+	Like(field string, value any) WhereInterface
+	Between(field string, from, to any) WhereInterface
+	Gt(field string, value any) WhereInterface
+	Ge(field string, value any) WhereInterface
+	Lt(field string, value any) WhereInterface
+	Le(field string, value any) WhereInterface
+	In(field string, value []any) WhereInterface
+	NotIn(field string, value []any) WhereInterface
+	IsNull(field string) WhereInterface
+	IsNotNull(field string) WhereInterface
+	Statement(statement string) WhereInterface
+	OrPrepare() string
 }
 
 func FormatValue(field string) string {

@@ -5,38 +5,38 @@ import (
 	"github.com/kovey/db-go/sql"
 )
 
-type TableInterface interface {
-	Database() db.DbInterface
-	Insert(map[string]interface{}) (int64, error)
-	Update(map[string]interface{}, map[string]interface{}) (int64, error)
-	Delete(map[string]interface{}) (int64, error)
+type TableInterface[T any] interface {
+	Database() db.DbInterface[T]
+	Insert(map[string]any) (int64, error)
+	Update(map[string]any, map[string]any) (int64, error)
+	Delete(map[string]any) (int64, error)
 	DeleteWhere(*sql.Where) (int64, error)
-	BatchInsert([]map[string]interface{}) (int64, error)
-	FetchRow(map[string]interface{}, interface{}) (interface{}, error)
-	FetchAll(map[string]interface{}, interface{}) ([]interface{}, error)
-	FetchAllByWhere(*sql.Where, interface{}) ([]interface{}, error)
-	FetchPage(map[string]interface{}, interface{}, int, int) ([]interface{}, error)
-	FetchPageByWhere(*sql.Where, interface{}, int, int) ([]interface{}, error)
+	BatchInsert([]map[string]any) (int64, error)
+	FetchRow(map[string]any, T) (T, error)
+	FetchAll(map[string]any, T) ([]T, error)
+	FetchAllByWhere(*sql.Where, T) ([]T, error)
+	FetchPage(map[string]any, T, int, int) ([]T, error)
+	FetchPageByWhere(*sql.Where, T, int, int) ([]T, error)
 }
 
-type Table struct {
+type Table[T any] struct {
 	table string
-	db    db.DbInterface
+	db    db.DbInterface[T]
 }
 
-func NewTable(table string) *Table {
-	return NewTableByDb(table, db.NewMysql())
+func NewTable[T any](table string) *Table[T] {
+	return NewTableByDb[T](table, db.NewMysql[T]())
 }
 
-func NewTableByDb(table string, database db.DbInterface) *Table {
-	return &Table{db: database, table: table}
+func NewTableByDb[T any](table string, database db.DbInterface[T]) *Table[T] {
+	return &Table[T]{db: database, table: table}
 }
 
-func (t *Table) Database() db.DbInterface {
+func (t *Table[T]) Database() db.DbInterface[T] {
 	return t.db
 }
 
-func (t *Table) Insert(data map[string]interface{}) (int64, error) {
+func (t *Table[T]) Insert(data map[string]any) (int64, error) {
 	in := sql.NewInsert(t.table)
 	for field, value := range data {
 		in.Set(field, value)
@@ -45,7 +45,7 @@ func (t *Table) Insert(data map[string]interface{}) (int64, error) {
 	return t.db.Insert(in)
 }
 
-func (t *Table) Update(data map[string]interface{}, where map[string]interface{}) (int64, error) {
+func (t *Table[T]) Update(data map[string]any, where map[string]any) (int64, error) {
 	up := sql.NewUpdate(t.table)
 	for field, value := range data {
 		up.Set(field, value)
@@ -56,21 +56,21 @@ func (t *Table) Update(data map[string]interface{}, where map[string]interface{}
 	return t.db.Update(up)
 }
 
-func (t *Table) Delete(where map[string]interface{}) (int64, error) {
+func (t *Table[T]) Delete(where map[string]any) (int64, error) {
 	del := sql.NewDelete(t.table)
 	del.WhereByMap(where)
 
 	return t.db.Delete(del)
 }
 
-func (t *Table) DeleteWhere(where *sql.Where) (int64, error) {
+func (t *Table[T]) DeleteWhere(where *sql.Where) (int64, error) {
 	del := sql.NewDelete(t.table)
 	del.Where(where)
 
 	return t.db.Delete(del)
 }
 
-func (t *Table) BatchInsert(data []map[string]interface{}) (int64, error) {
+func (t *Table[T]) BatchInsert(data []map[string]any) (int64, error) {
 	batch := sql.NewBatch(t.table)
 	for _, val := range data {
 		in := sql.NewInsert(t.table)
@@ -83,22 +83,22 @@ func (t *Table) BatchInsert(data []map[string]interface{}) (int64, error) {
 	return t.db.BatchInsert(batch)
 }
 
-func (t *Table) FetchRow(where map[string]interface{}, mt interface{}) (interface{}, error) {
-	return t.db.FetchRow(t.table, where, mt)
+func (t *Table[T]) FetchRow(where map[string]any, model T) (T, error) {
+	return t.db.FetchRow(t.table, where, model)
 }
 
-func (t *Table) FetchAll(where map[string]interface{}, mt interface{}) ([]interface{}, error) {
-	return t.db.FetchAll(t.table, where, mt)
+func (t *Table[T]) FetchAll(where map[string]any, model T) ([]T, error) {
+	return t.db.FetchAll(t.table, where, model)
 }
 
-func (t *Table) FetchAllByWhere(where *sql.Where, mt interface{}) ([]interface{}, error) {
-	return t.db.FetchAllByWhere(t.table, where, mt)
+func (t *Table[T]) FetchAllByWhere(where *sql.Where, model T) ([]T, error) {
+	return t.db.FetchAllByWhere(t.table, where, model)
 }
 
-func (t *Table) FetchPage(where map[string]interface{}, mt interface{}, page, pageSize int) ([]interface{}, error) {
-	return t.db.FetchPage(t.table, where, mt, page, pageSize)
+func (t *Table[T]) FetchPage(where map[string]any, model T, page, pageSize int) ([]T, error) {
+	return t.db.FetchPage(t.table, where, model, page, pageSize)
 }
 
-func (t *Table) FetchPageByWhere(where *sql.Where, mt interface{}, page, pageSize int) ([]interface{}, error) {
-	return t.db.FetchPageByWhere(t.table, where, mt, page, pageSize)
+func (t *Table[T]) FetchPageByWhere(where *sql.Where, model T, page, pageSize int) ([]T, error) {
+	return t.db.FetchPageByWhere(t.table, where, model, page, pageSize)
 }

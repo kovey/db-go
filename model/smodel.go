@@ -2,119 +2,125 @@ package model
 
 import (
 	"database/sql"
-	"errors"
 	"reflect"
 
+	"github.com/kovey/db-go/rows"
 	"github.com/kovey/db-go/table"
 )
 
 type ModelShardingInterface interface {
-	Save(interface{}, ModelShardingInterface) error
+	Empty() bool
 }
 
-type BaseSharding struct {
-	table     table.TableShardingInterface
+type BaseSharding[T ModelShardingInterface] struct {
+	Table     table.TableShardingInterface[T]
 	primaryId *PrimaryId
 	isInsert  bool
 	err       error
 }
 
-func NewBaseSharding(tb table.TableShardingInterface, primaryId *PrimaryId) BaseSharding {
-	return BaseSharding{table: tb, primaryId: primaryId, isInsert: true}
+func NewBaseSharding[T ModelShardingInterface](tb table.TableShardingInterface[T], primaryId *PrimaryId) *BaseSharding[T] {
+	return &BaseSharding[T]{Table: tb, primaryId: primaryId, isInsert: true}
 }
 
-func (b BaseSharding) Save(key interface{}, t ModelShardingInterface) error {
-	vt := reflect.ValueOf(t)
-
-	if vt.Kind() != reflect.Ptr {
-		return errors.New("params is not ptr")
+func (b BaseSharding[T]) Save(key any, model T) error {
+	vValue := reflect.ValueOf(model)
+	if vValue.Kind() == reflect.Ptr {
+		vValue = vValue.Elem()
 	}
 
-	vValue := vt.Elem()
 	vType := vValue.Type()
-
 	var name string
-	data := make(map[string]interface{})
+
+	data := make(map[string]any)
 	for i := 0; i < vValue.NumField(); i++ {
 		tField := vType.Field(i)
-		tag := tField.Tag.Get("db")
-		if len(tag) == 0 {
+		tag := tField.Tag.Get(rows.Tag_Db)
+		if tag == "" {
 			continue
 		}
 
 		vField := vValue.Field(i)
 		if tag == b.primaryId.Name {
-			b.primaryId.Parse(vField)
 			name = tField.Name
+			b.primaryId.Parse(vField)
 			if b.primaryId.Null() {
 				continue
 			}
+
+			continue
 		}
 
 		data[tag] = vField.Interface()
 	}
 
 	if !b.isInsert {
-		where := make(map[string]interface{})
+		where := make(map[string]any)
 		where[b.primaryId.Name] = b.primaryId.Value()
-
-		_, err := b.table.Update(key, data, where)
+		_, err := b.Table.Update(key, data, where)
 		return err
 	}
 
-	var err error
-	id, err := b.table.Insert(key, data)
+	id, err := b.Table.Insert(key, data)
+	if err != nil {
+		return err
+	}
+
 	if err == nil && id > 0 {
 		vValue.FieldByName(name).SetInt(id)
 	}
-
-	return err
+	return nil
 }
 
-func (b BaseSharding) Delete(key interface{}, t ModelShardingInterface) error {
-	data := make(map[string]interface{})
-	vValue := reflect.ValueOf(t)
-
+func (b BaseSharding[T]) Delete(key any, model T) error {
+	where := make(map[string]any)
+	vValue := reflect.ValueOf(model)
 	if vValue.Kind() == reflect.Ptr {
 		vValue = vValue.Elem()
 	}
 
-	var name string
 	vType := vValue.Type()
+	var val any
+
 	for i := 0; i < vType.NumField(); i++ {
-		field := vType.Field(i)
-		if field.Tag.Get("db") == b.primaryId.Name {
-			name = field.Name
+		tField := vType.Field(i)
+		if tField.Tag.Get(rows.Tag_Db) == b.primaryId.Name {
+			val = vValue.Field(i).Interface()
 			break
 		}
 	}
 
-	data[b.primaryId.Name] = vValue.FieldByName(name).Interface()
-
-	_, err := b.table.Delete(key, data)
+	where[b.primaryId.Name] = val
+	_, err := b.Table.Delete(key, where)
 	return err
 }
 
-func (b BaseSharding) FetchRow(key interface{}, where map[string]interface{}, t ModelShardingInterface) error {
-	vt := reflect.ValueOf(t)
-	if vt.Kind() != reflect.Ptr {
-		return errors.New("params is not ptr")
+func (b BaseSharding[T]) FetchRow(key any, where map[string]any, model T) error {
+	vValue := reflect.ValueOf(model)
+	isPointer := false
+	if vValue.Kind() == reflect.Ptr {
+		vValue = vValue.Elem()
+		isPointer = true
 	}
-	row, err := b.table.FetchRow(key, where, t)
+
+	row, err := b.Table.FetchRow(key, where, model)
 	b.err = err
-	vValue := vt.Elem()
 	if err != nil {
-		vValue.FieldByName("BaseSharding").Set(reflect.ValueOf(b))
+		vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 		return err
 	}
 
 	b.isInsert = false
-	vValue.Set(reflect.ValueOf(row))
-	vValue.FieldByName("BaseSharding").Set(reflect.ValueOf(b))
+	if isPointer {
+		vValue.Set(reflect.ValueOf(row).Elem())
+	} else {
+		vValue.Set(reflect.ValueOf(row))
+	}
 
+	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 	return nil
 }
 
-func (b BaseSharding) Empty() bool {
+func (b BaseSharding[T]) Empty() bool {
 	return b.err == sql.ErrNoRows
 }

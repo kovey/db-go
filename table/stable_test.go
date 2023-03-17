@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	shardTable *TableSharding
-	shardDb    *sharding.Mysql
+	shardTable *TableSharding[*Product]
+	shardDb    *sharding.Mysql[*Product]
 )
 
 func ssetup() {
@@ -26,7 +26,7 @@ func ssetup() {
 
 	sharding.Init(mas, mas)
 
-	shardDb = sharding.NewMysql(true)
+	shardDb = sharding.NewMysql[*Product](true)
 	sql := []string{"CREATE TABLE `{table}` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
@@ -56,8 +56,8 @@ func steardown() {
 }
 
 func TestTableShardingInsert(t *testing.T) {
-	shardTable = NewTableSharding("product", true)
-	data := make(map[string]interface{}, 5)
+	shardTable = NewTableSharding[*Product]("product", true)
+	data := make(map[string]any, 5)
 	data["name"] = "kovey"
 	data["date"] = "2021-01-01"
 	data["time"] = "2021-01-02 11:11:11"
@@ -72,21 +72,21 @@ func TestTableShardingInsert(t *testing.T) {
 
 	t.Logf("id: %d", a)
 
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
-	row, e := shardTable.FetchRow(0, where, Product{})
+	row, e := shardTable.FetchRow(0, where, &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
 
-	t.Logf("product: %v", row.(Product))
+	t.Logf("product: %v", row)
 }
 
 func TestTableShardingUpdate(t *testing.T) {
-	shardTable = NewTableSharding("product", true)
-	data := make(map[string]interface{})
+	shardTable = NewTableSharding[*Product]("product", true)
+	data := make(map[string]any)
 	data["name"] = "test"
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
 
 	a, err := shardTable.Update(0, data, where)
@@ -96,17 +96,17 @@ func TestTableShardingUpdate(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := shardTable.FetchRow(0, where, Product{})
+	row, e := shardTable.FetchRow(0, where, &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
 
-	t.Logf("product: %v", row.(Product))
+	t.Logf("product: %v", row)
 }
 
 func TestTableShardingDelete(t *testing.T) {
-	shardTable = NewTableSharding("product", true)
-	where := make(map[string]interface{})
+	shardTable = NewTableSharding[*Product]("product", true)
+	where := make(map[string]any)
 	where["id"] = 1
 
 	a, err := shardTable.Delete(0, where)
@@ -116,10 +116,10 @@ func TestTableShardingDelete(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := shardTable.FetchRow(0, where, Product{})
+	row, e := shardTable.FetchRow(0, where, &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
 
-	t.Logf("product: %v", row.(Product))
+	t.Logf("product: %v", row)
 }

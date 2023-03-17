@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	mysql *Mysql
+	mysql *Mysql[*Product]
 )
 
 type Product struct {
@@ -32,7 +32,7 @@ func setup() {
 		fmt.Printf("init mysql error: %s", err)
 	}
 
-	mysql = NewMysql()
+	mysql = NewMysql[*Product]()
 	sql := []string{"CREATE TABLE `test`.`product` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
@@ -111,27 +111,26 @@ func TestBatchInsert(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	rows, e := mysql.FetchAll("product", make(map[string]interface{}), Product{})
+	rows, e := mysql.FetchAll("product", make(map[string]any), &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 		return
 	}
 
 	for _, row := range rows {
-		t.Logf("pro: %v", row.(Product))
+		t.Logf("pro: %v", row)
 	}
 }
 
 func TestQuery(t *testing.T) {
 	sql := "select * from product"
-	rows, err := mysql.Query(sql, Product{})
+	rows, err := mysql.Query(sql, &Product{})
 	if err != nil {
 		t.Errorf("query[%s] fail, err: %s", sql, err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
@@ -148,14 +147,13 @@ func TestUpdate(t *testing.T) {
 	t.Logf("affected: %d", a)
 
 	sql := "select * from product"
-	rows, err := mysql.Query(sql, Product{})
+	rows, err := mysql.Query(sql, &Product{})
 	if err != nil {
 		t.Errorf("query[%s] fail, err: %s", sql, err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
@@ -172,37 +170,34 @@ func TestDelete(t *testing.T) {
 	t.Logf("affected: %d", a)
 
 	sql := "select * from product"
-	rows, err := mysql.Query(sql, Product{})
+	rows, err := mysql.Query(sql, &Product{})
 	if err != nil {
 		t.Errorf("query[%s] fail, err: %s", sql, err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
 func TestFatchAll(t *testing.T) {
-	rows, err := mysql.FetchAll("product", make(map[string]interface{}), Product{})
+	rows, err := mysql.FetchAll("product", make(map[string]any), &Product{})
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
 func TestFatchRow(t *testing.T) {
-	row, err := mysql.FetchRow("product", make(map[string]interface{}), Product{})
+	row, err := mysql.FetchRow("product", make(map[string]any), &Product{})
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
 	}
 
-	pro := row.(Product)
-	t.Logf("product: %v", pro)
+	t.Logf("product: %v", row)
 }
 
 func TestMain(m *testing.M) {

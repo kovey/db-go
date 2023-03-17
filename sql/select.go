@@ -21,8 +21,8 @@ type Select struct {
 	table     string
 	alias     string
 	columns   []string
-	where     *Where
-	orWhere   *Where
+	where     WhereInterface
+	orWhere   WhereInterface
 	limit     int
 	offset    int
 	orders    []string
@@ -51,12 +51,12 @@ func (s *Select) Columns(columns ...string) *Select {
 	return s
 }
 
-func (s *Select) Where(where *Where) *Select {
+func (s *Select) Where(where WhereInterface) *Select {
 	s.where = where
 	return s
 }
 
-func (s *Select) OrWhere(where *Where) *Select {
+func (s *Select) OrWhere(where WhereInterface) *Select {
 	s.orWhere = where
 	return s
 }
@@ -100,8 +100,8 @@ func (s *Select) Group(groups ...string) *Select {
 	return s
 }
 
-func (s *Select) Args() []interface{} {
-	args := make([]interface{}, 0)
+func (s *Select) Args() []any {
+	args := make([]any, 0)
 	if s.where != nil {
 		args = append(args, s.where.Args()...)
 	}
@@ -214,7 +214,7 @@ func (s *Select) String() string {
 	return String(s)
 }
 
-func (s *Select) WhereByMap(where map[string]interface{}) *Select {
+func (s *Select) WhereByMap(where map[string]any) *Select {
 	if s.where == nil {
 		s.where = NewWhere()
 	}

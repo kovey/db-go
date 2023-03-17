@@ -15,18 +15,18 @@ var (
 	dev      string
 )
 
-type Mysql struct {
+type Mysql[T any] struct {
 	database        *sql.DB
 	tx              *sql.Tx
 	isInTransaction bool
 }
 
-func NewMysql() *Mysql {
-	return &Mysql{database: database, tx: nil, isInTransaction: false}
+func NewMysql[T any]() *Mysql[T] {
+	return &Mysql[T]{database: database, tx: nil, isInTransaction: false}
 }
 
-func NewSharding(database *sql.DB) *Mysql {
-	return &Mysql{database: database, tx: nil, isInTransaction: false}
+func NewSharding[T any](database *sql.DB) *Mysql[T] {
+	return &Mysql[T]{database: database, tx: nil, isInTransaction: false}
 }
 
 func Init(conf config.Mysql) error {
@@ -60,7 +60,7 @@ func OpenDB(conf config.Mysql) (*sql.DB, error) {
 	return db, nil
 }
 
-func (m *Mysql) Begin() error {
+func (m *Mysql[T]) Begin() error {
 	tx, err := m.database.Begin()
 	if err != nil {
 		return err
@@ -71,7 +71,8 @@ func (m *Mysql) Begin() error {
 	return nil
 }
 
-func (m *Mysql) Commit() error {
+func (m *Mysql[T]) Commit() error {
+
 	if m.tx == nil {
 		return fmt.Errorf("transaction is not open or close")
 	}
@@ -82,7 +83,8 @@ func (m *Mysql) Commit() error {
 	return err
 }
 
-func (m *Mysql) RollBack() error {
+func (m *Mysql[T]) RollBack() error {
+
 	if m.tx == nil {
 		return fmt.Errorf("transaction is not open or close")
 	}
@@ -93,23 +95,23 @@ func (m *Mysql) RollBack() error {
 	return err
 }
 
-func (m *Mysql) InTransaction() bool {
+func (m *Mysql[T]) InTransaction() bool {
 	return m.isInTransaction
 }
 
-func (m *Mysql) Query(query string, t interface{}, args ...interface{}) ([]interface{}, error) {
-	return Query(m.getDb(), query, t, args...)
+func (m *Mysql[T]) Query(query string, model T, args ...any) ([]T, error) {
+	return Query(m.getDb(), query, model, args...)
 }
 
-func (m *Mysql) Exec(statement string) error {
+func (m *Mysql[T]) Exec(statement string) error {
 	return Exec(m.getDb(), statement)
 }
 
-func (m *Mysql) Insert(insert *ds.Insert) (int64, error) {
+func (m *Mysql[T]) Insert(insert *ds.Insert) (int64, error) {
 	return Insert(m.getDb(), insert)
 }
 
-func (m *Mysql) getDb() ConnInterface {
+func (m *Mysql[T]) getDb() ConnInterface {
 	if m.isInTransaction {
 		return m.tx
 	}
@@ -117,38 +119,38 @@ func (m *Mysql) getDb() ConnInterface {
 	return m.database
 }
 
-func (m *Mysql) Update(update *ds.Update) (int64, error) {
+func (m *Mysql[T]) Update(update *ds.Update) (int64, error) {
 	return Update(m.getDb(), update)
 }
 
-func (m *Mysql) Delete(del *ds.Delete) (int64, error) {
+func (m *Mysql[T]) Delete(del *ds.Delete) (int64, error) {
 	return Delete(m.getDb(), del)
 }
 
-func (m *Mysql) BatchInsert(batch *ds.Batch) (int64, error) {
+func (m *Mysql[T]) BatchInsert(batch *ds.Batch) (int64, error) {
 	return BatchInsert(m.getDb(), batch)
 }
 
-func (m *Mysql) Select(sel *ds.Select, t interface{}) ([]interface{}, error) {
-	return Select(m.getDb(), sel, t)
+func (m *Mysql[T]) Select(sel *ds.Select, modal T) ([]T, error) {
+	return Select(m.getDb(), sel, modal)
 }
 
-func (m *Mysql) FetchRow(table string, where map[string]interface{}, t interface{}) (interface{}, error) {
-	return FetchRow(m.getDb(), table, where, t)
+func (m *Mysql[T]) FetchRow(table string, where map[string]any, modal T) (T, error) {
+	return FetchRow(m.getDb(), table, where, modal)
 }
 
-func (m *Mysql) FetchAll(table string, where map[string]interface{}, t interface{}) ([]interface{}, error) {
-	return FetchAll(m.getDb(), table, where, t)
+func (m *Mysql[T]) FetchAll(table string, where map[string]any, modal T) ([]T, error) {
+	return FetchAll(m.getDb(), table, where, modal)
 }
 
-func (m *Mysql) FetchAllByWhere(table string, where *ds.Where, t interface{}) ([]interface{}, error) {
-	return FetchAllByWhere(m.getDb(), table, where, t)
+func (m *Mysql[T]) FetchAllByWhere(table string, where ds.WhereInterface, modal T) ([]T, error) {
+	return FetchAllByWhere(m.getDb(), table, where, modal)
 }
 
-func (m *Mysql) FetchPage(table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	return FetchPage(m.getDb(), table, where, t, page, pageSize)
+func (m *Mysql[T]) FetchPage(table string, where map[string]any, modal T, page int, pageSize int) ([]T, error) {
+	return FetchPage(m.getDb(), table, where, modal, page, pageSize)
 }
 
-func (m *Mysql) FetchPageByWhere(table string, where *ds.Where, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	return FetchPageByWhere(m.getDb(), table, where, t, page, pageSize)
+func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, modal T, page int, pageSize int) ([]T, error) {
+	return FetchPageByWhere(m.getDb(), table, where, modal, page, pageSize)
 }

@@ -2,120 +2,125 @@ package model
 
 import (
 	"database/sql"
-	"errors"
 	"reflect"
 
+	"github.com/kovey/db-go/rows"
 	"github.com/kovey/db-go/table"
 )
 
 type ModelInterface interface {
-	Save(ModelInterface) error
+	Empty() bool
 }
 
-type Base struct {
-	table     table.TableInterface
+type Base[T ModelInterface] struct {
+	Table     table.TableInterface[T]
 	primaryId *PrimaryId
 	isInsert  bool
 	err       error
 }
 
-func NewBase(tb table.TableInterface, primaryId *PrimaryId) Base {
-	return Base{table: tb, primaryId: primaryId, isInsert: true}
+func NewBase[T ModelInterface](tb table.TableInterface[T], primaryId *PrimaryId) *Base[T] {
+	return &Base[T]{Table: tb, primaryId: primaryId, isInsert: true}
 }
 
-func (b Base) Save(t ModelInterface) error {
-	vt := reflect.ValueOf(t)
-
-	if vt.Kind() != reflect.Ptr {
-		return errors.New("params is not ptr")
+func (b *Base[T]) Save(model T) error {
+	vValue := reflect.ValueOf(model)
+	if vValue.Kind() == reflect.Ptr {
+		vValue = vValue.Elem()
 	}
 
-	vValue := vt.Elem()
 	vType := vValue.Type()
-
 	var name string
 
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 	for i := 0; i < vValue.NumField(); i++ {
 		tField := vType.Field(i)
-		tag := tField.Tag.Get("db")
-		if len(tag) == 0 {
+		tag := tField.Tag.Get(rows.Tag_Db)
+		if tag == "" {
 			continue
 		}
 
 		vField := vValue.Field(i)
 		if tag == b.primaryId.Name {
-			b.primaryId.Parse(vField)
 			name = tField.Name
+			b.primaryId.Parse(vField)
 			if b.primaryId.Null() {
 				continue
 			}
+
+			continue
 		}
 
 		data[tag] = vField.Interface()
 	}
 
 	if !b.isInsert {
-		where := make(map[string]interface{})
+		where := make(map[string]any)
 		where[b.primaryId.Name] = b.primaryId.Value()
-
-		_, err := b.table.Update(data, where)
+		_, err := b.Table.Update(data, where)
 		return err
 	}
 
-	id, err := b.table.Insert(data)
+	id, err := b.Table.Insert(data)
+	if err != nil {
+		return err
+	}
+
 	if err == nil && id > 0 {
 		vValue.FieldByName(name).SetInt(id)
 	}
-
-	return err
+	return nil
 }
 
-func (b Base) Delete(t ModelInterface) error {
-	data := make(map[string]interface{})
-	vValue := reflect.ValueOf(t)
-
+func (b *Base[T]) Delete(model T) error {
+	where := make(map[string]any)
+	vValue := reflect.ValueOf(model)
 	if vValue.Kind() == reflect.Ptr {
 		vValue = vValue.Elem()
 	}
 
-	var name string
-
 	vType := vValue.Type()
+	var val any
+
 	for i := 0; i < vType.NumField(); i++ {
-		field := vType.Field(i)
-		if field.Tag.Get("db") == b.primaryId.Name {
-			name = field.Name
+		tField := vType.Field(i)
+		if tField.Tag.Get(rows.Tag_Db) == b.primaryId.Name {
+			val = vValue.Field(i).Interface()
 			break
 		}
 	}
 
-	data[b.primaryId.Name] = vValue.FieldByName(name).Interface()
-
-	_, err := b.table.Delete(data)
+	where[b.primaryId.Name] = val
+	_, err := b.Table.Delete(where)
 	return err
 }
 
-func (b Base) FetchRow(where map[string]interface{}, t ModelInterface) error {
-	vt := reflect.ValueOf(t)
-	if vt.Kind() != reflect.Ptr {
-		return errors.New("params is not ptr")
+func (b *Base[T]) FetchRow(where map[string]any, model T) error {
+	vValue := reflect.ValueOf(model)
+	isPointer := false
+	if vValue.Kind() == reflect.Ptr {
+		vValue = vValue.Elem()
+		isPointer = true
 	}
-	row, err := b.table.FetchRow(where, t)
+
+	row, err := b.Table.FetchRow(where, model)
 	b.err = err
-	vValue := vt.Elem()
 	if err != nil {
 		vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 		return err
 	}
 
 	b.isInsert = false
-	vValue.Set(reflect.ValueOf(row))
-	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
+	if isPointer {
+		vValue.Set(reflect.ValueOf(row).Elem())
+	} else {
+		vValue.Set(reflect.ValueOf(row))
+	}
 
+	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
 	return nil
 }
 
-func (b Base) Empty() bool {
+func (b *Base[T]) Empty() bool {
 	return b.err == sql.ErrNoRows
 }

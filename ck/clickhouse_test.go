@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ckDb *ClickHouse
+	ckDb *ClickHouse[*Product]
 )
 
 type Product struct {
@@ -50,7 +50,8 @@ func setup() {
 		"SETTINGS index_granularity = 8192",
 	}
 
-	ckDb = NewClickHouse()
+	ckDb = NewClickHouse[*Product]()
+
 	err = ckDb.Exec(strings.Join(str, ""))
 	fmt.Printf("err: %s", err)
 }
@@ -87,14 +88,14 @@ func TestBatchInsert(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	rows, e := ckDb.FetchAll("product", make(map[string]interface{}), Product{})
+	rows, e := ckDb.FetchAll("product", make(map[string]any), &Product{})
 	if e != nil {
 		t.Errorf("err: %s", err)
 		return
 	}
 
 	for _, row := range rows {
-		t.Logf("pro: %v", row.(Product))
+		t.Logf("pro: %v", row)
 	}
 }
 
@@ -161,19 +162,18 @@ func TestDelete(t *testing.T) {
 }
 
 func TestFatchAll(t *testing.T) {
-	rows, err := ckDb.FetchAll("product", make(map[string]interface{}), Product{})
+	rows, err := ckDb.FetchAll("product", make(map[string]any), &Product{})
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
 func TestFatchRow(t *testing.T) {
-	row, err := ckDb.FetchRow("product", make(map[string]interface{}), Product{})
+	row, err := ckDb.FetchRow("product", make(map[string]any), &Product{})
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
 	}

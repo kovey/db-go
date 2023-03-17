@@ -15,55 +15,55 @@ const (
 )
 
 type Where struct {
-	Fields []string      `json:"fields"`
-	Binds  []interface{} `json:"binds"`
+	Fields []string `json:"fields"`
+	Binds  []any    `json:"binds"`
 }
 
 func NewWhere() *Where {
-	return &Where{Fields: make([]string, 0), Binds: make([]interface{}, 0)}
+	return &Where{Fields: make([]string, 0), Binds: make([]any, 0)}
 }
 
-func (w *Where) Eq(field string, value interface{}) *Where {
+func (w *Where) Eq(field string, value any) WhereInterface {
 	return w.set("=", field, value)
 }
 
-func (w *Where) set(op string, field string, value interface{}) *Where {
+func (w *Where) set(op string, field string, value any) WhereInterface {
 	w.Fields = append(w.Fields, fmt.Sprintf("%s %s ?", formatValue(field), op))
 	w.Binds = append(w.Binds, value)
 	return w
 }
 
-func (w *Where) Neq(field string, value interface{}) *Where {
+func (w *Where) Neq(field string, value any) WhereInterface {
 	return w.set("<>", field, value)
 }
 
-func (w *Where) Like(field string, value interface{}) *Where {
+func (w *Where) Like(field string, value any) WhereInterface {
 	return w.set("LIKE", field, value)
 }
 
-func (w *Where) Between(field string, from interface{}, to interface{}) *Where {
+func (w *Where) Between(field string, from any, to any) WhereInterface {
 	w.Fields = append(w.Fields, fmt.Sprintf(betweenFormat, formatValue(field), "?", "?"))
 	w.Binds = append(w.Binds, from, to)
 	return w
 }
 
-func (w *Where) Gt(field string, value interface{}) *Where {
+func (w *Where) Gt(field string, value any) WhereInterface {
 	return w.set(">", field, value)
 }
 
-func (w *Where) Ge(field string, value interface{}) *Where {
+func (w *Where) Ge(field string, value any) WhereInterface {
 	return w.set(">=", field, value)
 }
 
-func (w *Where) Lt(field string, value interface{}) *Where {
+func (w *Where) Lt(field string, value any) WhereInterface {
 	return w.set("<", field, value)
 }
 
-func (w *Where) Le(field string, value interface{}) *Where {
+func (w *Where) Le(field string, value any) WhereInterface {
 	return w.set("<=", field, value)
 }
 
-func (w *Where) setIn(format string, field string, value []interface{}) *Where {
+func (w *Where) setIn(format string, field string, value []any) WhereInterface {
 	placeholders := make([]string, len(value))
 	for i := 0; i < len(value); i++ {
 		placeholders[i] = "?"
@@ -74,33 +74,33 @@ func (w *Where) setIn(format string, field string, value []interface{}) *Where {
 	return w
 }
 
-func (w *Where) In(field string, value []interface{}) *Where {
+func (w *Where) In(field string, value []any) WhereInterface {
 	return w.setIn(inFormat, field, value)
 }
 
-func (w *Where) NotIn(field string, value []interface{}) *Where {
+func (w *Where) NotIn(field string, value []any) WhereInterface {
 	return w.setIn(notInFormat, field, value)
 }
 
-func (w *Where) setNull(format string, field string) *Where {
+func (w *Where) setNull(format string, field string) WhereInterface {
 	w.Fields = append(w.Fields, fmt.Sprintf(format, formatValue(field)))
 	return w
 }
 
-func (w *Where) IsNull(field string) *Where {
+func (w *Where) IsNull(field string) WhereInterface {
 	return w.setNull(isNullFormat, field)
 }
 
-func (w *Where) IsNotNull(field string) *Where {
+func (w *Where) IsNotNull(field string) WhereInterface {
 	return w.setNull(isNotNullFormat, field)
 }
 
-func (w *Where) Statement(statement string) *Where {
+func (w *Where) Statement(statement string) WhereInterface {
 	w.Fields = append(w.Fields, statement)
 	return w
 }
 
-func (w *Where) Args() []interface{} {
+func (w *Where) Args() []any {
 	return w.Binds
 }
 

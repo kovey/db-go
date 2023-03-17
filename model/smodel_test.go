@@ -11,15 +11,15 @@ import (
 )
 
 var (
-	shardDb *sharding.Mysql
+	shardDb *sharding.Mysql[*ProductSharding]
 )
 
 type ProTableSharding struct {
-	table.TableSharding
+	*table.TableSharding[*ProductSharding]
 }
 
 type ProductSharding struct {
-	BaseSharding
+	*BaseSharding[*ProductSharding]
 	Id      int    `db:"id"`
 	Name    string `db:"name"`
 	Date    string `db:"date"`
@@ -29,11 +29,11 @@ type ProductSharding struct {
 }
 
 func NewProTableSharding() *ProTableSharding {
-	return &ProTableSharding{*table.NewTableSharding("product", true)}
+	return &ProTableSharding{table.NewTableSharding[*ProductSharding]("product", true)}
 }
 
-func NewProductSharding() ProductSharding {
-	pro := ProductSharding{NewBaseSharding(NewProTableSharding(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
+func NewProductSharding() *ProductSharding {
+	pro := &ProductSharding{NewBaseSharding[*ProductSharding](NewProTableSharding(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
 
 	return pro
 }
@@ -50,7 +50,7 @@ func ssetup() {
 
 	sharding.Init(mas, mas)
 
-	shardDb = sharding.NewMysql(true)
+	shardDb = sharding.NewMysql[*ProductSharding](true)
 	sql := []string{"CREATE TABLE `{table}` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
@@ -87,7 +87,7 @@ func TestModelShardingSave(t *testing.T) {
 	pro.Sex = 1
 	pro.Content = "{\"where\":123}"
 
-	err := pro.Save(0, &pro)
+	err := pro.Save(0, pro)
 	if err != nil {
 		t.Errorf("product save fail, error: %s", err)
 	}
@@ -95,19 +95,19 @@ func TestModelShardingSave(t *testing.T) {
 	t.Logf("id: %d", pro.Id)
 
 	pro1 := NewProductSharding()
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = pro.Id
 
-	pro1.FetchRow(0, where, &pro1)
+	pro1.FetchRow(0, where, pro1)
 	pro1.Name = "chelsea"
-	pro1.Save(0, &pro1)
+	pro1.Save(0, pro1)
 }
 
 func TestModelShardingFetchRow(t *testing.T) {
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
 	pr1 := NewProductSharding()
-	err := pr1.FetchRow(0, where, &pr1)
+	err := pr1.FetchRow(0, where, pr1)
 	if err != nil {
 		t.Errorf("fetch row err: %s", err)
 	}
@@ -116,10 +116,10 @@ func TestModelShardingFetchRow(t *testing.T) {
 }
 
 func TestModelShardingDelete(t *testing.T) {
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
 	pr1 := NewProductSharding()
-	err := pr1.FetchRow(0, where, &pr1)
+	err := pr1.FetchRow(0, where, pr1)
 	if err != nil {
 		t.Errorf("fetch row err: %s", err)
 	}
@@ -130,6 +130,6 @@ func TestModelShardingDelete(t *testing.T) {
 	}
 
 	pr2 := NewProductSharding()
-	pr2.FetchRow(0, where, &pr2)
+	pr2.FetchRow(0, where, pr2)
 	t.Logf("pr2: %v", pr2)
 }

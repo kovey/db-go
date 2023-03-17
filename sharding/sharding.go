@@ -18,26 +18,26 @@ var (
 	sNodeCount int
 )
 
-type Mysql struct {
-	connections map[int]*db.Mysql
+type Mysql[T any] struct {
+	connections map[int]*db.Mysql[T]
 	isMaster    bool
 }
 
-func NewMysql(isMaster bool) *Mysql {
-	return &Mysql{connections: make(map[int]*db.Mysql, 0), isMaster: isMaster}
+func NewMysql[T any](isMaster bool) *Mysql[T] {
+	return &Mysql[T]{connections: make(map[int]*db.Mysql[T], 0), isMaster: isMaster}
 }
 
-func (m *Mysql) AddSharding(key interface{}) *Mysql {
+func (m *Mysql[T]) AddSharding(key any) *Mysql[T] {
 	k := m.GetShardingKey(key)
 	if _, ok := m.connections[k]; ok {
 		return m
 	}
 
-	var database *db.Mysql
+	var database *db.Mysql[T]
 	if m.isMaster {
-		database = db.NewSharding(masters[k])
+		database = db.NewSharding[T](masters[k])
 	} else {
-		database = db.NewSharding(slaves[k])
+		database = db.NewSharding[T](slaves[k])
 	}
 
 	m.connections[k] = database
@@ -45,7 +45,7 @@ func (m *Mysql) AddSharding(key interface{}) *Mysql {
 	return m
 }
 
-func (m *Mysql) GetShardingKey(key interface{}) int {
+func (m *Mysql[T]) GetShardingKey(key any) int {
 	k, ok := key.(string)
 	if ok {
 		if m.isMaster {
@@ -96,16 +96,16 @@ func Init(mas []config.Mysql, sls []config.Mysql) {
 	}
 }
 
-func (m *Mysql) GetConnection(key int) *db.Mysql {
+func (m *Mysql[T]) GetConnection(key int) *db.Mysql[T] {
 	database, ok := m.connections[key]
 	if ok {
 		return database
 	}
 
 	if m.isMaster {
-		database = db.NewSharding(masters[key])
+		database = db.NewSharding[T](masters[key])
 	} else {
-		database = db.NewSharding(slaves[key])
+		database = db.NewSharding[T](slaves[key])
 	}
 
 	m.connections[key] = database
@@ -113,13 +113,13 @@ func (m *Mysql) GetConnection(key int) *db.Mysql {
 	return database
 }
 
-func (m *Mysql) rollBack(begins []int) {
+func (m *Mysql[T]) rollBack(begins []int) {
 	for _, id := range begins {
 		m.connections[id].RollBack()
 	}
 }
 
-func (m *Mysql) Begin() error {
+func (m *Mysql[T]) Begin() error {
 	if len(m.connections) == 0 {
 		return errors.New("connections is empty")
 	}
@@ -138,13 +138,13 @@ func (m *Mysql) Begin() error {
 	return nil
 }
 
-func (m *Mysql) retry(fails []int) {
+func (m *Mysql[T]) retry(fails []int) {
 	for _, id := range fails {
 		m.connections[id].Commit()
 	}
 }
 
-func (m *Mysql) Commit() error {
+func (m *Mysql[T]) Commit() error {
 	if len(m.connections) == 0 {
 		return errors.New("connections is empty")
 	}
@@ -171,7 +171,7 @@ func (m *Mysql) Commit() error {
 	return nil
 }
 
-func (m *Mysql) RollBack() error {
+func (m *Mysql[T]) RollBack() error {
 	if len(m.connections) == 0 {
 		return errors.New("connections is empty")
 	}
@@ -183,46 +183,46 @@ func (m *Mysql) RollBack() error {
 	return nil
 }
 
-func (m *Mysql) Query(key interface{}, query string, t interface{}, args ...interface{}) ([]interface{}, error) {
-	return m.GetConnection(m.GetShardingKey(key)).Query(query, t, args...)
+func (m *Mysql[T]) Query(key any, query string, model T, args ...any) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).Query(query, model, args...)
 }
 
-func (m *Mysql) Exec(key interface{}, statement string) error {
+func (m *Mysql[T]) Exec(key any, statement string) error {
 	return m.GetConnection(m.GetShardingKey(key)).Exec(statement)
 }
 
-func (m *Mysql) Insert(key interface{}, insert *ds.Insert) (int64, error) {
+func (m *Mysql[T]) Insert(key any, insert *ds.Insert) (int64, error) {
 	return m.GetConnection(m.GetShardingKey(key)).Insert(insert)
 }
 
-func (m *Mysql) Update(key interface{}, update *ds.Update) (int64, error) {
+func (m *Mysql[T]) Update(key any, update *ds.Update) (int64, error) {
 	return m.GetConnection(m.GetShardingKey(key)).Update(update)
 }
 
-func (m *Mysql) Delete(key interface{}, del *ds.Delete) (int64, error) {
+func (m *Mysql[T]) Delete(key any, del *ds.Delete) (int64, error) {
 	return m.GetConnection(m.GetShardingKey(key)).Delete(del)
 }
 
-func (m *Mysql) BatchInsert(key interface{}, batch *ds.Batch) (int64, error) {
+func (m *Mysql[T]) BatchInsert(key any, batch *ds.Batch) (int64, error) {
 	return m.GetConnection(m.GetShardingKey(key)).BatchInsert(batch)
 }
 
-func (m *Mysql) FetchRow(key interface{}, table string, where map[string]interface{}, t interface{}) (interface{}, error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchRow(table, where, t)
+func (m *Mysql[T]) FetchRow(key any, table string, where map[string]any, model T) (T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchRow(table, where, model)
 }
 
-func (m *Mysql) FetchAll(key interface{}, table string, where map[string]interface{}, t interface{}) ([]interface{}, error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchAll(table, where, t)
+func (m *Mysql[T]) FetchAll(key any, table string, where map[string]any, model T) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchAll(table, where, model)
 }
 
-func (m *Mysql) FetchAllByWhere(key interface{}, table string, where *ds.Where, t interface{}) ([]interface{}, error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchAllByWhere(table, where, t)
+func (m *Mysql[T]) FetchAllByWhere(key any, table string, where ds.WhereInterface, model T) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchAllByWhere(table, where, model)
 }
 
-func (m *Mysql) FetchPage(key interface{}, table string, where map[string]interface{}, t interface{}, page, pageSize int) ([]interface{}, error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchPage(table, where, t, page, pageSize)
+func (m *Mysql[T]) FetchPage(key any, table string, where map[string]any, model T, page, pageSize int) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPage(table, where, model, page, pageSize)
 }
 
-func (m *Mysql) FetchPageByWhere(key interface{}, table string, where *ds.Where, t interface{}, page, pageSize int) ([]interface{}, error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhere(table, where, t, page, pageSize)
+func (m *Mysql[T]) FetchPageByWhere(key any, table string, where ds.WhereInterface, model T, page, pageSize int) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhere(table, where, model, page, pageSize)
 }

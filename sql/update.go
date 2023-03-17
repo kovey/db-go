@@ -12,26 +12,26 @@ const (
 
 type Update struct {
 	table  string
-	data   map[string]interface{}
-	args   []interface{}
-	where  *Where
+	data   map[string]any
+	args   []any
+	where  WhereInterface
 	format string
 }
 
 func NewUpdate(table string) *Update {
-	return &Update{table: table, data: make(map[string]interface{}), where: nil, format: updateFormat}
+	return &Update{table: table, data: make(map[string]any), where: nil, format: updateFormat}
 }
 
 func NewCkUpdate(table string) *Update {
-	return &Update{table: table, data: make(map[string]interface{}), where: nil, format: updateCkFormat}
+	return &Update{table: table, data: make(map[string]any), where: nil, format: updateCkFormat}
 }
 
-func (u *Update) Set(field string, value interface{}) *Update {
+func (u *Update) Set(field string, value any) *Update {
 	u.data[field] = value
 	return u
 }
 
-func (u *Update) Args() []interface{} {
+func (u *Update) Args() []any {
 	if u.where == nil {
 		return u.args
 	}
@@ -41,7 +41,7 @@ func (u *Update) Args() []interface{} {
 
 func (u *Update) getPlaceholder() []string {
 	placeholders := make([]string, len(u.data))
-	u.args = make([]interface{}, len(u.data))
+	u.args = make([]any, len(u.data))
 	index := 0
 	for field, v := range u.data {
 		t, ok := v.(string)
@@ -81,12 +81,12 @@ func (u *Update) Prepare() string {
 	return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), ","), u.where.Prepare())
 }
 
-func (u *Update) Where(w *Where) *Update {
+func (u *Update) Where(w WhereInterface) *Update {
 	u.where = w
 	return u
 }
 
-func (u *Update) WhereByMap(where map[string]interface{}) *Update {
+func (u *Update) WhereByMap(where map[string]any) *Update {
 	if u.where == nil {
 		u.where = NewWhere()
 	}

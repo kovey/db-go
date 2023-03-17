@@ -3,59 +3,51 @@ package db
 import (
 	ds "database/sql"
 	"fmt"
-	"reflect"
 
-	"github.com/kovey/db-go/row"
+	"github.com/kovey/db-go/rows"
 	"github.com/kovey/db-go/sql"
 	"github.com/kovey/debug-go/debug"
 )
 
-type DbInterface interface {
+type DbInterface[T any] interface {
 	Begin() error
 	Commit() error
 	RollBack() error
 	InTransaction() bool
-	Query(string, interface{}, ...interface{}) ([]interface{}, error)
+	Query(string, T, ...any) ([]T, error)
 	Exec(string) error
 	Insert(*sql.Insert) (int64, error)
 	Update(*sql.Update) (int64, error)
 	Delete(*sql.Delete) (int64, error)
 	BatchInsert(*sql.Batch) (int64, error)
-	Select(*sql.Select, interface{}) ([]interface{}, error)
-	FetchRow(string, map[string]interface{}, interface{}) (interface{}, error)
-	FetchAll(string, map[string]interface{}, interface{}) ([]interface{}, error)
-	FetchAllByWhere(string, *sql.Where, interface{}) ([]interface{}, error)
-	FetchPage(string, map[string]interface{}, interface{}, int, int) ([]interface{}, error)
-	FetchPageByWhere(string, *sql.Where, interface{}, int, int) ([]interface{}, error)
+	Select(*sql.Select, T) ([]T, error)
+	FetchRow(string, map[string]any, T) (T, error)
+	FetchAll(string, map[string]any, T) ([]T, error)
+	FetchAllByWhere(string, sql.WhereInterface, T) ([]T, error)
+	FetchPage(string, map[string]any, T, int, int) ([]T, error)
+	FetchPageByWhere(string, sql.WhereInterface, T, int, int) ([]T, error)
 }
 
 type ConnInterface interface {
-	Query(string, ...interface{}) (*ds.Rows, error)
-	Exec(string, ...interface{}) (ds.Result, error)
+	Query(string, ...any) (*ds.Rows, error)
+	Exec(string, ...any) (ds.Result, error)
 	Prepare(string) (*ds.Stmt, error)
-	QueryRow(string, ...interface{}) *ds.Row
+	QueryRow(string, ...any) *ds.Row
 }
 
-func Query(m ConnInterface, query string, t interface{}, args ...interface{}) ([]interface{}, error) {
-	rows, err := m.Query(query, args...)
+func Query[T any](m ConnInterface, query string, model T, args ...any) ([]T, error) {
+	data, err := m.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	defer rows.Close()
-	res := make([]interface{}, 0)
-	vType := reflect.TypeOf(t)
-	if vType.Kind() == reflect.Ptr {
-		vType = vType.Elem()
+	defer data.Close()
+	res := rows.NewRows[T]()
+	if err := res.Scan(data, model); err != nil {
+		return nil, err
 	}
 
-	for rows.Next() {
-		row := row.New(vType)
-		row.Convert(rows)
-		res = append(res, row.Value())
-	}
-
-	return res, nil
+	return res.All(), nil
 }
 
 func Exec(m ConnInterface, stament string) error {
@@ -124,93 +116,54 @@ func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
 	return result.RowsAffected()
 }
 
-func Select(m ConnInterface, sel *sql.Select, t interface{}) ([]interface{}, error) {
-	debug.Info("sql: %s", sel)
-	return Query(m, sel.Prepare(), t, sel.Args()...)
+func Select[T any](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
+	return Query(m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchRow(m ConnInterface, table string, where map[string]interface{}, t interface{}) (interface{}, error) {
-	vType := reflect.TypeOf(t)
-	if vType.Kind() == reflect.Ptr {
-		vType = vType.Elem()
-	}
-
-	row := row.New(vType)
-
+func FetchRow[T any](m ConnInterface, table string, where map[string]any, model T) (T, error) {
+	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
-	sel.WhereByMap(where).Columns(row.Fields()...).Limit(1)
-
-	debug.Info("sql: %s", sel)
-
+	sel.WhereByMap(where).Columns(row.Fields...).Limit(1)
 	result := m.QueryRow(sel.Prepare(), sel.Args()...)
-
 	if result.Err() != nil {
-		return nil, result.Err()
+		return row.Model, result.Err()
 	}
 
-	if err := row.ConvertByRow(result); err != nil {
-		return nil, err
+	if err := row.Scan(result); err != nil {
+		return row.Model, err
 	}
 
-	return row.Value(), nil
+	return row.Model, nil
 }
 
-func FetchAll(m ConnInterface, table string, where map[string]interface{}, t interface{}) ([]interface{}, error) {
-	vType := reflect.TypeOf(t)
-	if vType.Kind() == reflect.Ptr {
-		vType = vType.Elem()
-	}
-
-	row := row.New(vType)
+func FetchAll[T any](m ConnInterface, table string, where map[string]any, model T) ([]T, error) {
+	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
-	sel.WhereByMap(where).Columns(row.Fields()...)
+	sel.WhereByMap(where).Columns(row.Fields...)
 
-	debug.Info("sql: %s", sel)
-
-	return Query(m, sel.Prepare(), t, sel.Args()...)
+	return Select(m, sel, model)
 }
 
-func FetchAllByWhere(m ConnInterface, table string, where *sql.Where, t interface{}) ([]interface{}, error) {
-	vType := reflect.TypeOf(t)
-	if vType.Kind() == reflect.Ptr {
-		vType = vType.Elem()
-	}
-
-	row := row.New(vType)
+func FetchAllByWhere[T any](m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
+	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
-	sel.Where(where).Columns(row.Fields()...)
+	sel.Where(where).Columns(row.Fields...)
 
-	debug.Info("sql: %s", sel)
-
-	return Query(m, sel.Prepare(), t, sel.Args()...)
+	return Select(m, sel, model)
 }
 
-func FetchPage(m ConnInterface, table string, where map[string]interface{}, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	vType := reflect.TypeOf(t)
-	if vType.Kind() == reflect.Ptr {
-		vType = vType.Elem()
-	}
-
-	row := row.New(vType)
+func FetchPage[T any](m ConnInterface, table string, where map[string]any, model T, page int, pageSize int) ([]T, error) {
+	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
-	sel.WhereByMap(where).Columns(row.Fields()...).Limit(pageSize).Offset((page - 1) * pageSize)
+	sel.WhereByMap(where).Columns(row.Fields...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	debug.Info("sql: %s", sel)
-
-	return Query(m, sel.Prepare(), t, sel.Args()...)
+	return Select(m, sel, model)
 }
 
-func FetchPageByWhere(m ConnInterface, table string, where *sql.Where, t interface{}, page int, pageSize int) ([]interface{}, error) {
-	vType := reflect.TypeOf(t)
-	if vType.Kind() == reflect.Ptr {
-		vType = vType.Elem()
-	}
-
-	row := row.New(vType)
+func FetchPageByWhere[T any](m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) ([]T, error) {
+	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
-	sel.Where(where).Columns(row.Fields()...).Limit(pageSize).Offset((page - 1) * pageSize)
+	sel.Where(where).Columns(row.Fields...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	debug.Info("sql: %s", sel)
-
-	return Query(m, sel.Prepare(), t, sel.Args()...)
+	return Select(m, sel, model)
 }

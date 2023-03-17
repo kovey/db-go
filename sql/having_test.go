@@ -5,7 +5,7 @@ import "testing"
 func TestHavingPrepare(t *testing.T) {
 	where := NewHaving()
 	where.Eq("age", 18).Neq("name", "kovey").Like("nickname", "%golang%").Between("id", 1, 100).Gt("balance", 1000).Ge("count", 10).Lt("sum", 15).Le("people", 100)
-	where.In("sex", []interface{}{0, 1, 2}).NotIn("lang", []interface{}{"php", "java", "ruby", "rust"}).IsNull("content").IsNotNull("title").Statement("last_id > 0")
+	where.In("sex", []any{0, 1, 2}).NotIn("lang", []any{"php", "java", "ruby", "rust"}).IsNull("content").IsNotNull("title").Statement("last_id > 0")
 
 	expected := "HAVING (`age` = ? AND `name` <> ? AND `nickname` LIKE ? AND `id` BETWEEN ? AND ? AND `balance` > ? AND `count` >= ? AND `sum` < ? AND `people` <= ? AND `sex` IN(?,?,?) AND `lang` NOT IN(?,?,?,?) AND `content` IS NULL AND `title` IS NOT NULL AND last_id > 0)"
 	realData := where.Prepare()

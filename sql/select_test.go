@@ -15,7 +15,7 @@ func TestSelectPrepare(t *testing.T) {
 
 	where.Eq("u.id", 1).Ge("u.sex", 10)
 	orWhere.Neq("u.name", "kovey").Like("c.name", "cron")
-	having.In("u.sex", []interface{}{1, 2, 3})
+	having.In("u.sex", []any{1, 2, 3})
 
 	s.Where(where).OrWhere(orWhere).Having(having)
 

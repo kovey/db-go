@@ -10,24 +10,24 @@ const (
 )
 
 type Insert struct {
-	data        map[string]interface{}
+	data        map[string]any
 	table       string
 	placeholder map[string]string
-	args        []interface{}
+	args        []any
 	fields      []string
 }
 
 func NewInsert(table string) *Insert {
-	return &Insert{table: table, data: make(map[string]interface{}), placeholder: make(map[string]string)}
+	return &Insert{table: table, data: make(map[string]any), placeholder: make(map[string]string)}
 }
 
-func (i *Insert) Set(field string, value interface{}) *Insert {
+func (i *Insert) Set(field string, value any) *Insert {
 	i.data[field] = value
 	i.placeholder[field] = "?"
 	return i
 }
 
-func (i *Insert) Args() []interface{} {
+func (i *Insert) Args() []any {
 	return i.args
 }
 
@@ -48,7 +48,7 @@ func (i *Insert) getPlaceholder() []string {
 
 func (i *Insert) getFields() []string {
 	fields := make([]string, len(i.data))
-	i.args = make([]interface{}, len(i.data))
+	i.args = make([]any, len(i.data))
 	i.fields = make([]string, len(i.data))
 	index := 0
 	for field, val := range i.data {
@@ -66,7 +66,7 @@ func (i *Insert) String() string {
 }
 
 func (i *Insert) ParseValue(fields []string) {
-	i.args = make([]interface{}, len(fields))
+	i.args = make([]any, len(fields))
 	for index, field := range fields {
 		i.args[index] = i.data[field]
 	}

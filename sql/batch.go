@@ -14,7 +14,7 @@ type Batch struct {
 	ins          []*Insert
 	table        string
 	argsCount    int
-	args         []interface{}
+	args         []any
 	placeholders []string
 }
 
@@ -28,7 +28,7 @@ func (b *Batch) Add(insert *Insert) *Batch {
 	return b
 }
 
-func (b *Batch) Args() []interface{} {
+func (b *Batch) Args() []any {
 	return b.args
 }
 
@@ -37,7 +37,7 @@ func (b *Batch) getFields() []string {
 		return []string{}
 	}
 
-	b.args = make([]interface{}, b.argsCount)
+	b.args = make([]any, b.argsCount)
 	b.placeholders = make([]string, len(b.ins))
 
 	first := b.ins[0]

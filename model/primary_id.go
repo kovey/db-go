@@ -33,7 +33,7 @@ func (p *PrimaryId) Parse(value reflect.Value) {
 	}
 }
 
-func (p *PrimaryId) Value() interface{} {
+func (p *PrimaryId) Value() any {
 	switch p.Type {
 	case Int:
 		return p.IntValue

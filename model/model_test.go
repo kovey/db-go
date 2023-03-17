@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	mysql *db.Mysql
+	mysql *db.Mysql[*Product]
 )
 
 type ProTable struct {
-	table.Table
+	table.Table[*Product]
 }
 
 type Product struct {
-	Base
+	*Base[*Product]
 	Id      int    `db:"id"`
 	Name    string `db:"name"`
 	Date    string `db:"date"`
@@ -30,13 +30,11 @@ type Product struct {
 }
 
 func NewProTable() *ProTable {
-	return &ProTable{*table.NewTable("product")}
+	return &ProTable{*table.NewTable[*Product]("product")}
 }
 
-func NewProduct() Product {
-	pro := Product{NewBase(NewProTable(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
-
-	return pro
+func NewProduct() *Product {
+	return &Product{NewBase[*Product](NewProTable(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
 }
 
 func setup() {
@@ -48,7 +46,7 @@ func setup() {
 		fmt.Printf("init mysql error: %s", err)
 	}
 
-	mysql = db.NewMysql()
+	mysql = db.NewMysql[*Product]()
 	sql := []string{"CREATE TABLE `test`.`product` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
@@ -80,7 +78,7 @@ func TestModelSave(t *testing.T) {
 	pro.Sex = 1
 	pro.Content = "{\"where\":123}"
 
-	err := pro.Save(&pro)
+	err := pro.Save(pro)
 	if err != nil {
 		t.Errorf("product save fail, error: %s", err)
 	}
@@ -88,19 +86,19 @@ func TestModelSave(t *testing.T) {
 	t.Logf("id: %d", pro.Id)
 
 	pro1 := NewProduct()
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = pro.Id
 
-	pro1.FetchRow(where, &pro1)
+	pro1.FetchRow(where, pro1)
 	pro1.Name = "chelsea"
-	pro1.Save(&pro1)
+	pro1.Save(pro1)
 }
 
 func TestModelFetchRow(t *testing.T) {
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
 	pr1 := NewProduct()
-	err := pr1.FetchRow(where, &pr1)
+	err := pr1.FetchRow(where, pr1)
 	if err != nil {
 		t.Errorf("fetch row err: %s", err)
 	}
@@ -109,10 +107,10 @@ func TestModelFetchRow(t *testing.T) {
 }
 
 func TestModelDelete(t *testing.T) {
-	where := make(map[string]interface{})
+	where := make(map[string]any)
 	where["id"] = 1
 	pr1 := NewProduct()
-	err := pr1.FetchRow(where, &pr1)
+	err := pr1.FetchRow(where, pr1)
 	if err != nil {
 		t.Errorf("fetch row err: %s", err)
 	}
@@ -123,7 +121,7 @@ func TestModelDelete(t *testing.T) {
 	}
 
 	pr2 := NewProduct()
-	pr2.FetchRow(where, &pr2)
+	pr2.FetchRow(where, pr2)
 	t.Logf("pr2: %v", pr2)
 }
 
