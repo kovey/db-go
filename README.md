@@ -19,7 +19,7 @@
     )
 
     type ProTable struct {
-        table.Table
+        *table.Table[*Product]
     }
 
     type Product struct {
@@ -33,13 +33,11 @@
     }
 
     func NewProTable() *ProTable {
-        return &ProTable{*table.NewTable("product")}
+        return &ProTable{*table.NewTable[*Product]("product")}
     }
 
-    func NewProduct() Product {
-        pro := Product{model.NewBase(NewProTable(), model.NewPrimaryId("id", model.Int)), 0, "", "", "", 0, "{}"}
-
-        return pro
+    func NewProduct() *Product {
+        return &Product{model.NewBase[*Product](NewProTable(), model.NewPrimaryId("id", model.Int)), 0, "", "", "", 0, "{}"}
     }
 
     func TestModelDelete(t *testing.T) {
@@ -62,7 +60,7 @@
             fmt.Printf("init mysql error: %s", err)
         }
 
-        mysql := db.NewMysql()
+        mysql := db.NewMysql[*Product]()
         sql := []string{"CREATE TABLE `test`.`product` (",
             "`id` INT NOT NULL AUTO_INCREMENT,",
             "`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
@@ -86,7 +84,7 @@
         pro.Sex = 1
         pro.Content = "{\"where\":123}"
 
-        if err := pro.Save(&pro); err != nil {
+        if err := pro.Save(pro); err != nil {
             fmt.Printf("product save fail, error: %s\n", err)
         }
 
@@ -97,7 +95,7 @@
         where["id"] = pro.Id
 
         // update
-        pro1.FetchRow(where, &pro1)
+        pro1.FetchRow(where, pro1)
         pro1.Name = "chelsea"
         pro1.Save(&pro1)
 
@@ -105,7 +103,7 @@
         where = make(map[string]interface{})
         where["id"] = 1
         pr1 = NewProduct()
-        if err := pr1.FetchRow(where, &pr1); err != nil {
+        if err := pr1.FetchRow(where, pr1); err != nil {
             fmt.Printf("fetch row err: %s\n", err)
         }
 
@@ -115,7 +113,7 @@
         where = make(map[string]interface{})
         where["id"] = 1
         pr1 = NewProduct()
-        if err := pr1.FetchRow(where, &pr1); err != nil {
+        if err := pr1.FetchRow(where, pr1); err != nil {
             t.Errorf("fetch row err: %s", err)
         }
 
@@ -124,7 +122,7 @@
         }
 
         pr2 := NewProduct()
-        pr2.FetchRow(where, &pr2)
+        pr2.FetchRow(where, pr2)
         fmt.Printf("pr2: %v\n", pr2)
     }
 ```
