@@ -29,7 +29,7 @@ func setup() {
 		Username: "default", Password: "", Dbname: "test", Debug: false, OpenStrategy: "random", BlockSize: 1000000, PoolSize: 100,
 		Compress: 0, Timeout: config.Timeout{Read: 10, Write: 10},
 		Cluster: config.Cluster{Open: "Off", Servers: make([]config.Addr, 0)},
-		Server:  config.Addr{Host: "47.108.203.217", Port: 29001},
+		Server:  config.Addr{Host: "127.0.0.1", Port: 29001},
 	}
 	err := Init(conf)
 	if err != nil {

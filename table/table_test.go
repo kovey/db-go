@@ -26,7 +26,7 @@ type Product struct {
 
 func setup() {
 	conf := config.Mysql{
-		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "123456", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
+		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
 	}
 	err := db.Init(conf)
 	if err != nil {
