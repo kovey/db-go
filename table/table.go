@@ -1,8 +1,8 @@
 package table
 
 import (
-	"github.com/kovey/db-go/db"
-	"github.com/kovey/db-go/sql"
+	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/sql"
 )
 
 type TableInterface[T any] interface {

@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"reflect"
 
-	"github.com/kovey/db-go/rows"
-	"github.com/kovey/db-go/table"
+	"github.com/kovey/db-go/v2/rows"
+	"github.com/kovey/db-go/v2/table"
 )
 
 type ModelInterface interface {

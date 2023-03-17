@@ -1,4 +1,4 @@
-module github.com/kovey/db-go
+module github.com/kovey/db-go/v2
 
 go 1.18
 

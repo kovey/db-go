@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/kovey/config-go/config"
-	"github.com/kovey/db-go/sql"
+	"github.com/kovey/db-go/v2/sql"
 )
 
 var (

@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"reflect"
 
-	"github.com/kovey/db-go/rows"
-	"github.com/kovey/db-go/table"
+	"github.com/kovey/db-go/v2/rows"
+	"github.com/kovey/db-go/v2/table"
 )
 
 type ModelShardingInterface interface {
@@ -23,7 +23,7 @@ func NewBaseSharding[T ModelShardingInterface](tb table.TableShardingInterface[T
 	return &BaseSharding[T]{Table: tb, primaryId: primaryId, isInsert: true}
 }
 
-func (b BaseSharding[T]) Save(key any, model T) error {
+func (b *BaseSharding[T]) Save(key any, model T) error {
 	vValue := reflect.ValueOf(model)
 	if vValue.Kind() == reflect.Ptr {
 		vValue = vValue.Elem()
@@ -72,7 +72,7 @@ func (b BaseSharding[T]) Save(key any, model T) error {
 	return nil
 }
 
-func (b BaseSharding[T]) Delete(key any, model T) error {
+func (b *BaseSharding[T]) Delete(key any, model T) error {
 	where := make(map[string]any)
 	vValue := reflect.ValueOf(model)
 	if vValue.Kind() == reflect.Ptr {
@@ -95,7 +95,7 @@ func (b BaseSharding[T]) Delete(key any, model T) error {
 	return err
 }
 
-func (b BaseSharding[T]) FetchRow(key any, where map[string]any, model T) error {
+func (b *BaseSharding[T]) FetchRow(key any, where map[string]any, model T) error {
 	vValue := reflect.ValueOf(model)
 	isPointer := false
 	if vValue.Kind() == reflect.Ptr {
@@ -106,7 +106,7 @@ func (b BaseSharding[T]) FetchRow(key any, where map[string]any, model T) error 
 	row, err := b.Table.FetchRow(key, where, model)
 	b.err = err
 	if err != nil {
-		vValue.FieldByName("Base").Set(reflect.ValueOf(b))
+		vValue.FieldByName("BaseSharding").Set(reflect.ValueOf(b))
 		return err
 	}
 
@@ -117,10 +117,10 @@ func (b BaseSharding[T]) FetchRow(key any, where map[string]any, model T) error 
 		vValue.Set(reflect.ValueOf(row))
 	}
 
-	vValue.FieldByName("Base").Set(reflect.ValueOf(b))
+	vValue.FieldByName("BaseSharding").Set(reflect.ValueOf(b))
 	return nil
 }
 
-func (b BaseSharding[T]) Empty() bool {
+func (b *BaseSharding[T]) Empty() bool {
 	return b.err == sql.ErrNoRows
 }

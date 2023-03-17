@@ -4,8 +4,8 @@ import (
 	ds "database/sql"
 	"fmt"
 
-	"github.com/kovey/db-go/rows"
-	"github.com/kovey/db-go/sql"
+	"github.com/kovey/db-go/v2/rows"
+	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/debug-go/debug"
 )
 

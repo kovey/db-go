@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/kovey/config-go/config"
-	"github.com/kovey/db-go/db"
-	"github.com/kovey/db-go/table"
+	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/table"
 )
 
 var (

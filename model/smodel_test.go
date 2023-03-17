@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/kovey/config-go/config"
-	"github.com/kovey/db-go/sharding"
-	"github.com/kovey/db-go/table"
+	"github.com/kovey/db-go/v2/sharding"
+	"github.com/kovey/db-go/v2/table"
 )
 
 var (

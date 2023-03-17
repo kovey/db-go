@@ -3,8 +3,8 @@ package table
 import (
 	"fmt"
 
-	"github.com/kovey/db-go/sharding"
-	"github.com/kovey/db-go/sql"
+	"github.com/kovey/db-go/v2/sharding"
+	"github.com/kovey/db-go/v2/sql"
 )
 
 type TableShardingInterface[T any] interface {

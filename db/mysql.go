@@ -6,7 +6,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kovey/config-go/config"
-	ds "github.com/kovey/db-go/sql"
+	ds "github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/debug-go/debug"
 )
 
