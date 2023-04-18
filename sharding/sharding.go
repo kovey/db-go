@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kovey/config-go/config"
+	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
 	ds "github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/debug-go/debug"
