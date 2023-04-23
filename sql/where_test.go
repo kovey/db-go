@@ -4,8 +4,19 @@ import "testing"
 
 func TestPrepare(t *testing.T) {
 	where := NewWhere()
-	where.Eq("age", 18).Neq("name", "kovey").Like("nickname", "%golang%").Between("id", 1, 100).Gt("balance", 1000).Ge("count", 10).Lt("sum", 15).Le("people", 100)
-	where.In("sex", []any{0, 1, 2}).NotIn("lang", []any{"php", "java", "ruby", "rust"}).IsNull("content").IsNotNull("title").Statement("last_id > 0")
+	where.Eq("age", 18)
+	where.Neq("name", "kovey")
+	where.Like("nickname", "%golang%")
+	where.Between("id", 1, 100)
+	where.Gt("balance", 1000)
+	where.Ge("count", 10)
+	where.Lt("sum", 15)
+	where.Le("people", 100)
+	where.In("sex", []any{0, 1, 2})
+	where.NotIn("lang", []any{"php", "java", "ruby", "rust"})
+	where.IsNull("content")
+	where.IsNotNull("title")
+	where.Statement("last_id > 0")
 
 	expected := "WHERE (`age` = ? AND `name` <> ? AND `nickname` LIKE ? AND `id` BETWEEN ? AND ? AND `balance` > ? AND `count` >= ? AND `sum` < ? AND `people` <= ? AND `sex` IN(?,?,?) AND `lang` NOT IN(?,?,?,?) AND `content` IS NULL AND `title` IS NOT NULL AND last_id > 0)"
 	realData := where.Prepare()

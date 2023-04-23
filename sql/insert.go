@@ -3,6 +3,8 @@ package sql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 const (
@@ -10,7 +12,7 @@ const (
 )
 
 type Insert struct {
-	data        map[string]any
+	data        meta.Data
 	table       string
 	placeholder map[string]string
 	args        []any
@@ -18,11 +20,11 @@ type Insert struct {
 }
 
 func NewInsert(table string) *Insert {
-	return &Insert{table: table, data: make(map[string]any), placeholder: make(map[string]string)}
+	return &Insert{table: table, data: meta.NewData(), placeholder: make(map[string]string)}
 }
 
 func (i *Insert) Set(field string, value any) *Insert {
-	i.data[field] = value
+	i.data.Add(field, value)
 	i.placeholder[field] = "?"
 	return i
 }

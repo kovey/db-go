@@ -10,22 +10,25 @@ import (
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
 	ds "github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
 )
 
 var (
 	database *sql.DB
 	dev      string
+	dbName   string
 )
 
 type ClickHouse[T any] struct {
 	database        *sql.DB
 	tx              *sql.Tx
 	isInTransaction bool
+	DbName          string
 }
 
 func NewClickHouse[T any]() *ClickHouse[T] {
-	return &ClickHouse[T]{database: database, tx: nil, isInTransaction: false}
+	return &ClickHouse[T]{database: database, tx: nil, isInTransaction: false, DbName: dbName}
 }
 
 func Init(conf config.ClickHouse) error {
@@ -35,6 +38,7 @@ func Init(conf config.ClickHouse) error {
 	}
 
 	database = db
+	dbName = conf.Dbname
 	return nil
 }
 
@@ -195,11 +199,19 @@ func (ck *ClickHouse[T]) Select(sel *ds.Select, model T) ([]T, error) {
 	return db.Select(ck.getDb(), sel, model)
 }
 
-func (ck *ClickHouse[T]) FetchRow(table string, where map[string]any, model T) (any, error) {
+func (ck *ClickHouse[T]) Desc(desc *ds.Desc, model T) ([]T, error) {
+	return db.Desc(ck.database, desc, model)
+}
+
+func (ck *ClickHouse[T]) ShowTables(show *ds.ShowTables, model T) ([]T, error) {
+	return db.ShowTables(ck.database, show, model)
+}
+
+func (ck *ClickHouse[T]) FetchRow(table string, where meta.Where, model T) (any, error) {
 	return db.FetchRow(ck.getDb(), table, where, model)
 }
 
-func (ck *ClickHouse[T]) FetchAll(table string, where map[string]any, model T) ([]T, error) {
+func (ck *ClickHouse[T]) FetchAll(table string, where meta.Where, model T) ([]T, error) {
 	return db.FetchAll(ck.getDb(), table, where, model)
 }
 
@@ -212,7 +224,7 @@ func (ck *ClickHouse[T]) RollBack() error {
 	return nil
 }
 
-func (ck *ClickHouse[T]) FetchPage(table string, where map[string]any, model T, page int, pageSize int) ([]T, error) {
+func (ck *ClickHouse[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
 	return db.FetchPage(ck.getDb(), table, where, model, page, pageSize)
 }
 

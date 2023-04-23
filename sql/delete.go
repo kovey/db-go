@@ -1,6 +1,10 @@
 package sql
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/kovey/db-go/v2/sql/meta"
+)
 
 const (
 	deleteFormat   string = "DELETE FROM %s %s"
@@ -45,7 +49,7 @@ func (d *Delete) String() string {
 	return String(d)
 }
 
-func (d *Delete) WhereByMap(where map[string]any) *Delete {
+func (d *Delete) WhereByMap(where meta.Where) *Delete {
 	if d.where == nil {
 		d.where = NewWhere()
 	}
@@ -57,7 +61,7 @@ func (d *Delete) WhereByMap(where map[string]any) *Delete {
 	return d
 }
 
-func (d *Delete) WhereByList(where []string) *Delete {
+func (d *Delete) WhereByList(where meta.List) *Delete {
 	if d.where == nil {
 		d.where = NewWhere()
 	}

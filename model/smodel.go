@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/kovey/db-go/v2/rows"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/table"
 )
 
@@ -32,7 +33,7 @@ func (b *BaseSharding[T]) Save(key any, model T) error {
 	vType := vValue.Type()
 	var name string
 
-	data := make(map[string]any)
+	data := meta.NewData()
 	for i := 0; i < vValue.NumField(); i++ {
 		tField := vType.Field(i)
 		tag := tField.Tag.Get(rows.Tag_Db)
@@ -55,8 +56,8 @@ func (b *BaseSharding[T]) Save(key any, model T) error {
 	}
 
 	if !b.isInsert {
-		where := make(map[string]any)
-		where[b.primaryId.Name] = b.primaryId.Value()
+		where := meta.NewWhere()
+		where.Add(b.primaryId.Name, b.primaryId.Value())
 		_, err := b.Table.Update(key, data, where)
 		return err
 	}
@@ -73,7 +74,7 @@ func (b *BaseSharding[T]) Save(key any, model T) error {
 }
 
 func (b *BaseSharding[T]) Delete(key any, model T) error {
-	where := make(map[string]any)
+	where := meta.NewWhere()
 	vValue := reflect.ValueOf(model)
 	if vValue.Kind() == reflect.Ptr {
 		vValue = vValue.Elem()
@@ -90,12 +91,12 @@ func (b *BaseSharding[T]) Delete(key any, model T) error {
 		}
 	}
 
-	where[b.primaryId.Name] = val
+	where.Add(b.primaryId.Name, val)
 	_, err := b.Table.Delete(key, where)
 	return err
 }
 
-func (b *BaseSharding[T]) FetchRow(key any, where map[string]any, model T) error {
+func (b *BaseSharding[T]) FetchRow(key any, where meta.Where, model T) error {
 	vValue := reflect.ValueOf(model)
 	isPointer := false
 	if vValue.Kind() == reflect.Ptr {

@@ -3,19 +3,20 @@ package table
 import (
 	"github.com/kovey/db-go/v2/db"
 	"github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 type TableInterface[T any] interface {
 	Database() db.DbInterface[T]
-	Insert(map[string]any) (int64, error)
-	Update(map[string]any, map[string]any) (int64, error)
-	Delete(map[string]any) (int64, error)
+	Insert(meta.Data) (int64, error)
+	Update(meta.Data, meta.Where) (int64, error)
+	Delete(meta.Where) (int64, error)
 	DeleteWhere(sql.WhereInterface) (int64, error)
-	BatchInsert([]map[string]any) (int64, error)
-	FetchRow(map[string]any, T) (T, error)
-	FetchAll(map[string]any, T) ([]T, error)
+	BatchInsert([]meta.Data) (int64, error)
+	FetchRow(meta.Where, T) (T, error)
+	FetchAll(meta.Where, T) ([]T, error)
 	FetchAllByWhere(sql.WhereInterface, T) ([]T, error)
-	FetchPage(map[string]any, T, int, int) ([]T, error)
+	FetchPage(meta.Where, T, int, int) ([]T, error)
 	FetchPageByWhere(sql.WhereInterface, T, int, int) ([]T, error)
 }
 
@@ -36,7 +37,7 @@ func (t *Table[T]) Database() db.DbInterface[T] {
 	return t.db
 }
 
-func (t *Table[T]) Insert(data map[string]any) (int64, error) {
+func (t *Table[T]) Insert(data meta.Data) (int64, error) {
 	in := sql.NewInsert(t.table)
 	for field, value := range data {
 		in.Set(field, value)
@@ -45,7 +46,7 @@ func (t *Table[T]) Insert(data map[string]any) (int64, error) {
 	return t.db.Insert(in)
 }
 
-func (t *Table[T]) Update(data map[string]any, where map[string]any) (int64, error) {
+func (t *Table[T]) Update(data meta.Data, where meta.Where) (int64, error) {
 	up := sql.NewUpdate(t.table)
 	for field, value := range data {
 		up.Set(field, value)
@@ -56,7 +57,7 @@ func (t *Table[T]) Update(data map[string]any, where map[string]any) (int64, err
 	return t.db.Update(up)
 }
 
-func (t *Table[T]) Delete(where map[string]any) (int64, error) {
+func (t *Table[T]) Delete(where meta.Where) (int64, error) {
 	del := sql.NewDelete(t.table)
 	del.WhereByMap(where)
 
@@ -70,7 +71,7 @@ func (t *Table[T]) DeleteWhere(where sql.WhereInterface) (int64, error) {
 	return t.db.Delete(del)
 }
 
-func (t *Table[T]) BatchInsert(data []map[string]any) (int64, error) {
+func (t *Table[T]) BatchInsert(data []meta.Data) (int64, error) {
 	batch := sql.NewBatch(t.table)
 	for _, val := range data {
 		in := sql.NewInsert(t.table)
@@ -83,11 +84,11 @@ func (t *Table[T]) BatchInsert(data []map[string]any) (int64, error) {
 	return t.db.BatchInsert(batch)
 }
 
-func (t *Table[T]) FetchRow(where map[string]any, model T) (T, error) {
+func (t *Table[T]) FetchRow(where meta.Where, model T) (T, error) {
 	return t.db.FetchRow(t.table, where, model)
 }
 
-func (t *Table[T]) FetchAll(where map[string]any, model T) ([]T, error) {
+func (t *Table[T]) FetchAll(where meta.Where, model T) ([]T, error) {
 	return t.db.FetchAll(t.table, where, model)
 }
 
@@ -95,7 +96,7 @@ func (t *Table[T]) FetchAllByWhere(where sql.WhereInterface, model T) ([]T, erro
 	return t.db.FetchAllByWhere(t.table, where, model)
 }
 
-func (t *Table[T]) FetchPage(where map[string]any, model T, page, pageSize int) ([]T, error) {
+func (t *Table[T]) FetchPage(where meta.Where, model T, page, pageSize int) ([]T, error) {
 	return t.db.FetchPage(t.table, where, model, page, pageSize)
 }
 

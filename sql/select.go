@@ -3,6 +3,8 @@ package sql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 const (
@@ -214,7 +216,7 @@ func (s *Select) String() string {
 	return String(s)
 }
 
-func (s *Select) WhereByMap(where map[string]any) *Select {
+func (s *Select) WhereByMap(where meta.Where) *Select {
 	if s.where == nil {
 		s.where = NewWhere()
 	}
@@ -226,7 +228,7 @@ func (s *Select) WhereByMap(where map[string]any) *Select {
 	return s
 }
 
-func (s *Select) WhereByList(where []string) *Select {
+func (s *Select) WhereByList(where meta.List) *Select {
 	if s.where == nil {
 		s.where = NewWhere()
 	}

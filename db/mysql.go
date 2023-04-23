@@ -3,30 +3,34 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kovey/db-go/v2/config"
 	ds "github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
 )
 
 var (
 	database *sql.DB
 	dev      string
+	dbName   string
 )
 
 type Mysql[T any] struct {
 	database        *sql.DB
 	tx              *sql.Tx
 	isInTransaction bool
+	DbName          string
 }
 
 func NewMysql[T any]() *Mysql[T] {
-	return &Mysql[T]{database: database, tx: nil, isInTransaction: false}
+	return &Mysql[T]{database: database, tx: nil, isInTransaction: false, DbName: dbName}
 }
 
 func NewSharding[T any](database *sql.DB) *Mysql[T] {
-	return &Mysql[T]{database: database, tx: nil, isInTransaction: false}
+	return &Mysql[T]{database: database, tx: nil, isInTransaction: false, DbName: dbName}
 }
 
 func Init(conf config.Mysql) error {
@@ -37,6 +41,8 @@ func Init(conf config.Mysql) error {
 
 	dev = conf.Dev
 	database = db
+	dbName = conf.Dbname
+
 	return nil
 }
 
@@ -51,6 +57,7 @@ func OpenDB(conf config.Mysql) (*sql.DB, error) {
 
 	db.SetMaxIdleConns(conf.ActiveMax)
 	db.SetMaxOpenConns(conf.ConnectionMax)
+	db.SetConnMaxLifetime(time.Duration(conf.LifeTime) * time.Second)
 
 	err = db.Ping()
 	if err != nil {
@@ -131,15 +138,23 @@ func (m *Mysql[T]) BatchInsert(batch *ds.Batch) (int64, error) {
 	return BatchInsert(m.getDb(), batch)
 }
 
-func (m *Mysql[T]) Select(sel *ds.Select, modal T) ([]T, error) {
-	return Select(m.getDb(), sel, modal)
+func (m *Mysql[T]) Desc(desc *ds.Desc, model T) ([]T, error) {
+	return Desc(m.getDb(), desc, model)
 }
 
-func (m *Mysql[T]) FetchRow(table string, where map[string]any, modal T) (T, error) {
+func (m *Mysql[T]) ShowTables(show *ds.ShowTables, model T) ([]T, error) {
+	return ShowTables(m.database, show, model)
+}
+
+func (m *Mysql[T]) Select(sel *ds.Select, model T) ([]T, error) {
+	return Select(m.getDb(), sel, model)
+}
+
+func (m *Mysql[T]) FetchRow(table string, where meta.Where, modal T) (T, error) {
 	return FetchRow(m.getDb(), table, where, modal)
 }
 
-func (m *Mysql[T]) FetchAll(table string, where map[string]any, modal T) ([]T, error) {
+func (m *Mysql[T]) FetchAll(table string, where meta.Where, modal T) ([]T, error) {
 	return FetchAll(m.getDb(), table, where, modal)
 }
 
@@ -147,7 +162,7 @@ func (m *Mysql[T]) FetchAllByWhere(table string, where ds.WhereInterface, modal 
 	return FetchAllByWhere(m.getDb(), table, where, modal)
 }
 
-func (m *Mysql[T]) FetchPage(table string, where map[string]any, modal T, page int, pageSize int) ([]T, error) {
+func (m *Mysql[T]) FetchPage(table string, where meta.Where, modal T, page int, pageSize int) ([]T, error) {
 	return FetchPage(m.getDb(), table, where, modal, page, pageSize)
 }
 

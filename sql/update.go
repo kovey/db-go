@@ -3,6 +3,8 @@ package sql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 const (
@@ -12,18 +14,18 @@ const (
 
 type Update struct {
 	table  string
-	data   map[string]any
+	data   meta.Data
 	args   []any
 	where  WhereInterface
 	format string
 }
 
 func NewUpdate(table string) *Update {
-	return &Update{table: table, data: make(map[string]any), where: nil, format: updateFormat}
+	return &Update{table: table, data: meta.NewData(), where: nil, format: updateFormat}
 }
 
 func NewCkUpdate(table string) *Update {
-	return &Update{table: table, data: make(map[string]any), where: nil, format: updateCkFormat}
+	return &Update{table: table, data: meta.NewData(), where: nil, format: updateCkFormat}
 }
 
 func (u *Update) Set(field string, value any) *Update {
@@ -86,7 +88,7 @@ func (u *Update) Where(w WhereInterface) *Update {
 	return u
 }
 
-func (u *Update) WhereByMap(where map[string]any) *Update {
+func (u *Update) WhereByMap(where meta.Where) *Update {
 	if u.where == nil {
 		u.where = NewWhere()
 	}
@@ -98,7 +100,7 @@ func (u *Update) WhereByMap(where map[string]any) *Update {
 	return u
 }
 
-func (u *Update) WhereByList(where []string) *Update {
+func (u *Update) WhereByList(where meta.List) *Update {
 	if u.where == nil {
 		u.where = NewWhere()
 	}

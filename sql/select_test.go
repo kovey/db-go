@@ -13,8 +13,10 @@ func TestSelectPrepare(t *testing.T) {
 	orWhere := NewWhere()
 	having := NewHaving()
 
-	where.Eq("u.id", 1).Ge("u.sex", 10)
-	orWhere.Neq("u.name", "kovey").Like("c.name", "cron")
+	where.Eq("u.id", 1)
+	where.Ge("u.sex", 10)
+	orWhere.Neq("u.name", "kovey")
+	orWhere.Like("c.name", "cron")
 	having.In("u.sex", []any{1, 2, 3})
 
 	s.Where(where).OrWhere(orWhere).Having(having)

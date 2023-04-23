@@ -8,6 +8,7 @@ import (
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
 	ds "github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
 )
 
@@ -207,11 +208,11 @@ func (m *Mysql[T]) BatchInsert(key any, batch *ds.Batch) (int64, error) {
 	return m.GetConnection(m.GetShardingKey(key)).BatchInsert(batch)
 }
 
-func (m *Mysql[T]) FetchRow(key any, table string, where map[string]any, model T) (T, error) {
+func (m *Mysql[T]) FetchRow(key any, table string, where meta.Where, model T) (T, error) {
 	return m.GetConnection(m.GetShardingKey(key)).FetchRow(table, where, model)
 }
 
-func (m *Mysql[T]) FetchAll(key any, table string, where map[string]any, model T) ([]T, error) {
+func (m *Mysql[T]) FetchAll(key any, table string, where meta.Where, model T) ([]T, error) {
 	return m.GetConnection(m.GetShardingKey(key)).FetchAll(table, where, model)
 }
 
@@ -219,7 +220,7 @@ func (m *Mysql[T]) FetchAllByWhere(key any, table string, where ds.WhereInterfac
 	return m.GetConnection(m.GetShardingKey(key)).FetchAllByWhere(table, where, model)
 }
 
-func (m *Mysql[T]) FetchPage(key any, table string, where map[string]any, model T, page, pageSize int) ([]T, error) {
+func (m *Mysql[T]) FetchPage(key any, table string, where meta.Where, model T, page, pageSize int) ([]T, error) {
 	return m.GetConnection(m.GetShardingKey(key)).FetchPage(table, where, model, page, pageSize)
 }
 

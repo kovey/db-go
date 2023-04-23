@@ -6,6 +6,7 @@ import (
 
 	"github.com/kovey/db-go/v2/rows"
 	"github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
 )
 
@@ -16,15 +17,17 @@ type DbInterface[T any] interface {
 	InTransaction() bool
 	Query(string, T, ...any) ([]T, error)
 	Exec(string) error
+	Desc(*sql.Desc, T) ([]T, error)
+	ShowTables(*sql.ShowTables, T) ([]T, error)
 	Insert(*sql.Insert) (int64, error)
 	Update(*sql.Update) (int64, error)
 	Delete(*sql.Delete) (int64, error)
 	BatchInsert(*sql.Batch) (int64, error)
 	Select(*sql.Select, T) ([]T, error)
-	FetchRow(string, map[string]any, T) (T, error)
-	FetchAll(string, map[string]any, T) ([]T, error)
+	FetchRow(string, meta.Where, T) (T, error)
+	FetchAll(string, meta.Where, T) ([]T, error)
 	FetchAllByWhere(string, sql.WhereInterface, T) ([]T, error)
-	FetchPage(string, map[string]any, T, int, int) ([]T, error)
+	FetchPage(string, meta.Where, T, int, int) ([]T, error)
 	FetchPageByWhere(string, sql.WhereInterface, T, int, int) ([]T, error)
 }
 
@@ -116,11 +119,19 @@ func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
 	return result.RowsAffected()
 }
 
+func ShowTables[T any](m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
+	return Query(m, show.Prepare(), model, show.Args()...)
+}
+
+func Desc[T any](m ConnInterface, desc *sql.Desc, model T) ([]T, error) {
+	return Query(m, desc.Prepare(), model, desc.Args()...)
+}
+
 func Select[T any](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
 	return Query(m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchRow[T any](m ConnInterface, table string, where map[string]any, model T) (T, error) {
+func FetchRow[T any](m ConnInterface, table string, where meta.Where, model T) (T, error) {
 	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields...).Limit(1)
@@ -136,7 +147,7 @@ func FetchRow[T any](m ConnInterface, table string, where map[string]any, model 
 	return row.Model, nil
 }
 
-func FetchAll[T any](m ConnInterface, table string, where map[string]any, model T) ([]T, error) {
+func FetchAll[T any](m ConnInterface, table string, where meta.Where, model T) ([]T, error) {
 	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields...)
@@ -152,7 +163,7 @@ func FetchAllByWhere[T any](m ConnInterface, table string, where sql.WhereInterf
 	return Select(m, sel, model)
 }
 
-func FetchPage[T any](m ConnInterface, table string, where map[string]any, model T, page int, pageSize int) ([]T, error) {
+func FetchPage[T any](m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
 	row := rows.NewRow(model)
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields...).Limit(pageSize).Offset((page - 1) * pageSize)
