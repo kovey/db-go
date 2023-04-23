@@ -69,9 +69,9 @@ func main() {
 
 		for _, field := range fields {
 			if field.Key.String == "PRI" {
-				t.SetPrimary(&meta.Field{Name: meta.UcFirst(field.Field), Type: field.Type, DbField: field.Field})
+				t.SetPrimary(meta.NewField(field.Field, field.Type, false))
 			}
-			t.Add(&meta.Field{Name: meta.UcFirst(field.Field), Type: field.Type, DbField: field.Field})
+			t.Add(meta.NewField(field.Field, field.Type, field.Null != "NO"))
 		}
 
 		path := *dist + "/" + tb.Name + ".go"

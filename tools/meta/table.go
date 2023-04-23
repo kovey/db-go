@@ -12,6 +12,8 @@ type Table struct {
 	DbTableName string
 	Fields      []*Field
 	Primary     *Field
+	HasSql      bool
+	HasDecimal  bool
 }
 
 func NewTable(name string, p string) *Table {
@@ -23,6 +25,13 @@ func (t *Table) SetPrimary(f *Field) {
 }
 
 func (t *Table) Add(f *Field) {
+	if f.HasDecimal {
+		t.HasDecimal = true
+	}
+	if f.HasSql {
+		t.HasSql = true
+	}
+
 	t.Fields = append(t.Fields, f)
 }
 
@@ -40,7 +49,8 @@ func (t *Table) Format() string {
 	content = strings.ReplaceAll(content, "{table_name}", t.DbTableName)
 	content = strings.ReplaceAll(content, "{row_fields}", t.fields())
 	content = strings.ReplaceAll(content, "{primary_id}", t.Primary.DbField)
-	switch t.Primary.GoType() {
+	content = strings.ReplaceAll(content, "{imports}", t.imports())
+	switch t.Primary.GolangType {
 	case "string":
 		content = strings.ReplaceAll(content, "{primary_id_type}", "Str")
 	default:
@@ -53,6 +63,18 @@ func (t *Table) fields() string {
 	res := make([]string, len(t.Fields))
 	for index, f := range t.Fields {
 		res[index] = f.Format()
+	}
+
+	return strings.Join(res, "\n")
+}
+
+func (t *Table) imports() string {
+	res := make([]string, 0)
+	if t.HasSql {
+		res = append(res, tpl.Sql)
+	}
+	if t.HasDecimal {
+		res = append(res, tpl.Decimal)
 	}
 
 	return strings.Join(res, "\n")

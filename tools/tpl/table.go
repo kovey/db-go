@@ -6,6 +6,7 @@ const (
 import(
 	"github.com/kovey/db-go/v2/table"
 	"github.com/kovey/db-go/v2/model"
+	{imports}
 )
 
 type {name}Table struct {
@@ -26,4 +27,7 @@ func New{name}Row() *{name}Row {
 }
 	`
 	Field = "	%s %s `db:\"%s\"`"
+
+	Decimal = `"github.com/shopspring/decimal"`
+	Sql     = `"database/sql"`
 )
