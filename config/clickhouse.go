@@ -5,9 +5,9 @@ type ClickHouse struct {
 	Password     string  `yaml:"password"`
 	Dbname       string  `yaml:"dbname"`
 	Debug        bool    `yaml:"debug"`
-	OpenStrategy string  `yaml:"open-strategy"`
-	BlockSize    int     `yaml:"block-size"`
-	PoolSize     int     `yaml:"pool-size"`
+	OpenStrategy string  `yaml:"open_strategy"`
+	BlockSize    int     `yaml:"block_size"`
+	PoolSize     int     `yaml:"pool_size"`
 	Compress     int     `yaml:"compress"`
 	Timeout      Timeout `yaml:"timeout"`
 	Cluster      Cluster `yaml:"cluster"`
