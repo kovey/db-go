@@ -55,7 +55,7 @@ func NewRow[T any](m T) *Row[T] {
 func (r *Row[T]) Columns() []any {
 	res := make([]any, len(r.Fields))
 	for index, name := range r.Fields {
-		res[index] = r.columns[name.Name.Name]
+		res[index] = r.columns[name.Alias]
 	}
 
 	return res
@@ -79,12 +79,7 @@ func (r *Row[T]) getColumnsBy(fields []string) []any {
 	return res
 }
 
-func (r *Row[T]) ScanByRows(rows *sql.Rows) error {
-	cols, err := rows.Columns()
-	if err != nil {
-		return err
-	}
-
+func (r *Row[T]) ScanByRows(rows *sql.Rows, cols []string) error {
 	if err := rows.Scan(r.getColumnsBy(cols)...); err != nil {
 		return err
 	}

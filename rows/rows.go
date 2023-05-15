@@ -15,9 +15,13 @@ func (r *Rows[T]) All() []T {
 }
 
 func (r *Rows[T]) Scan(rows *sql.Rows, model T) error {
+	cols, err := rows.Columns()
+	if err != nil {
+		return err
+	}
 	for rows.Next() {
 		row := NewRow(model)
-		if err := row.ScanByRows(rows); err != nil {
+		if err := row.ScanByRows(rows, cols); err != nil {
 			return err
 		}
 
