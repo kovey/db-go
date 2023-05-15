@@ -9,7 +9,6 @@ import (
 
 const (
 	selectFormat string = "SELECT %s FROM %s AS %s %s %s %s %s %s %s %s"
-	columnFormat string = "`%s`.`%s`"
 	orderFormat  string = "ORDER BY %s"
 	groupFormat  string = "GROUP BY %s"
 	limitFormat  string = "LIMIT %d,%d"
@@ -45,9 +44,18 @@ func NewSelect(table string, alias string) *Select {
 	}
 }
 
-func (s *Select) Columns(columns ...string) *Select {
+func (s *Select) Columns(columns ...*meta.Column) *Select {
 	for _, column := range columns {
-		s.columns = append(s.columns, fmt.Sprintf(columnFormat, s.alias, column))
+		column.Name.Table = s.alias
+		s.columns = append(s.columns, column.String())
+	}
+
+	return s
+}
+
+func (s *Select) CaseWhen(caseWhens ...*meta.CaseWhen) *Select {
+	for _, caseWhen := range caseWhens {
+		s.columns = append(s.columns, caseWhen.String())
 	}
 
 	return s
@@ -119,25 +127,25 @@ func (s *Select) Args() []any {
 	return args
 }
 
-func (s *Select) join(jt string, table string, alias string, on string, columns ...string) *Select {
-	for _, column := range columns {
-		s.columns = append(s.columns, fmt.Sprintf(columnFormat, alias, column))
+func (s *Select) join(jt string, join *Join) *Select {
+	for _, column := range join.columns {
+		s.columns = append(s.columns, column)
 	}
 
-	s.joins = append(s.joins, fmt.Sprintf(joinFormat, jt, formatValue(table), formatValue(alias), on))
+	s.joins = append(s.joins, fmt.Sprintf(joinFormat, jt, formatValue(join.table), formatValue(join.alias), join.on))
 	return s
 }
 
-func (s *Select) LeftJoin(table string, alias string, on string, columns ...string) *Select {
-	return s.join(leftJoin, table, alias, on, columns...)
+func (s *Select) LeftJoin(join *Join) *Select {
+	return s.join(leftJoin, join)
 }
 
-func (s *Select) RightJoin(table string, alias string, on string, columns ...string) *Select {
-	return s.join(rightJoin, table, alias, on, columns...)
+func (s *Select) RightJoin(join *Join) *Select {
+	return s.join(rightJoin, join)
 }
 
-func (s *Select) InnerJoin(table string, alias string, on string, columns ...string) *Select {
-	return s.join(innerJoin, table, alias, on, columns...)
+func (s *Select) InnerJoin(join *Join) *Select {
+	return s.join(innerJoin, join)
 }
 
 func (s *Select) getColumns() string {

@@ -133,6 +133,7 @@ func Select[T any](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
 
 func FetchRow[T any](m ConnInterface, table string, where meta.Where, model T) (T, error) {
 	row := rows.NewRow(model)
+	row.Table = table
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(row.Fields...).Limit(1)
 	result := m.QueryRow(sel.Prepare(), sel.Args()...)
