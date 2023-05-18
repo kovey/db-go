@@ -30,3 +30,16 @@ func (r *Rows[T]) Scan(rows *sql.Rows, model T) error {
 
 	return nil
 }
+
+func (r *Rows[T]) Tables(rows *sql.Rows, model T) error {
+	for rows.Next() {
+		row := NewRow(model)
+		if err := row.ScanByRowsAll(rows); err != nil {
+			return err
+		}
+
+		r.rows = append(r.rows, row.Model)
+	}
+
+	return nil
+}

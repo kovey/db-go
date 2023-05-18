@@ -18,7 +18,7 @@ func NewJoin(table, alias, on string) *Join {
 
 func (j *Join) Columns(columns ...*meta.Column) *Join {
 	for _, column := range columns {
-		column.Name.Table = j.alias
+		column.SetTable(j.alias)
 		j.columns = append(j.columns, column.String())
 	}
 

@@ -46,7 +46,7 @@ func NewSelect(table string, alias string) *Select {
 
 func (s *Select) Columns(columns ...*meta.Column) *Select {
 	for _, column := range columns {
-		column.Name.Table = s.alias
+		column.SetTable(s.alias)
 		s.columns = append(s.columns, column.String())
 	}
 

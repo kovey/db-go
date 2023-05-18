@@ -4,12 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/tools/desc"
 	"github.com/kovey/db-go/v2/tools/meta"
+	"github.com/kovey/debug-go/debug"
 )
 
 func main() {
@@ -59,8 +61,10 @@ func main() {
 		panic(err)
 	}
 
+	showTablesBegin(tables)
 	dm := db.NewMysql[*desc.Desc]()
 	for _, tb := range tables {
+		debug.Info("process table[%s] orm begin...", tb.Name)
 		t := meta.NewTable(tb.Name, *pc)
 		fields, err := dm.Desc(sql.NewDesc(tb.Name), desc.NewDesc(tb.Name))
 		if err != nil {
@@ -75,6 +79,30 @@ func main() {
 		}
 
 		path := *dist + "/" + tb.Name + ".go"
-		os.WriteFile(path, []byte(t.Format()), 0644)
+		if err := os.WriteFile(path, []byte(t.Format()), 0644); err != nil {
+			debug.Erro("write table[%s] content to file[%s] failure, error: %s", tb.Name, path, err)
+		}
+
+		debug.Info("process table[%s] orm end.", tb.Name)
 	}
+
+	showTablesEnd(tables)
+}
+
+func showTablesBegin(tables []*desc.Table) {
+	names := make([]string, len(tables))
+	for index, tb := range tables {
+		names[index] = tb.Name
+	}
+
+	debug.Info("orm prepare tables[%s]", strings.Join(names, ", "))
+}
+
+func showTablesEnd(tables []*desc.Table) {
+	names := make([]string, len(tables))
+	for index, tb := range tables {
+		names[index] = tb.Name
+	}
+
+	debug.Info("orm tables[%s] end.", strings.Join(names, ", "))
 }

@@ -2,8 +2,10 @@ package meta
 
 import (
 	"strings"
+	"time"
 
 	"github.com/kovey/db-go/v2/tools/tpl"
+	"github.com/kovey/debug-go/util"
 )
 
 type Table struct {
@@ -14,10 +16,11 @@ type Table struct {
 	Primary     *Field
 	HasSql      bool
 	HasDecimal  bool
+	Database    string
 }
 
-func NewTable(name string, p string) *Table {
-	return &Table{DbTableName: name, Name: UcFirst(name), Fields: make([]*Field, 0), Package: p}
+func NewTable(name, p, database string) *Table {
+	return &Table{DbTableName: name, Name: UcFirst(name), Fields: make([]*Field, 0), Package: p, Database: database}
 }
 
 func (t *Table) SetPrimary(f *Field) {
@@ -42,10 +45,16 @@ func UcFirst(name string) string {
 
 	return strings.ToUpper(name[:1]) + name[1:]
 }
+func now() string {
+	return time.Now().Format(util.Golang_Birthday_Time)
+}
 
 func (t *Table) Format() string {
 	content := strings.ReplaceAll(tpl.Table, "{name}", t.Name)
 	content = strings.ReplaceAll(content, "{package_name}", t.Package)
+	content = strings.ReplaceAll(content, "{orm_version}", Version)
+	content = strings.ReplaceAll(content, "{database}", t.Database)
+	content = strings.ReplaceAll(content, "{created_date}", now())
 	content = strings.ReplaceAll(content, "{table_name}", t.DbTableName)
 	content = strings.ReplaceAll(content, "{row_fields}", t.fields())
 	content = strings.ReplaceAll(content, "{primary_id}", t.Primary.DbField)

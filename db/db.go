@@ -120,7 +120,18 @@ func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
 }
 
 func ShowTables[T any](m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
-	return Query(m, show.Prepare(), model, show.Args()...)
+	data, err := m.Query(show.Prepare(), show.Args()...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer data.Close()
+	res := rows.NewRows[T]()
+	if err := res.Tables(data, model); err != nil {
+		return nil, err
+	}
+
+	return res.All(), nil
 }
 
 func Desc[T any](m ConnInterface, desc *sql.Desc, model T) ([]T, error) {

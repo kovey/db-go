@@ -88,6 +88,15 @@ func (r *Row[T]) ScanByRows(rows *sql.Rows, cols []string) error {
 	return nil
 }
 
+func (r *Row[T]) ScanByRowsAll(rows *sql.Rows) error {
+	if err := rows.Scan(r.Columns()...); err != nil {
+		return err
+	}
+
+	r.setModel()
+	return nil
+}
+
 func (r *Row[T]) setModel() {
 	if r.isPointer {
 		r.Model = r.v.Addr().Interface().(T)

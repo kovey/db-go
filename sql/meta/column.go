@@ -190,6 +190,16 @@ func NewFuncComlumn(name *Field, alias string, f Func, ext *Field) *Column {
 	return &Column{Name: name, Alias: alias, Func: f, Ext: ext}
 }
 
+func (c *Column) SetTable(table string) {
+	if c.Name != nil {
+		c.Name.Table = table
+	}
+
+	if c.Ext != nil {
+		c.Ext.Table = table
+	}
+}
+
 func (c *Column) String() string {
 	if c.Func == Func_None {
 		return fmt.Sprintf(columnFormat, c.Name, c.Alias)
