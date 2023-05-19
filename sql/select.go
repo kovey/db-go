@@ -35,7 +35,11 @@ type Select struct {
 
 func NewSelect(table string, alias string) *Select {
 	if alias == "" {
-		alias = table
+		if strings.Contains(table, ".") {
+			alias = strings.ReplaceAll(table, ".", "_")
+		} else {
+			alias = table
+		}
 	}
 
 	return &Select{

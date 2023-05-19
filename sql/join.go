@@ -1,6 +1,10 @@
 package sql
 
-import "github.com/kovey/db-go/v2/sql/meta"
+import (
+	"strings"
+
+	"github.com/kovey/db-go/v2/sql/meta"
+)
 
 type Join struct {
 	table   string
@@ -11,7 +15,11 @@ type Join struct {
 
 func NewJoin(table, alias, on string) *Join {
 	if alias == "" {
-		alias = table
+		if strings.Contains(table, ".") {
+			alias = strings.ReplaceAll(table, ".", "_")
+		} else {
+			alias = table
+		}
 	}
 	return &Join{table: table, alias: alias, columns: make([]string, 0), on: on}
 }
