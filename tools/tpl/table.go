@@ -35,7 +35,7 @@ func New{name}Row() *{name}Row {
 	return &{name}Row{Base: model.NewBase[*{name}Row](New{name}Table(), model.NewPrimaryId("{primary_id}", model.{primary_id_type}))}
 }
 	`
-	Field = "	%s %s `db:\"%s\"`"
+	Field = "	%s %s `db:\"%s\"` // %s"
 
 	Decimal = `	"github.com/shopspring/decimal"`
 	Sql     = `	"database/sql"`

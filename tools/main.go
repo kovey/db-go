@@ -9,6 +9,7 @@ import (
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
 	"github.com/kovey/db-go/v2/sql"
+	ms "github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/tools/desc"
 	"github.com/kovey/db-go/v2/tools/meta"
 	"github.com/kovey/debug-go/debug"
@@ -62,20 +63,20 @@ func main() {
 	}
 
 	showTablesBegin(tables)
-	dm := db.NewMysql[*desc.Desc]()
 	for _, tb := range tables {
 		debug.Info("process table[%s] orm begin...", tb.Name)
-		t := meta.NewTable(tb.Name, *pc)
-		fields, err := dm.Desc(sql.NewDesc(tb.Name), desc.NewDesc(tb.Name))
+		t := meta.NewTable(tb.Name, *pc, *dbName)
+		dTb := desc.NewDescTable()
+		fields, err := dTb.FetchAll(ms.Where{"TABLE_SCHEMA": *dbName, "TABLE_NAME": tb.Name}, desc.NewDesc())
 		if err != nil {
 			panic(err)
 		}
 
 		for _, field := range fields {
 			if field.Key.String == "PRI" {
-				t.SetPrimary(meta.NewField(field.Field, field.Type, false))
+				t.SetPrimary(meta.NewField(field.Field, field.Type, field.Comment.String, false))
 			}
-			t.Add(meta.NewField(field.Field, field.Type, field.Null != "NO"))
+			t.Add(meta.NewField(field.Field, field.Type, field.Comment.String, field.Null != "NO"))
 		}
 
 		path := *dist + "/" + tb.Name + ".go"

@@ -15,16 +15,17 @@ type Field struct {
 	HasSql     bool
 	HasDecimal bool
 	GolangType string
+	Comment    string
 }
 
-func NewField(name, t string, isNull bool) *Field {
-	f := &Field{Name: UcFirst(name), DbField: name, Type: t, IsNull: isNull}
+func NewField(name, t, comment string, isNull bool) *Field {
+	f := &Field{Name: UcFirst(name), DbField: name, Type: t, IsNull: isNull, Comment: comment}
 	f.GolangType = f.parse()
 	return f
 }
 
 func (f *Field) Format() string {
-	return fmt.Sprintf(tpl.Field, f.Name, f.GolangType, f.DbField)
+	return fmt.Sprintf(tpl.Field, f.Name, f.GolangType, f.DbField, f.Comment)
 }
 
 func (f *Field) parse() string {
