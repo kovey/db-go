@@ -66,7 +66,10 @@ func setup() {
 }
 
 func teardown() {
-	mysql.Exec("drop table product")
+	if err := mysql.Exec("drop table product"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
+
 	steardown()
 }
 
@@ -89,9 +92,13 @@ func TestModelSave(t *testing.T) {
 	where := make(map[string]any)
 	where["id"] = pro.Id
 
-	pro1.FetchRow(where, pro1)
+	if err := pro1.FetchRow(where, pro1); err != nil {
+		t.Errorf("FetchRow failure, error: %s", err)
+	}
 	pro1.Name = "chelsea"
-	pro1.Save(pro1)
+	if err := pro1.Save(pro1); err != nil {
+		t.Fatalf("save failure, error: %s", err)
+	}
 }
 
 func TestModelFetchRow(t *testing.T) {
@@ -121,7 +128,9 @@ func TestModelDelete(t *testing.T) {
 	}
 
 	pr2 := NewProduct()
-	pr2.FetchRow(where, pr2)
+	if err := pr2.FetchRow(where, pr2); err != nil {
+		t.Fatalf("FetchRow failure, error: %s", err)
+	}
 	t.Logf("pr2: %v", pr2)
 }
 

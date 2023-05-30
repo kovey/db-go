@@ -75,8 +75,12 @@ func ssetup() {
 }
 
 func steardown() {
-	shardDb.Exec(0, "drop table product_0")
-	shardDb.Exec(1, "drop table product_1")
+	if err := shardDb.Exec(0, "drop table product_0"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
+	if err := shardDb.Exec(1, "drop table product_1"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
 }
 
 func TestModelShardingSave(t *testing.T) {
@@ -98,9 +102,13 @@ func TestModelShardingSave(t *testing.T) {
 	where := make(map[string]any)
 	where["id"] = pro.Id
 
-	pro1.FetchRow(0, where, pro1)
+	if err := pro1.FetchRow(0, where, pro1); err != nil {
+		t.Fatalf("FetchRow failure, error: %s", err)
+	}
 	pro1.Name = "chelsea"
-	pro1.Save(0, pro1)
+	if err := pro1.Save(0, pro1); err != nil {
+		t.Fatalf("save failure, error: %s", err)
+	}
 }
 
 func TestModelShardingFetchRow(t *testing.T) {
@@ -130,6 +138,8 @@ func TestModelShardingDelete(t *testing.T) {
 	}
 
 	pr2 := NewProductSharding()
-	pr2.FetchRow(0, where, pr2)
+	if err := pr2.FetchRow(0, where, pr2); err != nil {
+		t.Fatalf("FetchRow failure, error: %s", err)
+	}
 	t.Logf("pr2: %v", pr2)
 }

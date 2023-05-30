@@ -16,7 +16,6 @@ import (
 
 var (
 	database *sql.DB
-	dev      string
 	dbName   string
 )
 
@@ -67,7 +66,6 @@ func GetDSN(conf config.ClickHouse) string {
 	dsn := "tcp://%s?%s"
 	host := fmt.Sprintf("%s:%d", conf.Server.Host, conf.Server.Port)
 	configs := make([]string, 0)
-	configs = append(configs)
 	configs = append(configs, formatString("username", conf.Username))
 	configs = append(configs, formatString("password", conf.Password))
 	configs = append(configs, formatString("database", conf.Dbname))
@@ -154,12 +152,18 @@ func (ck *ClickHouse[T]) Insert(insert *ds.Insert) (int64, error) {
 }
 
 func (ck *ClickHouse[T]) Update(update *ds.Update) (int64, error) {
-	db.Update(ck.getDb(), update)
+	if _, err := db.Update(ck.getDb(), update); err != nil {
+		return 0, err
+	}
+
 	return 1, nil
 }
 
 func (ck *ClickHouse[T]) Delete(del *ds.Delete) (int64, error) {
-	db.Delete(ck.getDb(), del)
+	if _, err := db.Delete(ck.getDb(), del); err != nil {
+		return 0, err
+	}
+
 	return 1, nil
 }
 
@@ -178,7 +182,10 @@ func (ck *ClickHouse[T]) BatchInsert(batch *ds.Batch) (int64, error) {
 	first := ins[0]
 	smt, e := ck.getDb().Prepare(first.Prepare())
 	if e != nil {
-		ck.RollBack()
+		if err := ck.RollBack(); err != nil {
+			return 0, err
+		}
+
 		return 0, e
 	}
 

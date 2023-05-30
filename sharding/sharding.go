@@ -116,7 +116,9 @@ func (m *Mysql[T]) GetConnection(key int) *db.Mysql[T] {
 
 func (m *Mysql[T]) rollBack(begins []int) {
 	for _, id := range begins {
-		m.connections[id].RollBack()
+		if err := m.connections[id].RollBack(); err != nil {
+			debug.Erro("connections[%d] rollBack failure, error: %s", id, err)
+		}
 	}
 }
 
@@ -141,7 +143,9 @@ func (m *Mysql[T]) Begin() error {
 
 func (m *Mysql[T]) retry(fails []int) {
 	for _, id := range fails {
-		m.connections[id].Commit()
+		if err := m.connections[id].Commit(); err != nil {
+			debug.Erro("connection[%d] Commit failure, error: %s", id, err)
+		}
 	}
 }
 
@@ -177,8 +181,10 @@ func (m *Mysql[T]) RollBack() error {
 		return errors.New("connections is empty")
 	}
 
-	for _, connection := range m.connections {
-		connection.RollBack()
+	for id, connection := range m.connections {
+		if err := connection.RollBack(); err != nil {
+			debug.Erro("connection[%d] rollBack failure, error: %s", id, err)
+		}
 	}
 
 	return nil

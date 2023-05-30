@@ -132,9 +132,7 @@ func (s *Select) Args() []any {
 }
 
 func (s *Select) join(jt string, join *Join) *Select {
-	for _, column := range join.columns {
-		s.columns = append(s.columns, column)
-	}
+	s.columns = append(s.columns, join.columns...)
 
 	s.joins = append(s.joins, fmt.Sprintf(joinFormat, jt, formatValue(join.table), formatValue(join.alias), join.on))
 	return s

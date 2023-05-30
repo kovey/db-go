@@ -60,8 +60,12 @@ func setup() {
 }
 
 func teardown() {
-	mysql.Exec(0, "drop table product_0")
-	mysql.Exec(1, "drop table product_1")
+	if err := mysql.Exec(0, "drop table product_0"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
+	if err := mysql.Exec(1, "drop table product_1"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
 }
 
 func TestInsert(t *testing.T) {

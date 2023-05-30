@@ -51,8 +51,12 @@ func ssetup() {
 }
 
 func steardown() {
-	shardDb.Exec(0, "drop table product_0")
-	shardDb.Exec(1, "drop table product_1")
+	if err := shardDb.Exec(0, "drop table product_0"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
+	if err := shardDb.Exec(1, "drop table product_1"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
 }
 
 func TestTableShardingInsert(t *testing.T) {

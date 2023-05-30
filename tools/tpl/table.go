@@ -13,8 +13,9 @@ const (
 // Created time: {created_date}
 
 import(
-	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/model"
+	"github.com/kovey/db-go/v2/table"
 {imports}
 )
 
@@ -33,6 +34,18 @@ type {name}Row struct {
 
 func New{name}Row() *{name}Row {
 	return &{name}Row{Base: model.NewBase[*{name}Row](New{name}Table(), model.NewPrimaryId("{primary_id}", model.{primary_id_type}))}
+}
+
+func (self *{name}Row) Save() error {
+	return self.Base.Save(self)
+}
+
+func (self *{name}Row) FetchRow(where meta.Where) error {
+	return self.Base.FetchRow(where, self)
+}
+
+func (self *{name}Row) Delete() error {
+	return self.Base.Delete(self)
 }
 	`
 	Field = "	%s %s `db:\"%s\"` // %s"

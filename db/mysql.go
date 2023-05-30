@@ -14,7 +14,6 @@ import (
 
 var (
 	database *sql.DB
-	dev      string
 	dbName   string
 )
 
@@ -39,7 +38,6 @@ func Init(conf config.Mysql) error {
 		return err
 	}
 
-	dev = conf.Dev
 	database = db
 	dbName = conf.Dbname
 

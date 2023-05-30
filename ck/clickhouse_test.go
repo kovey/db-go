@@ -57,7 +57,9 @@ func setup() {
 }
 
 func teardown() {
-	ckDb.Exec("DROP TABLE product")
+	if err := ckDb.Exec("DROP TABLE product"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
 }
 
 func TestInsert(t *testing.T) {

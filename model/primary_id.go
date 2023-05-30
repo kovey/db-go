@@ -26,10 +26,8 @@ func (p *PrimaryId) Parse(value reflect.Value) {
 	switch p.Type {
 	case Int:
 		p.IntValue = int(value.Int())
-		break
 	case Str:
 		p.StrValue = value.String()
-		break
 	}
 }
 
