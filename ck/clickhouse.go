@@ -20,14 +20,13 @@ var (
 )
 
 type ClickHouse[T any] struct {
-	database        *sql.DB
-	tx              *sql.Tx
-	isInTransaction bool
-	DbName          string
+	database *sql.DB
+	tx       *db.Tx
+	DbName   string
 }
 
 func NewClickHouse[T any]() *ClickHouse[T] {
-	return &ClickHouse[T]{database: database, tx: nil, isInTransaction: false, DbName: dbName}
+	return &ClickHouse[T]{database: database, tx: nil, DbName: dbName}
 }
 
 func Init(conf config.ClickHouse) error {
@@ -106,37 +105,43 @@ func formatList(key string, servers []config.Addr) string {
 }
 
 func (ck *ClickHouse[T]) getDb() db.ConnInterface {
-	if ck.isInTransaction {
-		return ck.tx
+	if ck.InTransaction() {
+		return ck.tx.Tx()
 	}
 
 	return ck.database
 }
 
-func (ck *ClickHouse[T]) Begin() error {
+func (ck *ClickHouse[T]) Transaction(func(*db.Tx) error) error {
+	return fmt.Errorf("clickhouse unsupported transaction")
+}
+
+func (ck *ClickHouse[T]) SetTx(tx *db.Tx) {
+	ck.tx = tx
+}
+
+func (ck *ClickHouse[T]) begin() error {
 	tx, err := ck.database.Begin()
 	if err != nil {
 		return err
 	}
 
-	ck.tx = tx
-	ck.isInTransaction = true
+	ck.SetTx(db.NewTx(tx))
 	return nil
 }
 
-func (ck *ClickHouse[T]) Commit() error {
+func (ck *ClickHouse[T]) commit() error {
 	if ck.tx == nil {
 		return fmt.Errorf("transaction is not open or close")
 	}
 
-	ck.isInTransaction = false
 	err := ck.tx.Commit()
 	ck.tx = nil
 	return err
 }
 
 func (ck *ClickHouse[T]) InTransaction() bool {
-	return ck.isInTransaction
+	return ck.tx != nil && !ck.tx.IsCompleted()
 }
 
 func (ck *ClickHouse[T]) Query(query string, t any, args ...any) ([]any, error) {
@@ -174,7 +179,7 @@ func (ck *ClickHouse[T]) BatchInsert(batch *ds.Batch) (int64, error) {
 		return count, errors.New("batch is empty")
 	}
 
-	err := ck.Begin()
+	err := ck.begin()
 	if err != nil {
 		return 0, err
 	}
@@ -197,7 +202,7 @@ func (ck *ClickHouse[T]) BatchInsert(batch *ds.Batch) (int64, error) {
 		}
 	}
 
-	err = ck.Commit()
+	err = ck.commit()
 
 	return count, err
 }
@@ -227,7 +232,6 @@ func (ck *ClickHouse[T]) FetchAllByWhere(table string, where *ds.Where, model T)
 }
 
 func (ck *ClickHouse[T]) RollBack() error {
-	ck.isInTransaction = false
 	return nil
 }
 

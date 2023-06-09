@@ -11,9 +11,8 @@ import (
 )
 
 type DbInterface[T any] interface {
-	Begin() error
-	Commit() error
-	RollBack() error
+	SetTx(*Tx)
+	Transaction(func(*Tx) error) error
 	InTransaction() bool
 	Query(string, T, ...any) ([]T, error)
 	Exec(string) error

@@ -9,6 +9,7 @@ import (
 )
 
 type TableShardingInterface[T any] interface {
+	InTransaction(tx *sharding.Tx)
 	Database() *sharding.Mysql[T]
 	Insert(any, meta.Data) (int64, error)
 	Update(any, meta.Data, meta.Where) (int64, error)
@@ -29,6 +30,10 @@ type TableSharding[T any] struct {
 
 func NewTableSharding[T any](table string, isMaster bool) *TableSharding[T] {
 	return &TableSharding[T]{db: sharding.NewMysql[T](isMaster), table: table}
+}
+
+func (t *TableSharding[T]) InTransaction(tx *sharding.Tx) {
+	t.db.SetTx(tx)
 }
 
 func (t *TableSharding[T]) Database() *sharding.Mysql[T] {

@@ -22,10 +22,32 @@ var (
 type Mysql[T any] struct {
 	connections map[int]*db.Mysql[T]
 	isMaster    bool
+	tx          *Tx
 }
 
 func NewMysql[T any](isMaster bool) *Mysql[T] {
-	return &Mysql[T]{connections: make(map[int]*db.Mysql[T], 0), isMaster: isMaster}
+	return &Mysql[T]{connections: make(map[int]*db.Mysql[T], 0), isMaster: isMaster, tx: NewTx()}
+}
+
+func (m *Mysql[T]) SetTx(tx *Tx) {
+	for key, tx := range tx.txs {
+		m.tx.Add(key, tx)
+	}
+}
+
+func (m *Mysql[T]) Transaction(f func(tx *Tx) error) error {
+	if err := m.begin(); err != nil {
+		return err
+	}
+
+	if err := f(m.tx); err != nil {
+		if err := m.rollBack(); err != nil {
+			debug.Erro("rollBack failure, error: %s", err)
+		}
+		return err
+	}
+
+	return m.commit()
 }
 
 func (m *Mysql[T]) AddSharding(key any) *Mysql[T] {
@@ -114,79 +136,39 @@ func (m *Mysql[T]) GetConnection(key int) *db.Mysql[T] {
 	return database
 }
 
-func (m *Mysql[T]) rollBack(begins []int) {
-	for _, id := range begins {
-		if err := m.connections[id].RollBack(); err != nil {
-			debug.Erro("connections[%d] rollBack failure, error: %s", id, err)
-		}
-	}
-}
-
-func (m *Mysql[T]) Begin() error {
+func (m *Mysql[T]) begin() error {
 	if len(m.connections) == 0 {
 		return errors.New("connections is empty")
 	}
 
-	begins := make([]int, 0)
 	for index, connection := range m.connections {
 		err := connection.Begin()
 		if err != nil {
-			m.rollBack(begins)
+			m.tx.Rollback()
 			return err
 		}
 
-		begins = append(begins, index)
+		m.tx.Add(index, connection.Tx())
 	}
 
 	return nil
 }
 
-func (m *Mysql[T]) retry(fails []int) {
-	for _, id := range fails {
-		if err := m.connections[id].Commit(); err != nil {
-			debug.Erro("connection[%d] Commit failure, error: %s", id, err)
-		}
-	}
-}
-
-func (m *Mysql[T]) Commit() error {
+func (m *Mysql[T]) commit() error {
 	if len(m.connections) == 0 {
 		return errors.New("connections is empty")
 	}
 
-	i := 0
-	fails := make([]int, 0)
-	for index, connection := range m.connections {
-		err := connection.Commit()
-		if err != nil {
-			if i == 0 {
-				return err
-			}
-
-			fails = append(fails, index)
-		}
-
-		i++
-	}
-
-	if len(fails) > 0 {
-		m.retry(fails)
-	}
-
+	m.tx.Commit()
 	return nil
 }
 
-func (m *Mysql[T]) RollBack() error {
+func (m *Mysql[T]) rollBack() error {
 	if len(m.connections) == 0 {
 		return errors.New("connections is empty")
 	}
 
-	for id, connection := range m.connections {
-		if err := connection.RollBack(); err != nil {
-			debug.Erro("connection[%d] rollBack failure, error: %s", id, err)
-		}
-	}
-
+	m.tx.Rollback()
 	return nil
 }
 

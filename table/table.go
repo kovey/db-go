@@ -8,6 +8,7 @@ import (
 
 type TableInterface[T any] interface {
 	Database() db.DbInterface[T]
+	InTransation(*db.Tx)
 	Insert(meta.Data) (int64, error)
 	Update(meta.Data, meta.Where) (int64, error)
 	Delete(meta.Where) (int64, error)
@@ -35,6 +36,10 @@ func NewTableByDb[T any](table string, database db.DbInterface[T]) *Table[T] {
 
 func (t *Table[T]) Database() db.DbInterface[T] {
 	return t.db
+}
+
+func (t *Table[T]) InTransation(tx *db.Tx) {
+	t.db.SetTx(tx)
 }
 
 func (t *Table[T]) Insert(data meta.Data) (int64, error) {

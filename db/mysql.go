@@ -18,18 +18,17 @@ var (
 )
 
 type Mysql[T any] struct {
-	database        *sql.DB
-	tx              *sql.Tx
-	isInTransaction bool
-	DbName          string
+	database *sql.DB
+	tx       *Tx
+	DbName   string
 }
 
 func NewMysql[T any]() *Mysql[T] {
-	return &Mysql[T]{database: database, tx: nil, isInTransaction: false, DbName: dbName}
+	return &Mysql[T]{database: database, tx: nil, DbName: dbName}
 }
 
 func NewSharding[T any](database *sql.DB) *Mysql[T] {
-	return &Mysql[T]{database: database, tx: nil, isInTransaction: false, DbName: dbName}
+	return &Mysql[T]{database: database, tx: nil, DbName: dbName}
 }
 
 func Init(conf config.Mysql) error {
@@ -65,14 +64,36 @@ func OpenDB(conf config.Mysql) (*sql.DB, error) {
 	return db, nil
 }
 
+func (m *Mysql[T]) SetTx(tx *Tx) {
+	m.tx = tx
+}
+
+func (m *Mysql[T]) Tx() *Tx {
+	return m.tx
+}
+
+func (m *Mysql[T]) Transaction(f func(tx *Tx) error) error {
+	if err := m.Begin(); err != nil {
+		return err
+	}
+
+	if err := f(m.tx); err != nil {
+		if err := m.tx.Rollback(); err != nil {
+			debug.Erro("rollBack failure, error: %s", err)
+		}
+		return err
+	}
+
+	return m.tx.Commit()
+}
+
 func (m *Mysql[T]) Begin() error {
 	tx, err := m.database.Begin()
 	if err != nil {
 		return err
 	}
 
-	m.tx = tx
-	m.isInTransaction = true
+	m.SetTx(NewTx(tx))
 	return nil
 }
 
@@ -82,26 +103,21 @@ func (m *Mysql[T]) Commit() error {
 		return fmt.Errorf("transaction is not open or close")
 	}
 
-	m.isInTransaction = false
 	err := m.tx.Commit()
-	m.tx = nil
 	return err
 }
 
 func (m *Mysql[T]) RollBack() error {
-
 	if m.tx == nil {
 		return fmt.Errorf("transaction is not open or close")
 	}
 
-	m.isInTransaction = false
 	err := m.tx.Rollback()
-	m.tx = nil
 	return err
 }
 
 func (m *Mysql[T]) InTransaction() bool {
-	return m.isInTransaction
+	return m.tx != nil && !m.tx.IsCompleted()
 }
 
 func (m *Mysql[T]) Query(query string, model T, args ...any) ([]T, error) {
@@ -117,8 +133,8 @@ func (m *Mysql[T]) Insert(insert *ds.Insert) (int64, error) {
 }
 
 func (m *Mysql[T]) getDb() ConnInterface {
-	if m.isInTransaction {
-		return m.tx
+	if m.InTransaction() {
+		return m.tx.tx
 	}
 
 	return m.database

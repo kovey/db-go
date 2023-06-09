@@ -69,44 +69,31 @@ func teardown() {
 }
 
 func TestInsert(t *testing.T) {
-	err := mysql.Begin()
-	if err != nil {
-		t.Errorf("begin transaction fail")
-	}
+	err := mysql.Transaction(func(tx *Tx) error {
+		in := sql.NewInsert("product_0")
+		in.Set("name", "golang").Set("date", "2021-01-01").Set("time", "2021-01-01 11:11:11").Set("sex", 1).Set("content", "{\"name\":\"kovey\"}")
 
-	var id int64
-
-	in := sql.NewInsert("product_0")
-	in.Set("name", "golang").Set("date", "2021-01-01").Set("time", "2021-01-01 11:11:11").Set("sex", 1).Set("content", "{\"name\":\"kovey\"}")
-
-	id, err = mysql.Insert(0, in)
-	if err != nil {
-		rerr := mysql.RollBack()
-		if rerr != nil {
-			t.Errorf("transaction rollback, err: %s", rerr)
+		id, err := mysql.Insert(0, in)
+		if err != nil {
+			return err
 		}
-		t.Errorf("insert err: %s", err)
-	}
 
-	t.Logf("insert id[%d]", id)
+		t.Logf("insert id[%d]", id)
 
-	in1 := sql.NewInsert("product_1")
-	in1.Set("name", "php").Set("date", "1995-01-01").Set("time", "1995-01-01 11:11:11").Set("sex", 1).Set("content", "{\"name\":\"rust\"}")
+		in1 := sql.NewInsert("product_1")
+		in1.Set("name", "php").Set("date", "1995-01-01").Set("time", "1995-01-01 11:11:11").Set("sex", 1).Set("content", "{\"name\":\"rust\"}")
 
-	id, err = mysql.Insert(1, in1)
-	if err != nil {
-		rerr := mysql.RollBack()
-		if rerr != nil {
-			t.Errorf("transaction rollback, err: %s", rerr)
+		id, err = mysql.Insert(1, in1)
+		if err != nil {
+			return err
 		}
-		t.Errorf("insert err: %s", err)
-	}
 
-	t.Logf("insert id[%d]", id)
+		t.Logf("insert id[%d]", id)
+		return nil
+	})
 
-	err = mysql.Commit()
 	if err != nil {
-		t.Errorf("commit fail, err: %s", err)
+		t.Fatalf("error: %s", err)
 	}
 }
 
