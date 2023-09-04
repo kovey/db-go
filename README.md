@@ -1,128 +1,172 @@
 ## kovey mysql database by golang
 #### Description
-###### This is a mysql database library
+###### This is a mysql database library, no reflect
 ###### Usage
     go get -u github.com/kovey/db-go
 ### Examples
 ```golang
-    package main
-    import (
-        "fmt"
-        "os"
-        "strings"
-        "testing"
+import (
+	"fmt"
+	"os"
+	"strings"
+	"testing"
 
-        "github.com/kovey/config-go/config"
-        "github.com/kovey/db-go/db"
-        "github.com/kovey/db-go/table"
-        "github.com/kovey/db-go/model"
-    )
+	"github.com/kovey/db-go/v2/config"
+	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/itf"
+	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/db-go/v2/table"
+)
 
-    type ProTable struct {
-        *table.Table[*Product]
-    }
+var (
+	mysql *db.Mysql[*Product]
+)
 
-    type Product struct {
-        Base    model.Base
-        Id      int    `db:"id"`
-        Name    string `db:"name"`
-        Date    string `db:"date"`
-        Time    string `db:"time"`
-        Sex     int    `db:"sex"`
-        Content string `db:"content"`
-    }
+type ProTable struct {
+	table.Table[*Product]
+}
 
-    func NewProTable() *ProTable {
-        return &ProTable{*table.NewTable[*Product]("product")}
-    }
+type Product struct {
+	*Base[*Product]
+	Id      int
+	Name    string
+	Date    string
+	Time    string
+	Sex     int
+	Content string
+}
 
-    func NewProduct() *Product {
-        return &Product{model.NewBase[*Product](NewProTable(), model.NewPrimaryId("id", model.Int)), 0, "", "", "", 0, "{}"}
-    }
+func (p *Product) Columns() []*meta.Column {
+	return []*meta.Column{
+		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+	}
+}
 
-    func TestModelDelete(t *testing.T) {
-    }
+func (p *Product) Fields() []any {
+	return []any{
+		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
+	}
+}
 
-    func TestMain(m *testing.M) {
-        setup()
-        code := m.Run()
-        teardown()
-        os.Exit(code)
-    }
+func (p *Product) Values() []any {
+	return []any{
+		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
+	}
+}
 
+func (p *Product) Clone() itf.RowInterface {
+	return &Product{}
+}
 
-    func main() {
-        conf := config.Mysql{
-            Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
-        }
-        err := db.Init(conf)
-        if err != nil {
-            fmt.Printf("init mysql error: %s", err)
-        }
+func NewProTable() *ProTable {
+	return &ProTable{*table.NewTable[*Product]("product")}
+}
 
-        mysql := db.NewMysql[*Product]()
-        sql := []string{"CREATE TABLE `test`.`product` (",
-            "`id` INT NOT NULL AUTO_INCREMENT,",
-            "`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
-            "`date` DATE NOT NULL DEFAULT '1970-01-01' COMMENT '日期',",
-            "`time` TIMESTAMP(6) NOT NULL COMMENT '时间',",
-            "`sex` INT NOT NULL DEFAULT 0 COMMENT '性别',",
-            "`content` JSON NOT NULL COMMENT '内容',",
-            "PRIMARY KEY (`id`))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
-        }
+func NewProduct() *Product {
+	return &Product{NewBase[*Product](NewProTable(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
+}
 
-        e := mysql.Exec(strings.Join(sql, ""))
-        if e != nil {
-            fmt.Printf("init table error: %s", e)
-        }
+func setup() {
+	conf := config.Mysql{
+		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
+	}
+	err := db.Init(conf)
+	if err != nil {
+		fmt.Printf("init mysql error: %s", err)
+	}
 
-        // save
-        pro := NewProduct()
-        pro.Name = "kovey"
-        pro.Date = "2021-08-12"
-        pro.Time = "2021-08-12 13:12:12"
-        pro.Sex = 1
-        pro.Content = "{\"where\":123}"
+	mysql = db.NewMysql[*Product]()
+	sql := []string{"CREATE TABLE `test`.`product` (",
+		"`id` INT NOT NULL AUTO_INCREMENT,",
+		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
+		"`date` DATE NOT NULL DEFAULT '1970-01-01' COMMENT '日期',",
+		"`time` TIMESTAMP(6) NOT NULL COMMENT '时间',",
+		"`sex` INT NOT NULL DEFAULT 0 COMMENT '性别',",
+		"`content` JSON NOT NULL COMMENT '内容',",
+		"PRIMARY KEY (`id`))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+	}
 
-        if err := pro.Save(pro); err != nil {
-            fmt.Printf("product save fail, error: %s\n", err)
-        }
+	e := mysql.Exec(strings.Join(sql, ""))
+	if e != nil {
+		fmt.Printf("init table error: %s", e)
+	}
 
-        fmt.Printf("id: %d\n", pro.Id)
+	ssetup()
+}
 
-        pro1 := NewProduct()
-        where := make(map[string]interface{})
-        where["id"] = pro.Id
+func teardown() {
+	if err := mysql.Exec("drop table product"); err != nil {
+		fmt.Printf("drop table failure, error: %s", err)
+	}
 
-        // update
-        pro1.FetchRow(where, pro1)
-        pro1.Name = "chelsea"
-        pro1.Save(&pro1)
+	steardown()
+}
 
-        // select
-        where = make(map[string]interface{})
-        where["id"] = 1
-        pr1 = NewProduct()
-        if err := pr1.FetchRow(where, pr1); err != nil {
-            fmt.Printf("fetch row err: %s\n", err)
-        }
+func TestModelSave(t *testing.T) {
+	pro := NewProduct()
+	pro.Name = "kovey"
+	pro.Date = "2021-08-12"
+	pro.Time = "2021-08-12 13:12:12"
+	pro.Sex = 1
+	pro.Content = "{\"where\":123}"
 
-        fmt.Printf("pr1: %v\n", pr1)
-        
-        // delete
-        where = make(map[string]interface{})
-        where["id"] = 1
-        pr1 = NewProduct()
-        if err := pr1.FetchRow(where, pr1); err != nil {
-            t.Errorf("fetch row err: %s", err)
-        }
+	err := pro.Save(pro)
+	if err != nil {
+		t.Errorf("product save fail, error: %s", err)
+	}
 
-        if err = pr1.Delete(pr1); err != nil {
-            fmt.Printf("delete row err: %s\n", err)
-        }
+	t.Logf("id: %d", pro.Id)
 
-        pr2 := NewProduct()
-        pr2.FetchRow(where, pr2)
-        fmt.Printf("pr2: %v\n", pr2)
-    }
+	pro1 := NewProduct()
+	where := make(map[string]any)
+	where["id"] = pro.Id
+
+	if err := pro1.FetchRow(where, pro1); err != nil {
+		t.Errorf("FetchRow failure, error: %s", err)
+	}
+	pro1.Name = "chelsea"
+	if err := pro1.Save(pro1); err != nil {
+		t.Fatalf("save failure, error: %s", err)
+	}
+}
+
+func TestModelFetchRow(t *testing.T) {
+	where := make(map[string]any)
+	where["id"] = 1
+	pr1 := NewProduct()
+	err := pr1.FetchRow(where, pr1)
+	if err != nil {
+		t.Errorf("fetch row err: %s", err)
+	}
+
+	t.Logf("pr1: %v", pr1)
+}
+
+func TestModelDelete(t *testing.T) {
+	where := make(map[string]any)
+	where["id"] = 1
+	pr1 := NewProduct()
+	err := pr1.FetchRow(where, pr1)
+	if err != nil {
+		t.Errorf("fetch row err: %s", err)
+	}
+
+	err = pr1.Delete(pr1)
+	if err != nil {
+		t.Errorf("delete row err: %s", err)
+	}
+
+	pr2 := NewProduct()
+	if err := pr2.FetchRow(where, pr2); err != nil {
+		t.Fatalf("FetchRow failure, error: %s", err)
+	}
+	t.Logf("pr2: %t", pr2.Empty())
+}
+
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	teardown()
+	os.Exit(code)
+}
 ```
