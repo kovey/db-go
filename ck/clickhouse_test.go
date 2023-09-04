@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/kovey/db-go/v2/config"
+	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
 )
 
@@ -16,12 +18,37 @@ var (
 )
 
 type Product struct {
-	Id      int    `db:"id"`
-	Name    string `db:"name"`
-	Date    string `db:"date"`
-	Time    string `db:"time"`
-	Sex     int    `db:"sex"`
-	Content string `db:"content"`
+	Id      int
+	Name    string
+	Date    string
+	Time    string
+	Sex     int
+	Content string
+}
+
+func (p *Product) Columns() []*meta.Column {
+	return []*meta.Column{
+		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+	}
+}
+
+func (p *Product) Fields() []any {
+	return []any{
+		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
+	}
+}
+
+func (p *Product) Values() []any {
+	return []any{
+		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
+	}
+}
+
+func (p *Product) Clone() itf.RowInterface {
+	return &Product{}
+}
+
+func (p *Product) SetEmpty() {
 }
 
 func setup() {
@@ -104,14 +131,13 @@ func TestBatchInsert(t *testing.T) {
 func TestQuery(t *testing.T) {
 
 	sql := "select * from product"
-	rows, err := ckDb.Query(sql, Product{})
+	rows, err := ckDb.Query(sql, &Product{})
 	if err != nil {
 		t.Errorf("query[%s] fail, err: %s", sql, err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
@@ -128,14 +154,13 @@ func TestUpdate(t *testing.T) {
 	t.Logf("affected: %d", a)
 
 	sql := "select * from product"
-	rows, err := ckDb.Query(sql, Product{})
+	rows, err := ckDb.Query(sql, &Product{})
 	if err != nil {
 		t.Errorf("query[%s] fail, err: %s", sql, err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
@@ -152,14 +177,13 @@ func TestDelete(t *testing.T) {
 	t.Logf("affected: %d", a)
 
 	sql := "select * from product"
-	rows, err := ckDb.Query(sql, Product{})
+	rows, err := ckDb.Query(sql, &Product{})
 	if err != nil {
 		t.Errorf("query[%s] fail, err: %s", sql, err)
 	}
 
 	for _, row := range rows {
-		pro := row.(Product)
-		t.Logf("product: %v", pro)
+		t.Logf("product: %v", row)
 	}
 }
 
@@ -175,13 +199,13 @@ func TestFatchAll(t *testing.T) {
 }
 
 func TestFatchRow(t *testing.T) {
-	row, err := ckDb.FetchRow("product", make(map[string]any), &Product{})
+	row := Product{}
+	err := ckDb.FetchRow("product", make(map[string]any), &row)
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
 	}
 
-	pro := row.(Product)
-	t.Logf("product: %v", pro)
+	t.Logf("product: %v", row)
 }
 
 func TestMain(m *testing.M) {

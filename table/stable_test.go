@@ -78,7 +78,8 @@ func TestTableShardingInsert(t *testing.T) {
 
 	where := make(map[string]any)
 	where["id"] = 1
-	row, e := shardTable.FetchRow(0, where, &Product{})
+	row := &Product{}
+	e := shardTable.FetchRow(0, where, row)
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
@@ -100,7 +101,8 @@ func TestTableShardingUpdate(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := shardTable.FetchRow(0, where, &Product{})
+	row := &Product{}
+	e := shardTable.FetchRow(0, where, row)
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
@@ -120,7 +122,8 @@ func TestTableShardingDelete(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := shardTable.FetchRow(0, where, &Product{})
+	row := &Product{}
+	e := shardTable.FetchRow(0, where, row)
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}

@@ -2,11 +2,12 @@ package table
 
 import (
 	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
 )
 
-type TableInterface[T any] interface {
+type TableInterface[T itf.ModelInterface] interface {
 	Database() db.DbInterface[T]
 	InTransation(*db.Tx)
 	Insert(meta.Data) (int64, error)
@@ -14,23 +15,24 @@ type TableInterface[T any] interface {
 	Delete(meta.Where) (int64, error)
 	DeleteWhere(sql.WhereInterface) (int64, error)
 	BatchInsert([]meta.Data) (int64, error)
-	FetchRow(meta.Where, T) (T, error)
+	FetchRow(meta.Where, T) error
+	LockRow(meta.Where, T) error
 	FetchAll(meta.Where, T) ([]T, error)
 	FetchAllByWhere(sql.WhereInterface, T) ([]T, error)
 	FetchPage(meta.Where, T, int, int) ([]T, error)
 	FetchPageByWhere(sql.WhereInterface, T, int, int) ([]T, error)
 }
 
-type Table[T any] struct {
+type Table[T itf.ModelInterface] struct {
 	table string
 	db    db.DbInterface[T]
 }
 
-func NewTable[T any](table string) *Table[T] {
+func NewTable[T itf.ModelInterface](table string) *Table[T] {
 	return NewTableByDb[T](table, db.NewMysql[T]())
 }
 
-func NewTableByDb[T any](table string, database db.DbInterface[T]) *Table[T] {
+func NewTableByDb[T itf.ModelInterface](table string, database db.DbInterface[T]) *Table[T] {
 	return &Table[T]{db: database, table: table}
 }
 
@@ -89,8 +91,12 @@ func (t *Table[T]) BatchInsert(data []meta.Data) (int64, error) {
 	return t.db.BatchInsert(batch)
 }
 
-func (t *Table[T]) FetchRow(where meta.Where, model T) (T, error) {
+func (t *Table[T]) FetchRow(where meta.Where, model T) error {
 	return t.db.FetchRow(t.table, where, model)
+}
+
+func (t *Table[T]) LockRow(where meta.Where, model T) error {
+	return t.db.LockRow(t.table, where, model)
 }
 
 func (t *Table[T]) FetchAll(where meta.Where, model T) ([]T, error) {

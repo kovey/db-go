@@ -16,7 +16,13 @@ import(
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/model"
 	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/db-go/v2/itf"
 {imports}
+)
+
+const (
+	Table_{name} = "{table_name}"
+{column_const}
 )
 
 type {name}Table struct {
@@ -24,7 +30,7 @@ type {name}Table struct {
 }
 
 func New{name}Table() *{name}Table {
-	return &{name}Table{Table: table.NewTable[*{name}Row]("{table_name}")}
+	return &{name}Table{Table: table.NewTable[*{name}Row](Table_{name})}
 }
 
 type {name}Row struct {
@@ -33,7 +39,29 @@ type {name}Row struct {
 }
 
 func New{name}Row() *{name}Row {
-	return &{name}Row{Base: model.NewBase[*{name}Row](New{name}Table(), model.NewPrimaryId("{primary_id}", model.{primary_id_type}))}
+	return &{name}Row{Base: model.NewBase[*{name}Row](New{name}Table(), model.NewPrimaryId({primary_id}, model.{primary_id_type}))}
+}
+
+func (self *{name}Row) Clone() itf.RowInterface {
+	return &{name}Row{}
+}
+
+func (self *{name}Row) Columns() []*meta.Column {
+	return []*meta.Column{
+{func_columns}
+	}
+}
+
+func (self *{name}Row) Fields() []any {
+	return []any{
+{func_fields}
+	}
+}
+
+func (self *{name}Row) Values() []any {
+	return []any{
+{func_values}
+	}
 }
 
 func (self *{name}Row) Save() error {
@@ -44,12 +72,19 @@ func (self *{name}Row) FetchRow(where meta.Where) error {
 	return self.Base.FetchRow(where, self)
 }
 
+func (self *{name}Row) LockRow(where meta.Where) error {
+	return self.Base.LockRow(where, self)
+}
+
 func (self *{name}Row) Delete() error {
 	return self.Base.Delete(self)
 }
 	`
 	Field = "	%s %s `db:\"%s\"` // %s"
 
-	Decimal = `	"github.com/shopspring/decimal"`
-	Sql     = `	"database/sql"`
+	Decimal     = `	"github.com/shopspring/decimal"`
+	Sql         = `	"database/sql"`
+	Meta_Column = `		meta.NewColumn(%s),`
+	Meta_Fields = `		&self.%s,`
+	Meta_Values = `		self.%s,`
 )

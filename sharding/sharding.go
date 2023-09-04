@@ -7,6 +7,7 @@ import (
 
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/itf"
 	ds "github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
@@ -19,13 +20,13 @@ var (
 	sNodeCount int
 )
 
-type Mysql[T any] struct {
+type Mysql[T itf.ModelInterface] struct {
 	connections map[int]*db.Mysql[T]
 	isMaster    bool
 	tx          *Tx
 }
 
-func NewMysql[T any](isMaster bool) *Mysql[T] {
+func NewMysql[T itf.ModelInterface](isMaster bool) *Mysql[T] {
 	return &Mysql[T]{connections: make(map[int]*db.Mysql[T], 0), isMaster: isMaster, tx: NewTx()}
 }
 
@@ -196,8 +197,12 @@ func (m *Mysql[T]) BatchInsert(key any, batch *ds.Batch) (int64, error) {
 	return m.GetConnection(m.GetShardingKey(key)).BatchInsert(batch)
 }
 
-func (m *Mysql[T]) FetchRow(key any, table string, where meta.Where, model T) (T, error) {
+func (m *Mysql[T]) FetchRow(key any, table string, where meta.Where, model T) error {
 	return m.GetConnection(m.GetShardingKey(key)).FetchRow(table, where, model)
+}
+
+func (m *Mysql[T]) LockRow(key any, table string, where meta.Where, model T) error {
+	return m.GetConnection(m.GetShardingKey(key)).LockRow(table, where, model)
 }
 
 func (m *Mysql[T]) FetchAll(key any, table string, where meta.Where, model T) ([]T, error) {

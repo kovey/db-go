@@ -1,9 +1,5 @@
 package model
 
-import (
-	"reflect"
-)
-
 type PrimaryIdType int
 
 const (
@@ -22,12 +18,33 @@ func NewPrimaryId(name string, t PrimaryIdType) *PrimaryId {
 	return &PrimaryId{Name: name, Type: t}
 }
 
-func (p *PrimaryId) Parse(value reflect.Value) {
+func (p *PrimaryId) Parse(val any) {
 	switch p.Type {
 	case Int:
-		p.IntValue = int(value.Int())
+		switch tmp := val.(type) {
+		case int:
+			p.IntValue = tmp
+		case int8:
+			p.IntValue = int(tmp)
+		case int16:
+			p.IntValue = int(tmp)
+		case int32:
+			p.IntValue = int(tmp)
+		case int64:
+			p.IntValue = int(tmp)
+		case uint8:
+			p.IntValue = int(tmp)
+		case uint16:
+			p.IntValue = int(tmp)
+		case uint32:
+			p.IntValue = int(tmp)
+		case uint64:
+			p.IntValue = int(tmp)
+		default:
+			panic("val is not integer")
+		}
 	case Str:
-		p.StrValue = value.String()
+		p.StrValue = val.(string)
 	}
 }
 

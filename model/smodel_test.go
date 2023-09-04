@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/kovey/db-go/v2/config"
+	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sharding"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/table"
 )
 
@@ -20,12 +22,34 @@ type ProTableSharding struct {
 
 type ProductSharding struct {
 	*BaseSharding[*ProductSharding]
-	Id      int    `db:"id"`
-	Name    string `db:"name"`
-	Date    string `db:"date"`
-	Time    string `db:"time"`
-	Sex     int    `db:"sex"`
-	Content string `db:"content"`
+	Id      int
+	Name    string
+	Date    string
+	Time    string
+	Sex     int
+	Content string
+}
+
+func (p *ProductSharding) Columns() []*meta.Column {
+	return []*meta.Column{
+		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+	}
+}
+
+func (p *ProductSharding) Fields() []any {
+	return []any{
+		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
+	}
+}
+
+func (p *ProductSharding) Values() []any {
+	return []any{
+		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
+	}
+}
+
+func (p *ProductSharding) Clone() itf.RowInterface {
+	return &Product{}
 }
 
 func NewProTableSharding() *ProTableSharding {
@@ -141,5 +165,5 @@ func TestModelShardingDelete(t *testing.T) {
 	if err := pr2.FetchRow(0, where, pr2); err != nil {
 		t.Fatalf("FetchRow failure, error: %s", err)
 	}
-	t.Logf("pr2: %v", pr2)
+	t.Logf("pr2: %t", pr2.Empty())
 }

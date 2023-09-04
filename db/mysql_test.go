@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/kovey/db-go/v2/config"
+	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 var (
@@ -15,12 +17,37 @@ var (
 )
 
 type Product struct {
-	Id      int    `db:"id"`
-	Name    string `db:"name"`
-	Date    string `db:"date"`
-	Time    string `db:"time"`
-	Sex     int    `db:"sex"`
-	Content string `db:"content"`
+	Id      int
+	Name    string
+	Date    string
+	Time    string
+	Sex     int
+	Content string
+}
+
+func (p *Product) Columns() []*meta.Column {
+	return []*meta.Column{
+		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+	}
+}
+
+func (p *Product) Fields() []any {
+	return []any{
+		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
+	}
+}
+
+func (p *Product) Values() []any {
+	return []any{
+		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
+	}
+}
+
+func (p *Product) Clone() itf.RowInterface {
+	return &Product{}
+}
+
+func (p *Product) SetEmpty() {
 }
 
 func setup() {
@@ -179,7 +206,8 @@ func TestFatchAll(t *testing.T) {
 }
 
 func TestFatchRow(t *testing.T) {
-	row, err := mysql.FetchRow("product", make(map[string]any), &Product{})
+	row := Product{}
+	err := mysql.FetchRow("product", make(map[string]any), &row)
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
 	}

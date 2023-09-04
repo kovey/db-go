@@ -182,12 +182,16 @@ type Column struct {
 	Func  Func
 }
 
-func NewColumn(name, alias string) *Column {
+func NewAliasColumn(name, alias string) *Column {
 	return NewFuncComlumn(NewField(name, "", false), alias, Func_None, nil)
 }
 
 func NewFuncComlumn(name *Field, alias string, f Func, ext *Field) *Column {
 	return &Column{Name: name, Alias: alias, Func: f, Ext: ext}
+}
+
+func NewColumn(name string) *Column {
+	return NewAliasColumn(name, name)
 }
 
 func (c *Column) SetTable(table string) {

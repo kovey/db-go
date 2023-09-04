@@ -3,12 +3,13 @@ package table
 import (
 	"fmt"
 
+	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sharding"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
 )
 
-type TableShardingInterface[T any] interface {
+type TableShardingInterface[T itf.ModelInterface] interface {
 	InTransaction(tx *sharding.Tx)
 	Database() *sharding.Mysql[T]
 	Insert(any, meta.Data) (int64, error)
@@ -16,19 +17,20 @@ type TableShardingInterface[T any] interface {
 	Delete(any, meta.Where) (int64, error)
 	DeleteWhere(any, sql.WhereInterface) (int64, error)
 	BatchInsert(any, []meta.Data) (int64, error)
-	FetchRow(any, meta.Where, T) (T, error)
+	FetchRow(any, meta.Where, T) error
+	LockRow(any, meta.Where, T) error
 	FetchAll(any, meta.Where, T) ([]T, error)
 	FetchAllByWhere(any, sql.WhereInterface, T) ([]T, error)
 	FetchPage(any, meta.Where, T, int, int) ([]T, error)
 	FetchPageByWhere(any, sql.WhereInterface, T, int, int) ([]T, error)
 }
 
-type TableSharding[T any] struct {
+type TableSharding[T itf.ModelInterface] struct {
 	table string
 	db    *sharding.Mysql[T]
 }
 
-func NewTableSharding[T any](table string, isMaster bool) *TableSharding[T] {
+func NewTableSharding[T itf.ModelInterface](table string, isMaster bool) *TableSharding[T] {
 	return &TableSharding[T]{db: sharding.NewMysql[T](isMaster), table: table}
 }
 
@@ -91,8 +93,12 @@ func (t *TableSharding[T]) BatchInsert(key any, data []meta.Data) (int64, error)
 	return t.db.BatchInsert(key, batch)
 }
 
-func (t *TableSharding[T]) FetchRow(key any, where meta.Where, model T) (T, error) {
+func (t *TableSharding[T]) FetchRow(key any, where meta.Where, model T) error {
 	return t.db.FetchRow(key, t.GetTableName(key), where, model)
+}
+
+func (t *TableSharding[T]) LockRow(key any, where meta.Where, model T) error {
+	return t.db.LockRow(key, t.GetTableName(key), where, model)
 }
 
 func (t *TableSharding[T]) FetchAll(key any, where meta.Where, model T) ([]T, error) {

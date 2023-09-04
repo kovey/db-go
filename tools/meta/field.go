@@ -19,13 +19,33 @@ type Field struct {
 }
 
 func NewField(name, t, comment string, isNull bool) *Field {
-	f := &Field{Name: UcFirst(name), DbField: name, Type: t, IsNull: isNull, Comment: comment}
+	f := &Field{Name: convert(name), DbField: name, Type: t, IsNull: isNull, Comment: comment}
 	f.GolangType = f.parse()
 	return f
 }
 
 func (f *Field) Format() string {
 	return fmt.Sprintf(tpl.Field, f.Name, f.GolangType, f.DbField, f.Comment)
+}
+
+func (f *Field) ConstaintName(table string) string {
+	return fmt.Sprintf("Column_%s_%s", table, f.Name)
+}
+
+func (f *Field) Constaint(table string) string {
+	return fmt.Sprintf(`	%s = "%s"`, f.ConstaintName(table), f.DbField)
+}
+
+func (f *Field) ToColumn(table string) string {
+	return fmt.Sprintf(tpl.Meta_Column, f.ConstaintName(table))
+}
+
+func (f *Field) ToField() string {
+	return fmt.Sprintf(tpl.Meta_Fields, f.Name)
+}
+
+func (f *Field) ToValue() string {
+	return fmt.Sprintf(tpl.Meta_Values, f.Name)
 }
 
 func (f *Field) parse() string {

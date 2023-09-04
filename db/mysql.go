@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kovey/db-go/v2/config"
+	"github.com/kovey/db-go/v2/itf"
 	ds "github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
@@ -17,17 +18,17 @@ var (
 	dbName   string
 )
 
-type Mysql[T any] struct {
+type Mysql[T itf.ModelInterface] struct {
 	database *sql.DB
 	tx       *Tx
 	DbName   string
 }
 
-func NewMysql[T any]() *Mysql[T] {
+func NewMysql[T itf.ModelInterface]() *Mysql[T] {
 	return &Mysql[T]{database: database, tx: nil, DbName: dbName}
 }
 
-func NewSharding[T any](database *sql.DB) *Mysql[T] {
+func NewSharding[T itf.ModelInterface](database *sql.DB) *Mysql[T] {
 	return &Mysql[T]{database: database, tx: nil, DbName: dbName}
 }
 
@@ -164,22 +165,30 @@ func (m *Mysql[T]) Select(sel *ds.Select, model T) ([]T, error) {
 	return Select(m.getDb(), sel, model)
 }
 
-func (m *Mysql[T]) FetchRow(table string, where meta.Where, modal T) (T, error) {
-	return FetchRow(m.getDb(), table, where, modal)
+func (m *Mysql[T]) FetchRow(table string, where meta.Where, model T) error {
+	return FetchRow(m.getDb(), table, where, model)
 }
 
-func (m *Mysql[T]) FetchAll(table string, where meta.Where, modal T) ([]T, error) {
-	return FetchAll(m.getDb(), table, where, modal)
+func (m *Mysql[T]) LockRow(table string, where meta.Where, model T) error {
+	if !m.InTransaction() {
+		return fmt.Errorf("transaction not open")
+	}
+
+	return LockRow(m.getDb(), table, where, model)
 }
 
-func (m *Mysql[T]) FetchAllByWhere(table string, where ds.WhereInterface, modal T) ([]T, error) {
-	return FetchAllByWhere(m.getDb(), table, where, modal)
+func (m *Mysql[T]) FetchAll(table string, where meta.Where, model T) ([]T, error) {
+	return FetchAll(m.getDb(), table, where, model)
 }
 
-func (m *Mysql[T]) FetchPage(table string, where meta.Where, modal T, page int, pageSize int) ([]T, error) {
-	return FetchPage(m.getDb(), table, where, modal, page, pageSize)
+func (m *Mysql[T]) FetchAllByWhere(table string, where ds.WhereInterface, model T) ([]T, error) {
+	return FetchAllByWhere(m.getDb(), table, where, model)
 }
 
-func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, modal T, page int, pageSize int) ([]T, error) {
-	return FetchPageByWhere(m.getDb(), table, where, modal, page, pageSize)
+func (m *Mysql[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
+	return FetchPage(m.getDb(), table, where, model, page, pageSize)
+}
+
+func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, model T, page int, pageSize int) ([]T, error) {
+	return FetchPageByWhere(m.getDb(), table, where, model, page, pageSize)
 }

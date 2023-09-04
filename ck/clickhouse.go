@@ -9,6 +9,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go"
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/itf"
 	ds "github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
@@ -19,13 +20,13 @@ var (
 	dbName   string
 )
 
-type ClickHouse[T any] struct {
+type ClickHouse[T itf.ModelInterface] struct {
 	database *sql.DB
 	tx       *db.Tx
 	DbName   string
 }
 
-func NewClickHouse[T any]() *ClickHouse[T] {
+func NewClickHouse[T itf.ModelInterface]() *ClickHouse[T] {
 	return &ClickHouse[T]{database: database, tx: nil, DbName: dbName}
 }
 
@@ -144,8 +145,8 @@ func (ck *ClickHouse[T]) InTransaction() bool {
 	return ck.tx != nil && !ck.tx.IsCompleted()
 }
 
-func (ck *ClickHouse[T]) Query(query string, t any, args ...any) ([]any, error) {
-	return db.Query(ck.getDb(), query, t)
+func (ck *ClickHouse[T]) Query(query string, model T, args ...any) ([]T, error) {
+	return db.Query(ck.getDb(), query, model)
 }
 
 func (ck *ClickHouse[T]) Exec(statement string) error {
@@ -219,7 +220,11 @@ func (ck *ClickHouse[T]) ShowTables(show *ds.ShowTables, model T) ([]T, error) {
 	return db.ShowTables(ck.database, show, model)
 }
 
-func (ck *ClickHouse[T]) FetchRow(table string, where meta.Where, model T) (any, error) {
+func (ck *ClickHouse[T]) FetchRow(table string, where meta.Where, model T) error {
+	return db.FetchRow(ck.getDb(), table, where, model)
+}
+
+func (ck *ClickHouse[T]) LockRow(table string, where meta.Where, model T) error {
 	return db.FetchRow(ck.getDb(), table, where, model)
 }
 

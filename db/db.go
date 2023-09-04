@@ -4,13 +4,13 @@ import (
 	ds "database/sql"
 	"fmt"
 
-	"github.com/kovey/db-go/v2/rows"
+	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/debug-go/debug"
 )
 
-type DbInterface[T any] interface {
+type DbInterface[T itf.RowInterface] interface {
 	SetTx(*Tx)
 	Transaction(func(*Tx) error) error
 	InTransaction() bool
@@ -23,7 +23,8 @@ type DbInterface[T any] interface {
 	Delete(*sql.Delete) (int64, error)
 	BatchInsert(*sql.Batch) (int64, error)
 	Select(*sql.Select, T) ([]T, error)
-	FetchRow(string, meta.Where, T) (T, error)
+	FetchRow(string, meta.Where, T) error
+	LockRow(string, meta.Where, T) error
 	FetchAll(string, meta.Where, T) ([]T, error)
 	FetchAllByWhere(string, sql.WhereInterface, T) ([]T, error)
 	FetchPage(string, meta.Where, T, int, int) ([]T, error)
@@ -37,19 +38,24 @@ type ConnInterface interface {
 	QueryRow(string, ...any) *ds.Row
 }
 
-func Query[T any](m ConnInterface, query string, model T, args ...any) ([]T, error) {
+func Query[T itf.RowInterface](m ConnInterface, query string, model T, args ...any) ([]T, error) {
 	data, err := m.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 
 	defer data.Close()
-	res := rows.NewRows[T]()
-	if err := res.Scan(data, model); err != nil {
-		return nil, err
+	rows := make([]T, 0)
+	for data.Next() {
+		tmp := model.Clone()
+		if err := data.Scan(tmp.Fields()...); err != nil {
+			return nil, err
+		}
+
+		rows = append(rows, tmp.(T))
 	}
 
-	return res.All(), nil
+	return rows, nil
 }
 
 func Exec(m ConnInterface, stament string) error {
@@ -118,73 +124,85 @@ func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
 	return result.RowsAffected()
 }
 
-func ShowTables[T any](m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
+func ShowTables[T itf.RowInterface](m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
 	data, err := m.Query(show.Prepare(), show.Args()...)
 	if err != nil {
 		return nil, err
 	}
 
 	defer data.Close()
-	res := rows.NewRows[T]()
-	if err := res.Tables(data, model); err != nil {
-		return nil, err
+	rows := make([]T, 0)
+	for data.Next() {
+		tmp := model.Clone()
+		if err := data.Scan(tmp.Fields()...); err != nil {
+			return nil, err
+		}
+
+		rows = append(rows, tmp.(T))
 	}
 
-	return res.All(), nil
+	return rows, nil
 }
 
-func Desc[T any](m ConnInterface, desc *sql.Desc, model T) ([]T, error) {
+func Desc[T itf.RowInterface](m ConnInterface, desc *sql.Desc, model T) ([]T, error) {
 	return Query(m, desc.Prepare(), model, desc.Args()...)
 }
 
-func Select[T any](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
+func Select[T itf.RowInterface](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
 	return Query(m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchRow[T any](m ConnInterface, table string, where meta.Where, model T) (T, error) {
-	row := rows.NewRow(model)
+func FetchRow[T itf.ModelInterface](m ConnInterface, table string, where meta.Where, model T) error {
 	sel := sql.NewSelect(table, "")
-	sel.WhereByMap(where).Columns(row.Fields...).Limit(1)
+	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1)
 	result := m.QueryRow(sel.Prepare(), sel.Args()...)
-	if result.Err() != nil {
-		return row.Model, result.Err()
+	return parseError(result.Scan(model.Fields()...), model)
+}
+
+func parseError[T itf.ModelInterface](err error, model T) error {
+	if err == nil {
+		return nil
 	}
 
-	if err := row.Scan(result); err != nil {
-		return row.Model, err
+	if err == ds.ErrNoRows {
+		model.SetEmpty()
+		return nil
 	}
 
-	return row.Model, nil
+	return err
 }
 
-func FetchAll[T any](m ConnInterface, table string, where meta.Where, model T) ([]T, error) {
-	row := rows.NewRow(model)
+func LockRow[T itf.ModelInterface](m ConnInterface, table string, where meta.Where, model T) error {
 	sel := sql.NewSelect(table, "")
-	sel.WhereByMap(where).Columns(row.Fields...)
+	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1).ForUpdate()
+	result := m.QueryRow(sel.Prepare(), sel.Args()...)
+	return parseError(result.Scan(model.Fields()...), model)
+}
+
+func FetchAll[T itf.RowInterface](m ConnInterface, table string, where meta.Where, model T) ([]T, error) {
+	sel := sql.NewSelect(table, "")
+	sel.WhereByMap(where).Columns(model.Columns()...)
 
 	return Select(m, sel, model)
 }
 
-func FetchAllByWhere[T any](m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
-	row := rows.NewRow(model)
+func FetchAllByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
 	sel := sql.NewSelect(table, "")
-	sel.Where(where).Columns(row.Fields...)
+	sel.Where(where).Columns(model.Columns()...)
 
 	return Select(m, sel, model)
 }
 
-func FetchPage[T any](m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
-	row := rows.NewRow(model)
+func FetchPage[T itf.RowInterface](m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
 	sel := sql.NewSelect(table, "")
-	sel.WhereByMap(where).Columns(row.Fields...).Limit(pageSize).Offset((page - 1) * pageSize)
+	sel.WhereByMap(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
 	return Select(m, sel, model)
 }
 
-func FetchPageByWhere[T any](m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) ([]T, error) {
-	row := rows.NewRow(model)
+func FetchPageByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) ([]T, error) {
 	sel := sql.NewSelect(table, "")
-	sel.Where(where).Columns(row.Fields...).Limit(pageSize).Offset((page - 1) * pageSize)
+	sel.Where(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
 	return Select(m, sel, model)
 }

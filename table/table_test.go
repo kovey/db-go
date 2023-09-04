@@ -8,6 +8,8 @@ import (
 
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/itf"
+	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 var (
@@ -16,12 +18,37 @@ var (
 )
 
 type Product struct {
-	Id      int    `db:"id"`
-	Name    string `db:"name"`
-	Date    string `db:"date"`
-	Time    string `db:"time"`
-	Sex     int    `db:"sex"`
-	Content string `db:"content"`
+	Id      int
+	Name    string
+	Date    string
+	Time    string
+	Sex     int
+	Content string
+}
+
+func (p *Product) Columns() []*meta.Column {
+	return []*meta.Column{
+		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+	}
+}
+
+func (p *Product) Fields() []any {
+	return []any{
+		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
+	}
+}
+
+func (p *Product) Values() []any {
+	return []any{
+		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
+	}
+}
+
+func (p *Product) Clone() itf.RowInterface {
+	return &Product{}
+}
+
+func (p *Product) SetEmpty() {
 }
 
 func setup() {
@@ -78,7 +105,8 @@ func TestTableInsert(t *testing.T) {
 
 	where := make(map[string]any)
 	where["id"] = 1
-	row, e := table.FetchRow(where, &Product{})
+	row := &Product{}
+	e := table.FetchRow(where, row)
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
@@ -100,7 +128,8 @@ func TestTableUpdate(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := table.FetchRow(where, &Product{})
+	row := Product{}
+	e := table.FetchRow(where, &row)
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}
@@ -120,7 +149,8 @@ func TestTableDelete(t *testing.T) {
 
 	t.Logf("affected: %d", a)
 
-	row, e := table.FetchRow(where, &Product{})
+	row := Product{}
+	e := table.FetchRow(where, &row)
 	if e != nil {
 		t.Errorf("err: %s", err)
 	}

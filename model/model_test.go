@@ -8,6 +8,8 @@ import (
 
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
+	"github.com/kovey/db-go/v2/itf"
+	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/table"
 )
 
@@ -21,12 +23,34 @@ type ProTable struct {
 
 type Product struct {
 	*Base[*Product]
-	Id      int    `db:"id"`
-	Name    string `db:"name"`
-	Date    string `db:"date"`
-	Time    string `db:"time"`
-	Sex     int    `db:"sex"`
-	Content string `db:"content"`
+	Id      int
+	Name    string
+	Date    string
+	Time    string
+	Sex     int
+	Content string
+}
+
+func (p *Product) Columns() []*meta.Column {
+	return []*meta.Column{
+		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+	}
+}
+
+func (p *Product) Fields() []any {
+	return []any{
+		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
+	}
+}
+
+func (p *Product) Values() []any {
+	return []any{
+		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
+	}
+}
+
+func (p *Product) Clone() itf.RowInterface {
+	return &Product{}
 }
 
 func NewProTable() *ProTable {
@@ -131,7 +155,7 @@ func TestModelDelete(t *testing.T) {
 	if err := pr2.FetchRow(where, pr2); err != nil {
 		t.Fatalf("FetchRow failure, error: %s", err)
 	}
-	t.Logf("pr2: %v", pr2)
+	t.Logf("pr2: %t", pr2.Empty())
 }
 
 func TestMain(m *testing.M) {

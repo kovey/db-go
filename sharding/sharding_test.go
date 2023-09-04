@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/kovey/db-go/v2/config"
+	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
+	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 var (
@@ -23,14 +25,39 @@ type Product struct {
 	Content string `db:"content"`
 }
 
+func (p *Product) Columns() []*meta.Column {
+	return []*meta.Column{
+		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+	}
+}
+
+func (p *Product) Fields() []any {
+	return []any{
+		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
+	}
+}
+
+func (p *Product) Values() []any {
+	return []any{
+		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
+	}
+}
+
+func (p *Product) Clone() itf.RowInterface {
+	return &Product{}
+}
+
+func (p *Product) SetEmpty() {
+}
+
 func setup() {
 	mas := make([]config.Mysql, 2)
 
 	mas[0] = config.Mysql{
-		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "123456", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
+		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
 	}
 	mas[1] = config.Mysql{
-		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "123456", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
+		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
 	}
 
 	Init(mas, mas)
@@ -195,13 +222,10 @@ func TestFatchAll(t *testing.T) {
 }
 
 func TestFatchRow(t *testing.T) {
-	row, err := mysql.FetchRow(1, "product_1", make(map[string]any), &Product{})
+	row := Product{}
+	err := mysql.FetchRow(1, "product_1", make(map[string]any), &row)
 	if err != nil {
 		t.Errorf("fetch all error: %s", err)
-	}
-
-	if row == nil {
-		t.Fatalf("row is nil")
 	}
 
 	t.Logf("product: %v", row)
