@@ -181,6 +181,10 @@ func (m *Mysql[T]) FetchAll(table string, where meta.Where, model T) ([]T, error
 	return FetchAll(m.getDb(), table, where, model)
 }
 
+func (m *Mysql[T]) FetchBySelect(s *ds.Select, model T) ([]T, error) {
+	return FetchBySelect(m.getDb(), s, model)
+}
+
 func (m *Mysql[T]) FetchAllByWhere(table string, where ds.WhereInterface, model T) ([]T, error) {
 	return FetchAllByWhere(m.getDb(), table, where, model)
 }

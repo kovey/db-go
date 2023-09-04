@@ -19,6 +19,7 @@ type TableInterface[T itf.ModelInterface] interface {
 	LockRow(meta.Where, T) error
 	FetchAll(meta.Where, T) ([]T, error)
 	FetchAllByWhere(sql.WhereInterface, T) ([]T, error)
+	FetchBySelect(*sql.Select, T) ([]T, error)
 	FetchPage(meta.Where, T, int, int) ([]T, error)
 	FetchPageByWhere(sql.WhereInterface, T, int, int) ([]T, error)
 }
@@ -105,6 +106,10 @@ func (t *Table[T]) FetchAll(where meta.Where, model T) ([]T, error) {
 
 func (t *Table[T]) FetchAllByWhere(where sql.WhereInterface, model T) ([]T, error) {
 	return t.db.FetchAllByWhere(t.table, where, model)
+}
+
+func (t *Table[T]) FetchBySelect(sel *sql.Select, model T) ([]T, error) {
+	return t.db.FetchBySelect(sel, model)
 }
 
 func (t *Table[T]) FetchPage(where meta.Where, model T, page, pageSize int) ([]T, error) {

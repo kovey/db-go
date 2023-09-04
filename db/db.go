@@ -27,6 +27,7 @@ type DbInterface[T itf.RowInterface] interface {
 	LockRow(string, meta.Where, T) error
 	FetchAll(string, meta.Where, T) ([]T, error)
 	FetchAllByWhere(string, sql.WhereInterface, T) ([]T, error)
+	FetchBySelect(*sql.Select, T) ([]T, error)
 	FetchPage(string, meta.Where, T, int, int) ([]T, error)
 	FetchPageByWhere(string, sql.WhereInterface, T, int, int) ([]T, error)
 }
@@ -38,6 +39,49 @@ type ConnInterface interface {
 	QueryRow(string, ...any) *ds.Row
 }
 
+func min(left, right int) int {
+	if left < right {
+		return left
+	}
+
+	return right
+}
+
+func getFields[T itf.RowInterface](columns []string, has []*meta.Column, length int, model T) []any {
+	fields := make([]any, length)
+	index := 0
+	mFields := model.Fields()
+	for _, column := range columns {
+		for i, col := range has {
+			if column == col.Name.Name {
+				fields[index] = mFields[i]
+				index++
+				break
+			}
+		}
+	}
+	return fields
+}
+
+func queryAll[T itf.RowInterface](m ConnInterface, query string, model T, args ...any) ([]T, error) {
+	data, err := m.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer data.Close()
+	rows := make([]T, 0)
+	for data.Next() {
+		tmp := model.Clone()
+		if err := data.Scan(tmp.Fields()...); err != nil {
+			return nil, err
+		}
+
+		rows = append(rows, tmp.(T))
+	}
+
+	return rows, nil
+}
+
 func Query[T itf.RowInterface](m ConnInterface, query string, model T, args ...any) ([]T, error) {
 	data, err := m.Query(query, args...)
 	if err != nil {
@@ -45,10 +89,16 @@ func Query[T itf.RowInterface](m ConnInterface, query string, model T, args ...a
 	}
 
 	defer data.Close()
+	columns, err := data.Columns()
+	if err != nil {
+		return nil, err
+	}
+	has := model.Columns()
+	length := min(len(columns), len(has))
 	rows := make([]T, 0)
 	for data.Next() {
 		tmp := model.Clone()
-		if err := data.Scan(tmp.Fields()...); err != nil {
+		if err := data.Scan(getFields(columns, has, length, tmp)...); err != nil {
 			return nil, err
 		}
 
@@ -125,27 +175,11 @@ func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
 }
 
 func ShowTables[T itf.RowInterface](m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
-	data, err := m.Query(show.Prepare(), show.Args()...)
-	if err != nil {
-		return nil, err
-	}
-
-	defer data.Close()
-	rows := make([]T, 0)
-	for data.Next() {
-		tmp := model.Clone()
-		if err := data.Scan(tmp.Fields()...); err != nil {
-			return nil, err
-		}
-
-		rows = append(rows, tmp.(T))
-	}
-
-	return rows, nil
+	return queryAll(m, show.Prepare(), model, show.Args()...)
 }
 
 func Desc[T itf.RowInterface](m ConnInterface, desc *sql.Desc, model T) ([]T, error) {
-	return Query(m, desc.Prepare(), model, desc.Args()...)
+	return queryAll(m, desc.Prepare(), model, desc.Args()...)
 }
 
 func Select[T itf.RowInterface](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
@@ -156,6 +190,7 @@ func FetchRow[T itf.ModelInterface](m ConnInterface, table string, where meta.Wh
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1)
 	result := m.QueryRow(sel.Prepare(), sel.Args()...)
+
 	return parseError(result.Scan(model.Fields()...), model)
 }
 
@@ -176,6 +211,7 @@ func LockRow[T itf.ModelInterface](m ConnInterface, table string, where meta.Whe
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1).ForUpdate()
 	result := m.QueryRow(sel.Prepare(), sel.Args()...)
+
 	return parseError(result.Scan(model.Fields()...), model)
 }
 
@@ -183,26 +219,32 @@ func FetchAll[T itf.RowInterface](m ConnInterface, table string, where meta.Wher
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...)
 
-	return Select(m, sel, model)
+	return queryAll(m, sel.Prepare(), model, sel.Args()...)
+}
+
+func FetchBySelect[T itf.RowInterface](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
+	sel.SetColumns(model.Columns())
+
+	return queryAll(m, sel.Prepare(), model, sel.Args()...)
 }
 
 func FetchAllByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
 	sel := sql.NewSelect(table, "")
 	sel.Where(where).Columns(model.Columns()...)
 
-	return Select(m, sel, model)
+	return queryAll(m, sel.Prepare(), model, sel.Args()...)
 }
 
 func FetchPage[T itf.RowInterface](m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	return Select(m, sel, model)
+	return queryAll(m, sel.Prepare(), model, sel.Args()...)
 }
 
 func FetchPageByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) ([]T, error) {
 	sel := sql.NewSelect(table, "")
 	sel.Where(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	return Select(m, sel, model)
+	return queryAll(m, sel.Prepare(), model, sel.Args()...)
 }

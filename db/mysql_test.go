@@ -52,7 +52,7 @@ func (p *Product) SetEmpty() {
 
 func setup() {
 	conf := config.Mysql{
-		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
+		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "some34QA@123", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
 	}
 	err := Init(conf)
 	if err != nil {

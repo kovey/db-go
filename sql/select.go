@@ -57,6 +57,16 @@ func (s *Select) Columns(columns ...*meta.Column) *Select {
 	return s
 }
 
+func (s *Select) SetColumns(columns []*meta.Column) *Select {
+	s.columns = make([]string, len(columns))
+	for index, column := range columns {
+		column.SetTable(s.alias)
+		s.columns[index] = column.String()
+	}
+
+	return s
+}
+
 func (s *Select) CaseWhen(caseWhens ...*meta.CaseWhen) *Select {
 	for _, caseWhen := range caseWhens {
 		s.columns = append(s.columns, caseWhen.String())
