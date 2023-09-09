@@ -3,7 +3,6 @@ package desc
 import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/model"
-	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/table"
 )
 
@@ -12,8 +11,8 @@ type Table struct {
 	Name string
 }
 
-func (t *Table) Columns() []*meta.Column {
-	return []*meta.Column{meta.NewColumn("tables")}
+func (t *Table) Columns() []string {
+	return []string{"tables"}
 }
 
 func (t *Table) Fields() []any {

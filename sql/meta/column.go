@@ -145,8 +145,9 @@ const (
 
 const (
 	columnFormat = "%s AS `%s`"
-	columnFunc   = "%s(%s) AS `%s`"
-	divFunc      = "%s %s %s AS `%s`"
+	columnFunc   = "%s(%s)"
+	divFunc      = "%s %s %s"
+	ifNull       = "%s(%s, %s) AS `%s`"
 )
 
 type Field struct {
@@ -176,22 +177,31 @@ func (f *Field) String() string {
 }
 
 type Column struct {
-	Name  *Field
-	Ext   *Field
-	Alias string
-	Func  Func
+	Name    *Field
+	Ext     *Field
+	Alias   string
+	Func    Func
+	IsNull  bool
+	Default string
 }
 
-func NewAliasColumn(name, alias string) *Column {
-	return NewFuncComlumn(NewField(name, "", false), alias, Func_None, nil)
+func NewColumnAlias(name, alias string) *Column {
+	return NewColumnFunc(NewField(name, "", false), alias, Func_None, nil)
 }
 
-func NewFuncComlumn(name *Field, alias string, f Func, ext *Field) *Column {
-	return &Column{Name: name, Alias: alias, Func: f, Ext: ext}
+func NewColumnFunc(name *Field, alias string, f Func, ext *Field) *Column {
+	return &Column{Name: name, Alias: alias, Func: f, Ext: ext, Default: "''"}
+}
+
+func NewColFuncWithNull(name *Field, alias, defaultValue string, f Func, ext *Field) *Column {
+	c := NewColumnFunc(name, alias, f, ext)
+	c.IsNull = true
+	c.Default = defaultValue
+	return c
 }
 
 func NewColumn(name string) *Column {
-	return NewAliasColumn(name, name)
+	return NewColumnAlias(name, name)
 }
 
 func (c *Column) SetTable(table string) {
@@ -204,19 +214,35 @@ func (c *Column) SetTable(table string) {
 	}
 }
 
-func (c *Column) String() string {
+func (c *Column) funcName() string {
 	if c.Func == Func_None {
-		return fmt.Sprintf(columnFormat, c.Name, c.Alias)
+		return c.Name.String()
 	}
 
 	switch c.Func {
 	case Func_DIV:
-		return fmt.Sprintf(divFunc, c.Name, c.Func, c.Ext, c.Alias)
+		return fmt.Sprintf(divFunc, c.Name, c.Func, c.Ext)
 	case Func_CAST:
-		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf("%s AS %s", c.Name, c.Ext), c.Alias)
+		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf("%s AS %s", c.Name, c.Ext))
 	case Func_CONVERT:
-		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf("%s USING %s", c.Name, c.Ext), c.Alias)
+		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf("%s USING %s", c.Name, c.Ext))
 	default:
-		return fmt.Sprintf(columnFunc, c.Func, c.Name, c.Alias)
+		return fmt.Sprintf(columnFunc, c.Func, c.Name)
+	}
+}
+
+func (c *Column) String() string {
+	switch c.Func {
+	case Func_None:
+		return fmt.Sprintf(columnFormat, c.Name, c.Alias)
+	case Func_ISNULL:
+		return fmt.Sprintf(ifNull, Func_ISNULL, c.Name, c.Default, c.Alias)
+	default:
+		val := c.funcName()
+		if !c.IsNull {
+			return fmt.Sprintf(columnFormat, val, c.Alias)
+		}
+
+		return fmt.Sprintf(ifNull, Func_ISNULL, val, c.Default, c.Alias)
 	}
 }

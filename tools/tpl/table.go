@@ -46,8 +46,8 @@ func (self *{name}Row) Clone() itf.RowInterface {
 	return &{name}Row{}
 }
 
-func (self *{name}Row) Columns() []*meta.Column {
-	return []*meta.Column{
+func (self *{name}Row) Columns() []string {
+	return []string{
 {func_columns}
 	}
 }
@@ -84,7 +84,7 @@ func (self *{name}Row) Delete() error {
 
 	Decimal     = `	"github.com/shopspring/decimal"`
 	Sql         = `	"database/sql"`
-	Meta_Column = `		meta.NewColumn(%s),`
+	Meta_Column = `		%s,`
 	Meta_Fields = `		&self.%s,`
 	Meta_Values = `		self.%s,`
 )

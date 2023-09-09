@@ -24,7 +24,7 @@ func (b *Base[T]) Save(model T) error {
 	data := meta.NewData()
 	var primary any
 	for index, column := range columns {
-		if column.Name.Name == b.primaryId.Name {
+		if column == b.primaryId.Name {
 			b.primaryId.Parse(values[index])
 			if b.primaryId.Null() {
 				continue
@@ -34,7 +34,7 @@ func (b *Base[T]) Save(model T) error {
 			continue
 		}
 
-		data.Add(column.Name.Name, values[index])
+		data.Add(column, values[index])
 	}
 
 	if !b.isInsert {
@@ -83,7 +83,7 @@ func (b *Base[T]) Delete(model T) error {
 	where := meta.NewWhere()
 
 	for index, column := range columns {
-		if column.Name.Name == b.primaryId.Name {
+		if column == b.primaryId.Name {
 			where.Add(b.primaryId.Name, values[index])
 			break
 		}

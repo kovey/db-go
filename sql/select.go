@@ -8,14 +8,15 @@ import (
 )
 
 const (
-	selectFormat string = "SELECT %s FROM %s AS %s %s %s %s %s %s %s %s"
-	orderFormat  string = "ORDER BY %s"
-	groupFormat  string = "GROUP BY %s"
-	limitFormat  string = "LIMIT %d,%d"
-	joinFormat   string = "%s %s AS %s ON %s"
-	leftJoin     string = "LEFT JOIN"
-	rightJoin    string = "RIGHT JOIN"
-	innerJoin    string = "INNER JOIN"
+	selectFormat = "SELECT %s FROM %s AS %s %s %s %s %s %s %s %s"
+	orderFormat  = "ORDER BY %s"
+	groupFormat  = "GROUP BY %s"
+	limitFormat  = "LIMIT %d,%d"
+	joinFormat   = "%s %s AS %s ON %s"
+	leftJoin     = "LEFT JOIN"
+	rightJoin    = "RIGHT JOIN"
+	innerJoin    = "INNER JOIN"
+	subFormat    = "(%s)"
 )
 
 type Select struct {
@@ -31,6 +32,15 @@ type Select struct {
 	having    *Having
 	joins     []string
 	forUpdate string
+	sub       *Select
+	joinArgs  []any
+}
+
+func NewSelectSub(sub *Select, alias string) *Select {
+	return &Select{
+		sub: sub, alias: alias, columns: make([]string, 0), where: nil, orWhere: nil, limit: 0, offset: 0,
+		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0), forUpdate: "",
+	}
 }
 
 func NewSelect(table string, alias string) *Select {
@@ -48,7 +58,17 @@ func NewSelect(table string, alias string) *Select {
 	}
 }
 
-func (s *Select) Columns(columns ...*meta.Column) *Select {
+func (s *Select) Columns(columns ...string) *Select {
+	for _, col := range columns {
+		column := meta.NewColumn(col)
+		column.SetTable(s.alias)
+		s.columns = append(s.columns, column.String())
+	}
+
+	return s
+}
+
+func (s *Select) ColMeta(columns ...*meta.Column) *Select {
 	for _, column := range columns {
 		column.SetTable(s.alias)
 		s.columns = append(s.columns, column.String())
@@ -57,7 +77,18 @@ func (s *Select) Columns(columns ...*meta.Column) *Select {
 	return s
 }
 
-func (s *Select) SetColumns(columns []*meta.Column) *Select {
+func (s *Select) SetColumns(columns []string) *Select {
+	s.columns = make([]string, len(columns))
+	for index, col := range columns {
+		column := meta.NewColumn(col)
+		column.SetTable(s.alias)
+		s.columns[index] = column.String()
+	}
+
+	return s
+}
+
+func (s *Select) SetColMeta(columns []*meta.Column) *Select {
 	s.columns = make([]string, len(columns))
 	for index, column := range columns {
 		column.SetTable(s.alias)
@@ -126,6 +157,14 @@ func (s *Select) Group(groups ...string) *Select {
 
 func (s *Select) Args() []any {
 	args := make([]any, 0)
+	if s.sub != nil {
+		args = append(args, s.sub.Args()...)
+	}
+
+	if len(s.joinArgs) > 0 {
+		args = append(args, s.joinArgs...)
+	}
+
 	if s.where != nil {
 		args = append(args, s.where.Args()...)
 	}
@@ -143,20 +182,48 @@ func (s *Select) Args() []any {
 
 func (s *Select) join(jt string, join *Join) *Select {
 	s.columns = append(s.columns, join.columns...)
+	s.joins = append(s.joins, fmt.Sprintf(joinFormat, jt, join.tableName(), formatValue(join.alias), join.on))
+	args := join.args()
+	if len(args) > 0 {
+		s.joinArgs = append(s.joinArgs, args...)
+	}
 
-	s.joins = append(s.joins, fmt.Sprintf(joinFormat, jt, formatValue(join.table), formatValue(join.alias), join.on))
 	return s
 }
 
-func (s *Select) LeftJoin(join *Join) *Select {
+func (s *Select) LeftJoinSub(sub *Select, alias, on string, columns ...string) *Select {
+	return s.LeftJoinWith(NewJoinSub(sub, alias, on, columns...))
+}
+
+func (s *Select) LeftJoin(table, alias, on string, columns ...string) *Select {
+	return s.LeftJoinWith(NewJoin(table, alias, on, columns...))
+}
+
+func (s *Select) LeftJoinWith(join *Join) *Select {
 	return s.join(leftJoin, join)
 }
 
-func (s *Select) RightJoin(join *Join) *Select {
+func (s *Select) RightJoinSub(sub *Select, alias, on string, columns ...string) *Select {
+	return s.RightJoinWith(NewJoinSub(sub, alias, on, columns...))
+}
+
+func (s *Select) RightJoin(table, alias, on string, columns ...string) *Select {
+	return s.RightJoinWith(NewJoin(table, alias, on, columns...))
+}
+
+func (s *Select) RightJoinWith(join *Join) *Select {
 	return s.join(rightJoin, join)
 }
 
-func (s *Select) InnerJoin(join *Join) *Select {
+func (s *Select) InnerJoinSub(sub *Select, alias, on string, columns ...string) *Select {
+	return s.InnerJoinWith(NewJoinSub(sub, alias, on, columns...))
+}
+
+func (s *Select) InnerJoin(table, alias, on string, columns ...string) *Select {
+	return s.InnerJoinWith(NewJoin(table, alias, on, columns...))
+}
+
+func (s *Select) InnerJoinWith(join *Join) *Select {
 	return s.join(innerJoin, join)
 }
 
@@ -226,8 +293,15 @@ func (s *Select) getLimit() string {
 }
 
 func (s *Select) Prepare() string {
+	if s.sub == nil {
+		return strings.Trim(fmt.Sprintf(
+			selectFormat, s.getColumns(), formatValue(s.table), formatValue(s.alias), s.getJoin(), s.getWhere(), s.getGroup(), s.getHaving(),
+			s.getOrder(), s.getLimit(), s.forUpdate,
+		), " ")
+	}
+
 	return strings.Trim(fmt.Sprintf(
-		selectFormat, s.getColumns(), formatValue(s.table), formatValue(s.alias), s.getJoin(), s.getWhere(), s.getGroup(), s.getHaving(),
+		selectFormat, s.getColumns(), fmt.Sprintf(subFormat, s.sub.Prepare()), formatValue(s.alias), s.getJoin(), s.getWhere(), s.getGroup(), s.getHaving(),
 		s.getOrder(), s.getLimit(), s.forUpdate,
 	), " ")
 }

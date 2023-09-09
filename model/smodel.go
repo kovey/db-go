@@ -29,7 +29,7 @@ func (b *BaseSharding[T]) Save(key any, model T) error {
 	var primary any
 	data := meta.NewData()
 	for index, column := range columns {
-		if column.Name.Name == b.primaryId.Name {
+		if column == b.primaryId.Name {
 			b.primaryId.Parse(values[index])
 			if b.primaryId.Null() {
 				continue
@@ -39,7 +39,7 @@ func (b *BaseSharding[T]) Save(key any, model T) error {
 			continue
 		}
 
-		data[column.Name.Name] = values[index]
+		data[column] = values[index]
 	}
 
 	if !b.isInsert {
@@ -86,7 +86,7 @@ func (b *BaseSharding[T]) Delete(key any, model T) error {
 	columns := model.Columns()
 	values := model.Values()
 	for index, column := range columns {
-		if column.Name.Name == b.primaryId.Name {
+		if column == b.primaryId.Name {
 			where.Add(b.primaryId.Name, values[index])
 			break
 		}

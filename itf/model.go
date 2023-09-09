@@ -1,9 +1,7 @@
 package itf
 
-import "github.com/kovey/db-go/v2/sql/meta"
-
 type RowInterface interface {
-	Columns() []*meta.Column
+	Columns() []string
 	Fields() []any
 	Clone() RowInterface
 }

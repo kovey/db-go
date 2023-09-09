@@ -9,7 +9,6 @@ import (
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
 	"github.com/kovey/db-go/v2/itf"
-	"github.com/kovey/db-go/v2/sql/meta"
 )
 
 var (
@@ -26,9 +25,9 @@ type Product struct {
 	Content string
 }
 
-func (p *Product) Columns() []*meta.Column {
-	return []*meta.Column{
-		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
+func (p *Product) Columns() []string {
+	return []string{
+		"id", "name", "date", "time", "sex", "content",
 	}
 }
 

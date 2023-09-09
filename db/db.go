@@ -47,13 +47,13 @@ func min(left, right int) int {
 	return right
 }
 
-func getFields[T itf.RowInterface](columns []string, has []*meta.Column, length int, model T) []any {
+func getFields[T itf.RowInterface](columns []string, has []string, length int, model T) []any {
 	fields := make([]any, length)
 	index := 0
 	mFields := model.Fields()
 	for _, column := range columns {
 		for i, col := range has {
-			if column == col.Name.Name {
+			if column == col {
 				fields[index] = mFields[i]
 				index++
 				break
