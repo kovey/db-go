@@ -2,7 +2,6 @@ package sql
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -58,16 +57,15 @@ func formatValue(field string) string {
 func String(s SqlInterface) string {
 	sql := s.Prepare()
 	for _, arg := range s.Args() {
-		str, ok := arg.(string)
-		if ok {
-			sql = strings.Replace(sql, "?", formatString(str), 1)
-			continue
-		}
-
-		iArg, res := arg.(int)
-		if res {
-			sql = strings.Replace(sql, "?", formatString(strconv.Itoa(iArg)), 1)
-			continue
+		switch a := arg.(type) {
+		case string:
+			sql = strings.Replace(sql, "?", formatString(a), 1)
+		case float32, float64:
+			sql = strings.Replace(sql, "?", formatString(fmt.Sprintf("%f", a)), 1)
+		case uint, uint8, uint16, uint32, uint64, int, int8, int16, int32, int64:
+			sql = strings.Replace(sql, "?", formatString(fmt.Sprintf("%d", a)), 1)
+		default:
+			sql = strings.Replace(sql, "?", formatString(fmt.Sprintf("%s", a)), 1)
 		}
 	}
 
