@@ -26,7 +26,7 @@ func TestSelectPrepare(t *testing.T) {
 	s.LeftJoinWith(j)
 	s.RightJoin("cron", "c", "c.user_id=u.id", "time", "run")
 	sub := NewSelect("base_info", "bi")
-	sub.Columns("age", "device", "sign").WhereByMap(meta.Where{"id": 100, "status": 1, "open": "on"})
+	sub.Columns("age", "device", "sign").WhereByMap(meta.Where{"id": 100, "status": 1.9, "open": "on"})
 	j2 := NewJoinSub(sub, "e", "bi.user_id=u.id", "age", "device", "sign")
 	caseWhen := meta.NewCaseWhen("uid")
 	caseWhen.AddWhenThen("e.user_id > 0", "e.user_id")
