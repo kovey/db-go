@@ -84,6 +84,13 @@ func (t *Table) Format() string {
 	default:
 		content = strings.ReplaceAll(content, "{primary_id_type}", "Int")
 	}
+
+	closeAuto := ""
+	if !t.Primary.IsAutoInc {
+		closeAuto = tpl.Close_Auto_Inc
+	}
+
+	content = strings.ReplaceAll(content, "{close_auto_inc}", closeAuto)
 	return content
 }
 

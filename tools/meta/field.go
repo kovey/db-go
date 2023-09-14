@@ -16,10 +16,11 @@ type Field struct {
 	HasDecimal bool
 	GolangType string
 	Comment    string
+	IsAutoInc  bool
 }
 
 func NewField(name, t, comment string, isNull bool) *Field {
-	f := &Field{Name: convert(name), DbField: name, Type: t, IsNull: isNull, Comment: comment}
+	f := &Field{Name: convert(name), DbField: name, Type: t, IsNull: isNull, Comment: comment, IsAutoInc: true}
 	f.GolangType = f.parse()
 	return f
 }

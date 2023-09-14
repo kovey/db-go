@@ -75,6 +75,9 @@ func main() {
 		for _, field := range fields {
 			if field.Key.String == "PRI" {
 				t.SetPrimary(meta.NewField(field.Field, field.Type, field.Comment.String, false))
+				if field.Extra.String != "auto_increment" {
+					t.Primary.IsAutoInc = false
+				}
 			}
 			t.Add(meta.NewField(field.Field, field.Type, field.Comment.String, field.Null != "NO"))
 		}

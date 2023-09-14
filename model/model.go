@@ -17,6 +17,10 @@ func NewBase[T itf.ModelInterface](tb table.TableInterface[T], primaryId *Primar
 	return &Base[T]{Table: tb, primaryId: primaryId, isInsert: true, isEmpty: false}
 }
 
+func (b *Base[T]) NoAutoInc() {
+	b.primaryId.IsAutoInc = false
+}
+
 func (b *Base[T]) Save(model T) error {
 	columns := model.Columns()
 	fields := model.Fields()
@@ -31,7 +35,13 @@ func (b *Base[T]) Save(model T) error {
 			}
 
 			primary = fields[index]
-			continue
+			if !b.isInsert {
+				continue
+			}
+
+			if b.primaryId.IsAutoInc {
+				continue
+			}
 		}
 
 		data.Add(column, values[index])

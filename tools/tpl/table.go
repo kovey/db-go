@@ -39,7 +39,9 @@ type {name}Row struct {
 }
 
 func New{name}Row() *{name}Row {
-	return &{name}Row{Base: model.NewBase[*{name}Row](New{name}Table(), model.NewPrimaryId({primary_id}, model.{primary_id_type}))}
+	self := &{name}Row{Base: model.NewBase[*{name}Row](New{name}Table(), model.NewPrimaryId({primary_id}, model.{primary_id_type}))}
+	{close_auto_inc}
+	return self
 }
 
 func (self *{name}Row) Clone() itf.RowInterface {
@@ -82,9 +84,10 @@ func (self *{name}Row) Delete() error {
 	`
 	Field = "	%s %s `db:\"%s\"` // %s"
 
-	Decimal     = `	"github.com/shopspring/decimal"`
-	Sql         = `	"database/sql"`
-	Meta_Column = `		%s,`
-	Meta_Fields = `		&self.%s,`
-	Meta_Values = `		self.%s,`
+	Decimal        = `	"github.com/shopspring/decimal"`
+	Sql            = `	"database/sql"`
+	Meta_Column    = `		%s,`
+	Meta_Fields    = `		&self.%s,`
+	Meta_Values    = `		self.%s,`
+	Close_Auto_Inc = "self.NoAutoInc()"
 )

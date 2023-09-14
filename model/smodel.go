@@ -22,6 +22,10 @@ func NewBaseSharding[T ModelShardingInterface](tb table.TableShardingInterface[T
 	return &BaseSharding[T]{Table: tb, primaryId: primaryId, isInsert: true, isEmpty: false}
 }
 
+func (b *BaseSharding[T]) NoAutoInc() {
+	b.primaryId.IsAutoInc = false
+}
+
 func (b *BaseSharding[T]) Save(key any, model T) error {
 	columns := model.Columns()
 	fields := model.Fields()

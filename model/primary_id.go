@@ -8,14 +8,15 @@ const (
 )
 
 type PrimaryId struct {
-	Type     PrimaryIdType
-	Name     string
-	IntValue int
-	StrValue string
+	Type      PrimaryIdType
+	Name      string
+	IntValue  int
+	StrValue  string
+	IsAutoInc bool
 }
 
 func NewPrimaryId(name string, t PrimaryIdType) *PrimaryId {
-	return &PrimaryId{Name: name, Type: t}
+	return &PrimaryId{Name: name, Type: t, IsAutoInc: true}
 }
 
 func (p *PrimaryId) Parse(val any) {
