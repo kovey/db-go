@@ -8,7 +8,6 @@ import (
 
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
-	"github.com/kovey/db-go/v2/sql"
 	ms "github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/tools/desc"
 	"github.com/kovey/db-go/v2/tools/meta"
@@ -56,8 +55,8 @@ func main() {
 		}
 	}
 
-	mysql := db.NewMysql[*desc.Table]()
-	tables, err := mysql.ShowTables(sql.NewShowTables(), desc.NewTable())
+	tbl := desc.NewTable()
+	tables, err := tbl.Table.FetchAll(ms.Where{"TABLE_SCHEMA": *dbName}, &desc.Table{})
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +64,7 @@ func main() {
 	showTablesBegin(tables)
 	for _, tb := range tables {
 		debug.Info("process table[%s] orm begin...", tb.Name)
-		t := meta.NewTable(tb.Name, *pc, *dbName)
+		t := meta.NewTable(tb.Name, tb.GetComment(), *pc, *dbName)
 		dTb := desc.NewDescTable()
 		fields, err := dTb.FetchAll(ms.Where{"TABLE_SCHEMA": *dbName, "TABLE_NAME": tb.Name}, desc.NewDesc())
 		if err != nil {
@@ -74,12 +73,12 @@ func main() {
 
 		for _, field := range fields {
 			if field.Key.String == "PRI" {
-				t.SetPrimary(meta.NewField(field.Field, field.Type, field.Comment.String, false))
+				t.SetPrimary(meta.NewField(field.Field, field.Type, field.GetComment(), false))
 				if field.Extra.String != "auto_increment" {
 					t.Primary.IsAutoInc = false
 				}
 			}
-			t.Add(meta.NewField(field.Field, field.Type, field.Comment.String, field.Null != "NO"))
+			t.Add(meta.NewField(field.Field, field.Type, field.GetComment(), field.Null != "NO"))
 		}
 
 		path := *dist + "/" + tb.Name + ".go"

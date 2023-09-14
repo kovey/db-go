@@ -34,7 +34,7 @@ func (f *Field) ConstaintName(table string) string {
 }
 
 func (f *Field) Constaint(table string) string {
-	return fmt.Sprintf(`	%s = "%s"`, f.ConstaintName(table), f.DbField)
+	return fmt.Sprintf(`	%s = "%s" %s`, f.ConstaintName(table), f.DbField, f.Comment)
 }
 
 func (f *Field) ToColumn(table string) string {

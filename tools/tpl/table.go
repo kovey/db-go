@@ -9,7 +9,7 @@ const (
 // DO NOT EDIT!!!
 // Orm version: {orm_version}
 // Database: {database}
-// Table: {table_name}
+// Table: {table_name} {table_comment}
 // Created time: {created_date}
 
 import(
@@ -21,10 +21,11 @@ import(
 )
 
 const (
-	Table_{name} = "{table_name}"
+	Table_{name} = "{table_name}" {table_comment}
 {column_const}
 )
 
+{table_comment}
 type {name}Table struct {
 	*table.Table[*{name}Row]
 }
@@ -33,6 +34,7 @@ func New{name}Table() *{name}Table {
 	return &{name}Table{Table: table.NewTable[*{name}Row](Table_{name})}
 }
 
+{table_comment}
 type {name}Row struct {
 	*model.Base[*{name}Row]
 {row_fields}
@@ -82,7 +84,7 @@ func (self *{name}Row) Delete() error {
 	return self.Base.Delete(self)
 }
 	`
-	Field = "	%s %s `db:\"%s\"` // %s"
+	Field = "	%s %s `db:\"%s\"` %s"
 
 	Decimal        = `	"github.com/shopspring/decimal"`
 	Sql            = `	"database/sql"`

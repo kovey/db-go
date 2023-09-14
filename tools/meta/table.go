@@ -18,10 +18,11 @@ type Table struct {
 	HasSql      bool
 	HasDecimal  bool
 	Database    string
+	Comment     string
 }
 
-func NewTable(name, p, database string) *Table {
-	return &Table{DbTableName: name, Name: convert(name), Fields: make([]*Field, 0), Package: p, Database: database}
+func NewTable(name, comment, p, database string) *Table {
+	return &Table{DbTableName: name, Name: convert(name), Fields: make([]*Field, 0), Package: p, Database: database, Comment: comment}
 }
 
 func (t *Table) SetPrimary(f *Field) {
@@ -71,6 +72,7 @@ func (t *Table) Format() string {
 	content = strings.ReplaceAll(content, "{database}", t.Database)
 	content = strings.ReplaceAll(content, "{created_date}", now())
 	content = strings.ReplaceAll(content, "{table_name}", t.DbTableName)
+	content = strings.ReplaceAll(content, "{table_comment}", t.Comment)
 	content = strings.ReplaceAll(content, "{column_const}", t.constaints())
 	content = strings.ReplaceAll(content, "{func_columns}", t.columns())
 	content = strings.ReplaceAll(content, "{func_fields}", t.tofields())

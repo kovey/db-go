@@ -2,6 +2,7 @@ package desc
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/model"
@@ -21,6 +22,14 @@ type Desc struct {
 
 func NewDesc() *Desc {
 	return &Desc{Base: model.NewBase[*Desc](NewDescTable(), model.NewPrimaryId("Field", model.Str))}
+}
+
+func (t *Desc) GetComment() string {
+	if t.Comment.String == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("// %s", t.Comment.String)
 }
 
 func (t *Desc) Columns() []string {
