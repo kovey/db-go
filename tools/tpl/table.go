@@ -14,6 +14,7 @@ const (
 
 import(
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/model"
 	"github.com/kovey/db-go/v2/table"
 	"github.com/kovey/db-go/v2/itf"
@@ -32,6 +33,26 @@ type {name}Table struct {
 
 func New{name}Table() *{name}Table {
 	return &{name}Table{Table: table.NewTable[*{name}Row](Table_{name})}
+}
+
+func (self *{name}Table) FetchAll(where meta.Where) ([]*{name}Row, error) {
+	return self.Table.FetchAll(where, &{name}Row{})
+}
+
+func (self *{name}Table) FetchAllByWhere(where sql.WhereInterface) ([]*{name}Row, error) {
+	return self.Table.FetchAllByWhere(where, &{name}Row{})
+}
+
+func (self *{name}Table) FetchBySelect(sel *sql.Select) ([]*{name}Row, error) {
+	return self.Table.FetchBySelect(sel, &{name}Row{})
+}
+
+func (self *{name}Table) FetchPage(where meta.Where, page, pageSize int) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPage(where, &{name}Row{}, page, pageSize)
+}
+
+func (self *{name}Table) FetchPageByWhere(where sql.WhereInterface, page, pageSize int) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPageByWhere(where, &{name}Row{}, page, pageSize)
 }
 
 {table_comment}

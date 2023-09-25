@@ -40,5 +40,13 @@ func (t *Table) Clone() itf.RowInterface {
 }
 
 func NewTable() *Table {
-	return &Table{Base: model.NewBase[*Table](table.NewTable[*Table]("information_schema.TABLES"), model.NewPrimaryId("Field", model.Str))}
+	return &Table{Base: model.NewBase[*Table](NewTableTable(), model.NewPrimaryId("Field", model.Str))}
+}
+
+type TableTable struct {
+	*table.Table[*Table]
+}
+
+func NewTableTable() *TableTable {
+	return &TableTable{Table: table.NewTable[*Table]("information_schema.TABLES")}
 }

@@ -17,11 +17,6 @@ type TableInterface[T itf.ModelInterface] interface {
 	BatchInsert([]meta.Data) (int64, error)
 	FetchRow(meta.Where, T) error
 	LockRow(meta.Where, T) error
-	FetchAll(meta.Where, T) ([]T, error)
-	FetchAllByWhere(sql.WhereInterface, T) ([]T, error)
-	FetchBySelect(*sql.Select, T) ([]T, error)
-	FetchPage(meta.Where, T, int, int) (*meta.Page[T], error)
-	FetchPageByWhere(sql.WhereInterface, T, int, int) (*meta.Page[T], error)
 }
 
 type Table[T itf.ModelInterface] struct {

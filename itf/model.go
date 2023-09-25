@@ -11,3 +11,25 @@ type ModelInterface interface {
 	Values() []any
 	SetEmpty()
 }
+
+type Row struct {
+}
+
+func (r *Row) Columns() []string {
+	return nil
+}
+
+func (r *Row) Fields() []any {
+	return nil
+}
+
+func (r *Row) Clone() RowInterface {
+	return &Row{}
+}
+
+func (r *Row) Values() []any {
+	return nil
+}
+
+func (r *Row) SetEmpty() {
+}

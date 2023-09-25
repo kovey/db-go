@@ -55,8 +55,8 @@ func main() {
 		}
 	}
 
-	tbl := desc.NewTable()
-	tables, err := tbl.Table.FetchAll(ms.Where{"TABLE_SCHEMA": *dbName}, &desc.Table{})
+	ttb := desc.NewTableTable()
+	tables, err := ttb.FetchAll(ms.Where{"TABLE_SCHEMA": *dbName}, &desc.Table{})
 	if err != nil {
 		panic(err)
 	}
