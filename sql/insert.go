@@ -25,7 +25,7 @@ func NewInsert(table string) *Insert {
 
 func (i *Insert) Set(field string, value any) *Insert {
 	i.data.Add(field, value)
-	i.placeholder[field] = "?"
+	i.placeholder[field] = question
 	return i
 }
 
@@ -34,7 +34,7 @@ func (i *Insert) Args() []any {
 }
 
 func (i *Insert) Prepare() string {
-	return fmt.Sprintf(format, formatValue(i.table), strings.Join(i.getFields(), ","), strings.Join(i.getPlaceholder(), ","))
+	return fmt.Sprintf(format, formatValue(i.table), strings.Join(i.getFields(), comma), strings.Join(i.getPlaceholder(), comma))
 }
 
 func (i *Insert) getPlaceholder() []string {

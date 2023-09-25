@@ -20,8 +20,8 @@ type TableInterface[T itf.ModelInterface] interface {
 	FetchAll(meta.Where, T) ([]T, error)
 	FetchAllByWhere(sql.WhereInterface, T) ([]T, error)
 	FetchBySelect(*sql.Select, T) ([]T, error)
-	FetchPage(meta.Where, T, int, int) ([]T, error)
-	FetchPageByWhere(sql.WhereInterface, T, int, int) ([]T, error)
+	FetchPage(meta.Where, T, int, int) (*meta.Page[T], error)
+	FetchPageByWhere(sql.WhereInterface, T, int, int) (*meta.Page[T], error)
 }
 
 type Table[T itf.ModelInterface] struct {
@@ -112,10 +112,10 @@ func (t *Table[T]) FetchBySelect(sel *sql.Select, model T) ([]T, error) {
 	return t.db.FetchBySelect(sel, model)
 }
 
-func (t *Table[T]) FetchPage(where meta.Where, model T, page, pageSize int) ([]T, error) {
+func (t *Table[T]) FetchPage(where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
 	return t.db.FetchPage(t.table, where, model, page, pageSize)
 }
 
-func (t *Table[T]) FetchPageByWhere(where sql.WhereInterface, model T, page, pageSize int) ([]T, error) {
+func (t *Table[T]) FetchPageByWhere(where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
 	return t.db.FetchPageByWhere(t.table, where, model, page, pageSize)
 }

@@ -12,6 +12,13 @@ const (
 	end             = "END"
 	case_when       = "(%s %s %s) AS `%s`"
 	case_when_else  = "(%s %s %s %s) AS `%s`"
+	space           = " "
+	emptyStr        = ""
+	as              = "%s AS %s"
+	using           = "%s USING %s"
+	qua             = "''"
+	strFormat       = "`%s`"
+	strTowFormat    = "`%s`.`%s`"
 )
 
 type CaseWhen struct {
@@ -33,7 +40,7 @@ func (c *CaseWhen) Else(expression string) {
 }
 
 func (c *CaseWhen) String() string {
-	if c.elseResult == "" {
+	if c.elseResult == emptyStr {
 		return fmt.Sprintf(case_when, case_expression, c.whens(), end, c.Alias)
 	}
 
@@ -46,7 +53,7 @@ func (c *CaseWhen) whens() string {
 		res[index] = co.String()
 	}
 
-	return strings.Join(res, " ")
+	return strings.Join(res, space)
 }
 
 type WhenThen struct {

@@ -10,6 +10,13 @@ import (
 	"github.com/kovey/debug-go/debug"
 )
 
+const (
+	countField = "count"
+	emptyStr   = ""
+	one        = "1"
+	zero       = "0"
+)
+
 type DbInterface[T itf.RowInterface] interface {
 	SetTx(*Tx)
 	Transaction(func(*Tx) error) error
@@ -28,8 +35,10 @@ type DbInterface[T itf.RowInterface] interface {
 	FetchAll(string, meta.Where, T) ([]T, error)
 	FetchAllByWhere(string, sql.WhereInterface, T) ([]T, error)
 	FetchBySelect(*sql.Select, T) ([]T, error)
-	FetchPage(string, meta.Where, T, int, int) ([]T, error)
-	FetchPageByWhere(string, sql.WhereInterface, T, int, int) ([]T, error)
+	FetchPage(string, meta.Where, T, int, int) (*meta.Page[T], error)
+	FetchPageByWhere(string, sql.WhereInterface, T, int, int) (*meta.Page[T], error)
+	FetchPageBySelect(*sql.Select, T) (*meta.Page[T], error)
+	Count(string, sql.WhereInterface) (int64, error)
 }
 
 type ConnInterface interface {
@@ -235,16 +244,100 @@ func FetchAllByWhere[T itf.RowInterface](m ConnInterface, table string, where sq
 	return queryAll(m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchPage[T itf.RowInterface](m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
+func FetchPage[T itf.RowInterface](m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	return queryAll(m, sel.Prepare(), model, sel.Args()...)
+	rows, err := queryAll(m, sel.Prepare(), model, sel.Args()...)
+	if err != nil {
+		return nil, err
+	}
+
+	w := sql.NewWhere()
+	for key, val := range where {
+		w.Eq(key, val)
+	}
+
+	return pageInfo(m, table, w, rows, pageSize)
 }
 
-func FetchPageByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) ([]T, error) {
+func FetchPageByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
 	sel := sql.NewSelect(table, "")
 	sel.Where(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	return queryAll(m, sel.Prepare(), model, sel.Args()...)
+	rows, err := queryAll(m, sel.Prepare(), model, sel.Args()...)
+	if err != nil {
+		return nil, err
+	}
+
+	return pageInfo(m, table, where, rows, pageSize)
+}
+
+func FetchPageBySelect[T itf.RowInterface](m ConnInterface, sel *sql.Select, model T) (*meta.Page[T], error) {
+	rows, err := queryAll(m, sel.Prepare(), model, sel.Args()...)
+	if err != nil {
+		return nil, err
+	}
+
+	pageSize := sel.GetLimit()
+	if len(rows) < pageSize {
+		p := meta.NewPage(rows)
+		p.TotalCount = int64(len(rows))
+		p.TotalPage = 1
+		return p, nil
+	}
+
+	sel.Limit(1)
+	sel.Offset(0)
+	cols := make([]*meta.Column, 1)
+	cols[0] = meta.NewColFuncWithNull(meta.NewField(one, emptyStr, true), countField, zero, meta.Func_COUNT, nil)
+	sel.SetColMeta(cols)
+	row := m.QueryRow(sel.Prepare(), sel.Args()...)
+	count := int64(0)
+	err = row.Scan(&count)
+	if err != nil {
+		return nil, err
+	}
+
+	p := meta.NewPage(rows)
+	p.TotalCount = count
+	p.TotalPage = p.TotalCount / int64(pageSize)
+	if p.TotalCount%int64(pageSize) != 0 {
+		p.TotalPage++
+	}
+
+	return p, nil
+}
+
+func pageInfo[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, rows []T, pageSize int) (*meta.Page[T], error) {
+	if len(rows) < pageSize {
+		page := meta.NewPage(rows)
+		page.TotalCount = int64(len(rows))
+		page.TotalPage = 1
+		return page, nil
+	}
+
+	count, err := Count(m, table, where)
+	if err != nil {
+		return nil, err
+	}
+
+	p := meta.NewPage(rows)
+	p.TotalCount = count
+	p.TotalPage = p.TotalCount / int64(pageSize)
+	if p.TotalCount%int64(pageSize) != 0 {
+		p.TotalPage++
+	}
+
+	return p, nil
+}
+
+func Count(m ConnInterface, table string, where sql.WhereInterface) (int64, error) {
+	sel := sql.NewSelect(table, emptyStr)
+	sel.Where(where).ColMeta(meta.NewColFuncWithNull(meta.NewField(one, emptyStr, true), countField, zero, meta.Func_COUNT, nil))
+	row := m.QueryRow(sel.Prepare(), sel.Args()...)
+	count := int64(0)
+	err := row.Scan(&count)
+
+	return count, err
 }

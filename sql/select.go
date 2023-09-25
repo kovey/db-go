@@ -17,6 +17,15 @@ const (
 	rightJoin    = "RIGHT JOIN"
 	innerJoin    = "INNER JOIN"
 	subFormat    = "(%s)"
+	and          = " AND "
+	forUpdate    = "FOR UPDATE"
+	where        = "WHERE "
+	space        = " "
+	comma        = ","
+	emptyStr     = ""
+	dot          = "."
+	underline    = "_"
+	star         = "*"
 )
 
 type Select struct {
@@ -39,14 +48,14 @@ type Select struct {
 func NewSelectSub(sub *Select, alias string) *Select {
 	return &Select{
 		sub: sub, alias: alias, columns: make([]string, 0), where: nil, orWhere: nil, limit: 0, offset: 0,
-		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0), forUpdate: "",
+		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0), forUpdate: emptyStr,
 	}
 }
 
 func NewSelect(table string, alias string) *Select {
-	if alias == "" {
-		if strings.Contains(table, ".") {
-			alias = strings.ReplaceAll(table, ".", "_")
+	if alias == emptyStr {
+		if strings.Contains(table, dot) {
+			alias = strings.ReplaceAll(table, dot, underline)
 		} else {
 			alias = table
 		}
@@ -54,7 +63,7 @@ func NewSelect(table string, alias string) *Select {
 
 	return &Select{
 		table: table, alias: alias, columns: make([]string, 0), where: nil, orWhere: nil, limit: 0, offset: 0,
-		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0), forUpdate: "",
+		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0), forUpdate: emptyStr,
 	}
 }
 
@@ -128,6 +137,10 @@ func (s *Select) Limit(size int) *Select {
 
 	s.limit = size
 	return s
+}
+
+func (s *Select) GetLimit() int {
+	return s.limit
 }
 
 func (s *Select) Offset(offset int) *Select {
@@ -229,18 +242,18 @@ func (s *Select) InnerJoinWith(join *Join) *Select {
 
 func (s *Select) getColumns() string {
 	if len(s.columns) == 0 {
-		return "*"
+		return star
 	}
 
-	return strings.Join(s.columns, ",")
+	return strings.Join(s.columns, comma)
 }
 
 func (s *Select) getJoin() string {
 	if len(s.joins) == 0 {
-		return ""
+		return emptyStr
 	}
 
-	return strings.Join(s.joins, " ")
+	return strings.Join(s.joins, space)
 }
 
 func (s *Select) getWhere() string {
@@ -253,16 +266,16 @@ func (s *Select) getWhere() string {
 		if len(wheres) == 0 {
 			wheres = append(wheres, s.orWhere.OrPrepare())
 		} else {
-			wheres = append(wheres, strings.Replace(s.orWhere.OrPrepare(), "WHERE ", "", 1))
+			wheres = append(wheres, strings.Replace(s.orWhere.OrPrepare(), where, emptyStr, 1))
 		}
 	}
 
-	return strings.Join(wheres, " AND ")
+	return strings.Join(wheres, and)
 }
 
 func (s *Select) getHaving() string {
 	if s.having == nil {
-		return ""
+		return emptyStr
 	}
 
 	return s.having.Prepare()
@@ -270,23 +283,23 @@ func (s *Select) getHaving() string {
 
 func (s *Select) getOrder() string {
 	if len(s.orders) == 0 {
-		return ""
+		return emptyStr
 	}
 
-	return fmt.Sprintf(orderFormat, strings.Join(s.orders, ","))
+	return fmt.Sprintf(orderFormat, strings.Join(s.orders, comma))
 }
 
 func (s *Select) getGroup() string {
 	if len(s.groups) == 0 {
-		return ""
+		return emptyStr
 	}
 
-	return fmt.Sprintf(groupFormat, strings.Join(s.groups, ","))
+	return fmt.Sprintf(groupFormat, strings.Join(s.groups, comma))
 }
 
 func (s *Select) getLimit() string {
 	if s.limit == 0 {
-		return ""
+		return emptyStr
 	}
 
 	return fmt.Sprintf(limitFormat, s.offset, s.limit)
@@ -297,13 +310,13 @@ func (s *Select) Prepare() string {
 		return strings.Trim(fmt.Sprintf(
 			selectFormat, s.getColumns(), formatValue(s.table), formatValue(s.alias), s.getJoin(), s.getWhere(), s.getGroup(), s.getHaving(),
 			s.getOrder(), s.getLimit(), s.forUpdate,
-		), " ")
+		), space)
 	}
 
 	return strings.Trim(fmt.Sprintf(
 		selectFormat, s.getColumns(), fmt.Sprintf(subFormat, s.sub.Prepare()), formatValue(s.alias), s.getJoin(), s.getWhere(), s.getGroup(), s.getHaving(),
 		s.getOrder(), s.getLimit(), s.forUpdate,
-	), " ")
+	), space)
 }
 
 func (s *Select) String() string {
@@ -335,6 +348,6 @@ func (s *Select) WhereByList(where meta.List) *Select {
 }
 
 func (s *Select) ForUpdate() *Select {
-	s.forUpdate = "FOR UPDATE"
+	s.forUpdate = forUpdate
 	return s
 }

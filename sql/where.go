@@ -24,50 +24,50 @@ func NewWhere() *Where {
 }
 
 func (w *Where) Eq(field string, value any) {
-	w.set("=", field, value)
+	w.set(eq, field, value)
 }
 
 func (w *Where) set(op string, field string, value any) {
-	w.Fields = append(w.Fields, fmt.Sprintf("%s %s ?", formatValue(field), op))
+	w.Fields = append(w.Fields, fmt.Sprintf(whereFields, formatValue(field), op))
 	w.Binds = append(w.Binds, value)
 }
 
 func (w *Where) Neq(field string, value any) {
-	w.set("<>", field, value)
+	w.set(neq, field, value)
 }
 
 func (w *Where) Like(field string, value any) {
-	w.set("LIKE", field, value)
+	w.set(like, field, value)
 }
 
 func (w *Where) Between(field string, from any, to any) {
-	w.Fields = append(w.Fields, fmt.Sprintf(betweenFormat, formatValue(field), "?", "?"))
+	w.Fields = append(w.Fields, fmt.Sprintf(betweenFormat, formatValue(field), question, question))
 	w.Binds = append(w.Binds, from, to)
 }
 
 func (w *Where) Gt(field string, value any) {
-	w.set(">", field, value)
+	w.set(gt, field, value)
 }
 
 func (w *Where) Ge(field string, value any) {
-	w.set(">=", field, value)
+	w.set(ge, field, value)
 }
 
 func (w *Where) Lt(field string, value any) {
-	w.set("<", field, value)
+	w.set(lt, field, value)
 }
 
 func (w *Where) Le(field string, value any) {
-	w.set("<=", field, value)
+	w.set(le, field, value)
 }
 
 func (w *Where) setIn(format string, field string, value []any) {
 	placeholders := make([]string, len(value))
 	for i := 0; i < len(value); i++ {
-		placeholders[i] = "?"
+		placeholders[i] = question
 	}
 
-	w.Fields = append(w.Fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, ",")))
+	w.Fields = append(w.Fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, comma)))
 	w.Binds = append(w.Binds, value...)
 }
 
@@ -101,18 +101,18 @@ func (w *Where) Args() []any {
 
 func (w *Where) prepare(op string) string {
 	if len(w.Fields) == 0 {
-		return ""
+		return emptyStr
 	}
 
 	return fmt.Sprintf(whereFormat, strings.Join(w.Fields, op))
 }
 
 func (w *Where) Prepare() string {
-	return w.prepare(" AND ")
+	return w.prepare(and)
 }
 
 func (w *Where) OrPrepare() string {
-	return w.prepare(" OR ")
+	return w.prepare(or)
 }
 
 func (w *Where) String() string {

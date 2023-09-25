@@ -21,8 +21,8 @@ type TableShardingInterface[T itf.ModelInterface] interface {
 	LockRow(any, meta.Where, T) error
 	FetchAll(any, meta.Where, T) ([]T, error)
 	FetchAllByWhere(any, sql.WhereInterface, T) ([]T, error)
-	FetchPage(any, meta.Where, T, int, int) ([]T, error)
-	FetchPageByWhere(any, sql.WhereInterface, T, int, int) ([]T, error)
+	FetchPage(any, meta.Where, T, int, int) (*meta.Page[T], error)
+	FetchPageByWhere(any, sql.WhereInterface, T, int, int) (*meta.Page[T], error)
 }
 
 type TableSharding[T itf.ModelInterface] struct {
@@ -109,10 +109,10 @@ func (t *TableSharding[T]) FetchAllByWhere(key any, where sql.WhereInterface, mo
 	return t.db.FetchAllByWhere(key, t.GetTableName(key), where, model)
 }
 
-func (t *TableSharding[T]) FetchPage(key any, where meta.Where, model T, page, pageSize int) ([]T, error) {
+func (t *TableSharding[T]) FetchPage(key any, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
 	return t.db.FetchPage(key, t.GetTableName(key), where, model, page, pageSize)
 }
 
-func (t *TableSharding[T]) FetchPageByWhere(key any, where sql.WhereInterface, model T, page, pageSize int) ([]T, error) {
+func (t *TableSharding[T]) FetchPageByWhere(key any, where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
 	return t.db.FetchPageByWhere(key, t.GetTableName(key), where, model, page, pageSize)
 }

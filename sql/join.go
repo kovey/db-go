@@ -16,9 +16,9 @@ type Join struct {
 }
 
 func NewJoin(table, alias, on string, columns ...string) *Join {
-	if alias == "" {
-		if strings.Contains(table, ".") {
-			alias = strings.ReplaceAll(table, ".", "_")
+	if alias == emptyStr {
+		if strings.Contains(table, dot) {
+			alias = strings.ReplaceAll(table, dot, underline)
 		} else {
 			alias = table
 		}

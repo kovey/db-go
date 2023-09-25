@@ -59,11 +59,11 @@ func (b *Batch) getFields() []string {
 }
 
 func (b *Batch) formatValue(placeholders []string) string {
-	return fmt.Sprintf(batchValueFormat, strings.Join(placeholders, ","))
+	return fmt.Sprintf(batchValueFormat, strings.Join(placeholders, comma))
 }
 
 func (b *Batch) Prepare() string {
-	return fmt.Sprintf(batchFormat, formatValue(b.table), strings.Join(b.getFields(), ","), strings.Join(b.placeholders, ","))
+	return fmt.Sprintf(batchFormat, formatValue(b.table), strings.Join(b.getFields(), comma), strings.Join(b.placeholders, comma))
 }
 
 func (b *Batch) String() string {

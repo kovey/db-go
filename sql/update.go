@@ -8,8 +8,13 @@ import (
 )
 
 const (
-	updateFormat   string = "UPDATE %s SET %s %s"
-	updateCkFormat string = "ALTER TABLE %s UPDATE %s %s"
+	updateFormat      = "UPDATE %s SET %s %s"
+	updateCkFormat    = "ALTER TABLE %s UPDATE %s %s"
+	updatePlaceFormat = "%s = ?"
+	addEq             = "+="
+	updateAddFormat   = "= %s +"
+	subEq             = "-="
+	updateSubFormat   = "= %s -"
 )
 
 type Update struct {
@@ -48,27 +53,27 @@ func (u *Update) getPlaceholder() []string {
 	for field, v := range u.data {
 		t, ok := v.(string)
 		if !ok {
-			placeholders[index] = fmt.Sprintf("%s = ?", formatValue(field))
+			placeholders[index] = fmt.Sprintf(updatePlaceFormat, formatValue(field))
 			u.args[index] = v
 			index++
 			continue
 		}
 
 		var value = t
-		var op = "="
+		var op = eq
 		if len(value) > 2 {
 			prefix := t[0:2]
-			if prefix == "+=" {
+			if prefix == addEq {
 				value = t[2:]
-				op = fmt.Sprintf("= %s +", field)
-			} else if prefix == "-=" {
+				op = fmt.Sprintf(updateAddFormat, field)
+			} else if prefix == subEq {
 				value = t[2:]
-				op = fmt.Sprintf("= %s -", field)
+				op = fmt.Sprintf(updateSubFormat, field)
 			}
 		}
 
 		u.args[index] = value
-		placeholders[index] = fmt.Sprintf("%s %s ?", formatValue(field), op)
+		placeholders[index] = fmt.Sprintf(whereFields, formatValue(field), op)
 		index++
 	}
 
@@ -77,10 +82,10 @@ func (u *Update) getPlaceholder() []string {
 
 func (u *Update) Prepare() string {
 	if u.where == nil {
-		return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), ","), "")
+		return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), comma), emptyStr)
 	}
 
-	return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), ","), u.where.Prepare())
+	return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), comma), u.where.Prepare())
 }
 
 func (u *Update) Where(w WhereInterface) *Update {

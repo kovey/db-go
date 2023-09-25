@@ -170,10 +170,10 @@ func (f *Field) String() string {
 	}
 
 	if f.Table == "" {
-		return fmt.Sprintf("`%s`", f.Name)
+		return fmt.Sprintf(strFormat, f.Name)
 	}
 
-	return fmt.Sprintf("`%s`.`%s`", f.Table, f.Name)
+	return fmt.Sprintf(strTowFormat, f.Table, f.Name)
 }
 
 type Column struct {
@@ -186,11 +186,11 @@ type Column struct {
 }
 
 func NewColumnAlias(name, alias string) *Column {
-	return NewColumnFunc(NewField(name, "", false), alias, Func_None, nil)
+	return NewColumnFunc(NewField(name, emptyStr, false), alias, Func_None, nil)
 }
 
 func NewColumnFunc(name *Field, alias string, f Func, ext *Field) *Column {
-	return &Column{Name: name, Alias: alias, Func: f, Ext: ext, Default: "''"}
+	return &Column{Name: name, Alias: alias, Func: f, Ext: ext, Default: qua}
 }
 
 func NewColFuncWithNull(name *Field, alias, defaultValue string, f Func, ext *Field) *Column {
@@ -223,9 +223,9 @@ func (c *Column) funcName() string {
 	case Func_DIV:
 		return fmt.Sprintf(divFunc, c.Name, c.Func, c.Ext)
 	case Func_CAST:
-		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf("%s AS %s", c.Name, c.Ext))
+		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf(as, c.Name, c.Ext))
 	case Func_CONVERT:
-		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf("%s USING %s", c.Name, c.Ext))
+		return fmt.Sprintf(columnFunc, c.Func, fmt.Sprintf(using, c.Name, c.Ext))
 	default:
 		return fmt.Sprintf(columnFunc, c.Func, c.Name)
 	}

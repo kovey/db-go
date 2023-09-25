@@ -189,10 +189,18 @@ func (m *Mysql[T]) FetchAllByWhere(table string, where ds.WhereInterface, model 
 	return FetchAllByWhere(m.getDb(), table, where, model)
 }
 
-func (m *Mysql[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
+func (m *Mysql[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
 	return FetchPage(m.getDb(), table, where, model, page, pageSize)
 }
 
-func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, model T, page int, pageSize int) ([]T, error) {
+func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
 	return FetchPageByWhere(m.getDb(), table, where, model, page, pageSize)
+}
+
+func (m *Mysql[T]) Count(table string, where ds.WhereInterface) (int64, error) {
+	return Count(m.getDb(), table, where)
+}
+
+func (m *Mysql[T]) FetchPageBySelect(sel *ds.Select, model T) (*meta.Page[T], error) {
+	return FetchPageBySelect(m.getDb(), sel, model)
 }

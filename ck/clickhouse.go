@@ -240,10 +240,18 @@ func (ck *ClickHouse[T]) RollBack() error {
 	return nil
 }
 
-func (ck *ClickHouse[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) ([]T, error) {
+func (ck *ClickHouse[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
 	return db.FetchPage(ck.getDb(), table, where, model, page, pageSize)
 }
 
-func (ck *ClickHouse[T]) FetchPageByWhere(table string, where *ds.Where, model T, page int, pageSize int) ([]T, error) {
+func (ck *ClickHouse[T]) FetchPageByWhere(table string, where *ds.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
 	return db.FetchPageByWhere(ck.getDb(), table, where, model, page, pageSize)
+}
+
+func (ck *ClickHouse[T]) Count(table string, where *ds.Where) (int64, error) {
+	return db.Count(ck.getDb(), table, where)
+}
+
+func (ck *ClickHouse[T]) FetchPageBySelect(sel *ds.Select, model T) (*meta.Page[T], error) {
+	return db.FetchPageBySelect(ck.getDb(), sel, model)
 }

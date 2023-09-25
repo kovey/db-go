@@ -6,8 +6,11 @@ import (
 )
 
 const (
-	valueStringFormat string = "'%s'"
-	valueFormat       string = "`%s`"
+	valueStringFormat = "'%s'"
+	valueFormat       = "`%s`"
+	folatFormat       = "%f"
+	numberFormat      = "%d"
+	stringFormat      = "%s"
 )
 
 type SqlInterface interface {
@@ -43,7 +46,7 @@ func formatString(value string) string {
 }
 
 func formatValue(field string) string {
-	info := strings.Split(field, ".")
+	info := strings.Split(field, dot)
 	if len(info) != 2 {
 		return fmt.Sprintf(valueFormat, field)
 	}
@@ -51,7 +54,7 @@ func formatValue(field string) string {
 	info[0] = fmt.Sprintf(valueFormat, info[0])
 	info[1] = fmt.Sprintf(valueFormat, info[1])
 
-	return strings.Join(info, ".")
+	return strings.Join(info, dot)
 }
 
 func String(s SqlInterface) string {
@@ -59,13 +62,13 @@ func String(s SqlInterface) string {
 	for _, arg := range s.Args() {
 		switch a := arg.(type) {
 		case string:
-			sql = strings.Replace(sql, "?", formatString(a), 1)
+			sql = strings.Replace(sql, question, formatString(a), 1)
 		case float32, float64:
-			sql = strings.Replace(sql, "?", formatString(fmt.Sprintf("%f", a)), 1)
+			sql = strings.Replace(sql, question, formatString(fmt.Sprintf(folatFormat, a)), 1)
 		case uint, uint8, uint16, uint32, uint64, int, int8, int16, int32, int64:
-			sql = strings.Replace(sql, "?", formatString(fmt.Sprintf("%d", a)), 1)
+			sql = strings.Replace(sql, question, formatString(fmt.Sprintf(numberFormat, a)), 1)
 		default:
-			sql = strings.Replace(sql, "?", formatString(fmt.Sprintf("%s", a)), 1)
+			sql = strings.Replace(sql, question, formatString(fmt.Sprintf(stringFormat, a)), 1)
 		}
 	}
 
@@ -73,12 +76,12 @@ func String(s SqlInterface) string {
 }
 
 func formatOrder(order string) string {
-	info := strings.Split(order, " ")
+	info := strings.Split(order, space)
 	if len(info) != 2 {
 		return order
 	}
 
 	info[0] = formatValue(info[0])
 
-	return strings.Join(info, " ")
+	return strings.Join(info, space)
 }

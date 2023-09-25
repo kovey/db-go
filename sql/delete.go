@@ -40,7 +40,7 @@ func (d *Delete) Args() []any {
 
 func (d *Delete) Prepare() string {
 	if d.where == nil {
-		return fmt.Sprintf(d.format, formatValue(d.table), "")
+		return fmt.Sprintf(d.format, formatValue(d.table), emptyStr)
 	}
 	return fmt.Sprintf(d.format, formatValue(d.table), d.where.Prepare())
 }

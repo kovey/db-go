@@ -6,7 +6,17 @@ import (
 )
 
 const (
-	havingFormat string = "HAVING (%s)"
+	havingFormat = "HAVING (%s)"
+	whereFields  = "%s %s ?"
+	eq           = "="
+	neq          = "<>"
+	like         = "LIKE"
+	gt           = ">"
+	ge           = ">="
+	lt           = "<"
+	le           = "<="
+	question     = "?"
+	or           = " OR "
 )
 
 type Having struct {
@@ -19,52 +29,52 @@ func NewHaving() *Having {
 }
 
 func (w *Having) Eq(field string, value any) *Having {
-	return w.set("=", field, value)
+	return w.set(eq, field, value)
 }
 
 func (w *Having) set(op string, field string, value any) *Having {
-	w.fields = append(w.fields, fmt.Sprintf("%s %s ?", formatValue(field), op))
+	w.fields = append(w.fields, fmt.Sprintf(whereFields, formatValue(field), op))
 	w.args = append(w.args, value)
 	return w
 }
 
 func (w *Having) Neq(field string, value any) *Having {
-	return w.set("<>", field, value)
+	return w.set(neq, field, value)
 }
 
 func (w *Having) Like(field string, value any) *Having {
-	return w.set("LIKE", field, value)
+	return w.set(like, field, value)
 }
 
 func (w *Having) Between(field string, from any, to any) *Having {
-	w.fields = append(w.fields, fmt.Sprintf(betweenFormat, formatValue(field), "?", "?"))
+	w.fields = append(w.fields, fmt.Sprintf(betweenFormat, formatValue(field), question, question))
 	w.args = append(w.args, from, to)
 	return w
 }
 
 func (w *Having) Gt(field string, value any) *Having {
-	return w.set(">", field, value)
+	return w.set(gt, field, value)
 }
 
 func (w *Having) Ge(field string, value any) *Having {
-	return w.set(">=", field, value)
+	return w.set(ge, field, value)
 }
 
 func (w *Having) Lt(field string, value any) *Having {
-	return w.set("<", field, value)
+	return w.set(lt, field, value)
 }
 
 func (w *Having) Le(field string, value any) *Having {
-	return w.set("<=", field, value)
+	return w.set(le, field, value)
 }
 
 func (w *Having) setIn(format string, field string, value []any) *Having {
 	placeholders := make([]string, len(value))
 	for i := 0; i < len(value); i++ {
-		placeholders[i] = "?"
+		placeholders[i] = question
 	}
 
-	w.fields = append(w.fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, ",")))
+	w.fields = append(w.fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, comma)))
 	w.args = append(w.args, value...)
 	return w
 }
@@ -104,11 +114,11 @@ func (w *Having) prepare(op string) string {
 }
 
 func (w *Having) Prepare() string {
-	return w.prepare(" AND ")
+	return w.prepare(and)
 }
 
 func (w *Having) OrPrepare() string {
-	return w.prepare(" OR ")
+	return w.prepare(or)
 }
 
 func (w *Having) String() string {
