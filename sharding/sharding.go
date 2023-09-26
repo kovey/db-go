@@ -1,6 +1,7 @@
 package sharding
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -38,6 +39,21 @@ func (m *Mysql[T]) SetTx(tx *Tx) {
 
 func (m *Mysql[T]) Transaction(f func(tx *Tx) error) error {
 	if err := m.begin(); err != nil {
+		return err
+	}
+
+	if err := f(m.tx); err != nil {
+		if err := m.rollBack(); err != nil {
+			debug.Erro("rollBack failure, error: %s", err)
+		}
+		return err
+	}
+
+	return m.commit()
+}
+
+func (m *Mysql[T]) TransactionCtx(ctx context.Context, f func(tx *Tx) error, opts *sql.TxOptions) error {
+	if err := m.beginCtx(ctx, opts); err != nil {
 		return err
 	}
 
@@ -155,6 +171,24 @@ func (m *Mysql[T]) begin() error {
 	return nil
 }
 
+func (m *Mysql[T]) beginCtx(ctx context.Context, opts *sql.TxOptions) error {
+	if len(m.connections) == 0 {
+		return errors.New("connections is empty")
+	}
+
+	for index, connection := range m.connections {
+		err := connection.BeginCtx(ctx, opts)
+		if err != nil {
+			m.tx.Rollback()
+			return err
+		}
+
+		m.tx.Add(index, connection.Tx())
+	}
+
+	return nil
+}
+
 func (m *Mysql[T]) commit() error {
 	if len(m.connections) == 0 {
 		return errors.New("connections is empty")
@@ -227,4 +261,60 @@ func (m *Mysql[T]) Count(key any, table string, where ds.WhereInterface) (int64,
 
 func (m *Mysql[T]) FetchPageBySelect(key any, sel *ds.Select, model T) (*meta.Page[T], error) {
 	return m.GetConnection(m.GetShardingKey(key)).FetchPageBySelect(sel, model)
+}
+
+func (m *Mysql[T]) QueryCtx(ctx context.Context, key any, query string, model T, args ...any) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).QueryCtx(ctx, query, model, args...)
+}
+
+func (m *Mysql[T]) ExecCtx(ctx context.Context, key any, statement string) error {
+	return m.GetConnection(m.GetShardingKey(key)).ExecCtx(ctx, statement)
+}
+
+func (m *Mysql[T]) InsertCtx(ctx context.Context, key any, insert *ds.Insert) (int64, error) {
+	return m.GetConnection(m.GetShardingKey(key)).InsertCtx(ctx, insert)
+}
+
+func (m *Mysql[T]) UpdateCtx(ctx context.Context, key any, update *ds.Update) (int64, error) {
+	return m.GetConnection(m.GetShardingKey(key)).UpdateCtx(ctx, update)
+}
+
+func (m *Mysql[T]) DeleteCtx(ctx context.Context, key any, del *ds.Delete) (int64, error) {
+	return m.GetConnection(m.GetShardingKey(key)).DeleteCtx(ctx, del)
+}
+
+func (m *Mysql[T]) BatchInsertCtx(ctx context.Context, key any, batch *ds.Batch) (int64, error) {
+	return m.GetConnection(m.GetShardingKey(key)).BatchInsertCtx(ctx, batch)
+}
+
+func (m *Mysql[T]) FetchRowCtx(ctx context.Context, key any, table string, where meta.Where, model T) error {
+	return m.GetConnection(m.GetShardingKey(key)).FetchRowCtx(ctx, table, where, model)
+}
+
+func (m *Mysql[T]) LockRowCtx(ctx context.Context, key any, table string, where meta.Where, model T) error {
+	return m.GetConnection(m.GetShardingKey(key)).LockRowCtx(ctx, table, where, model)
+}
+
+func (m *Mysql[T]) FetchAllCtx(ctx context.Context, key any, table string, where meta.Where, model T) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchAllCtx(ctx, table, where, model)
+}
+
+func (m *Mysql[T]) FetchAllByWhereCtx(ctx context.Context, key any, table string, where ds.WhereInterface, model T) ([]T, error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchAllByWhereCtx(ctx, table, where, model)
+}
+
+func (m *Mysql[T]) FetchPageCtx(ctx context.Context, key any, table string, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageCtx(ctx, table, where, model, page, pageSize)
+}
+
+func (m *Mysql[T]) FetchPageByWhereCtx(ctx context.Context, key any, table string, where ds.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhereCtx(ctx, table, where, model, page, pageSize)
+}
+
+func (m *Mysql[T]) CountCtx(ctx context.Context, key any, table string, where ds.WhereInterface) (int64, error) {
+	return m.GetConnection(m.GetShardingKey(key)).CountCtx(ctx, table, where)
+}
+
+func (m *Mysql[T]) FetchPageBySelectCtx(ctx context.Context, key any, sel *ds.Select, model T) (*meta.Page[T], error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageBySelectCtx(ctx, sel, model)
 }

@@ -13,6 +13,8 @@ const (
 // Created time: {created_date}
 
 import(
+	"context"
+
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/model"
@@ -53,6 +55,26 @@ func (self *{name}Table) FetchPage(where meta.Where, page, pageSize int) (*meta.
 
 func (self *{name}Table) FetchPageByWhere(where sql.WhereInterface, page, pageSize int) (*meta.Page[*{name}Row], error) {
 	return self.Table.FetchPageByWhere(where, &{name}Row{}, page, pageSize)
+}
+
+func (self *{name}Table) FetchAllCtx(ctx context.Context, where meta.Where) ([]*{name}Row, error) {
+	return self.Table.FetchAllCtx(ctx, where, &{name}Row{})
+}
+
+func (self *{name}Table) FetchAllByWhereCtx(ctx context.Context, where sql.WhereInterface) ([]*{name}Row, error) {
+	return self.Table.FetchAllByWhereCtx(ctx, where, &{name}Row{})
+}
+
+func (self *{name}Table) FetchBySelectCtx(ctx context.Context, sel *sql.Select) ([]*{name}Row, error) {
+	return self.Table.FetchBySelectCtx(ctx, sel, &{name}Row{})
+}
+
+func (self *{name}Table) FetchPageCtx(ctx context.Context, where meta.Where, page, pageSize int) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPageCtx(ctx, where, &{name}Row{}, page, pageSize)
+}
+
+func (self *{name}Table) FetchPageByWhereCtx(ctx context.Context, where sql.WhereInterface, page, pageSize int) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPageByWhereCtx(ctx, where, &{name}Row{}, page, pageSize)
 }
 
 {table_comment}
@@ -103,6 +125,22 @@ func (self *{name}Row) LockRow(where meta.Where) error {
 
 func (self *{name}Row) Delete() error {
 	return self.Base.Delete(self)
+}
+
+func (self *{name}Row) SaveCtx(ctx context.Context) error {
+	return self.Base.SaveCtx(ctx, self)
+}
+
+func (self *{name}Row) FetchRowCtx(ctx context.Context, where meta.Where) error {
+	return self.Base.FetchRowCtx(ctx, where, self)
+}
+
+func (self *{name}Row) LockRowCtx(ctx context.Context, where meta.Where) error {
+	return self.Base.LockRowCtx(ctx, where, self)
+}
+
+func (self *{name}Row) DeleteCtx(ctx context.Context) error {
+	return self.Base.DeleteCtx(ctx, self)
 }
 	`
 	Field = "	%s %s `db:\"%s\"` %s"

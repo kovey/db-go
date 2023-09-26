@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/table"
@@ -22,6 +24,10 @@ func (b *Base[T]) NoAutoInc() {
 }
 
 func (b *Base[T]) Save(model T) error {
+	return b.SaveCtx(context.Background(), model)
+}
+
+func (b *Base[T]) SaveCtx(ctx context.Context, model T) error {
 	columns := model.Columns()
 	fields := model.Fields()
 	values := model.Values()
@@ -50,11 +56,11 @@ func (b *Base[T]) Save(model T) error {
 	if !b.isInsert {
 		where := meta.NewWhere()
 		where.Add(b.primaryId.Name, b.primaryId.Value())
-		_, err := b.Table.Update(data, where)
+		_, err := b.Table.UpdateCtx(ctx, data, where)
 		return err
 	}
 
-	id, err := b.Table.Insert(data)
+	id, err := b.Table.InsertCtx(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -88,6 +94,10 @@ func (b *Base[T]) Save(model T) error {
 }
 
 func (b *Base[T]) Delete(model T) error {
+	return b.DeleteCtx(context.Background(), model)
+}
+
+func (b *Base[T]) DeleteCtx(ctx context.Context, model T) error {
 	columns := model.Columns()
 	values := model.Values()
 	where := meta.NewWhere()
@@ -99,13 +109,17 @@ func (b *Base[T]) Delete(model T) error {
 		}
 	}
 
-	_, err := b.Table.Delete(where)
+	_, err := b.Table.DeleteCtx(ctx, where)
 	return err
 }
 
 func (b *Base[T]) FetchRow(where meta.Where, model T) error {
+	return b.FetchRowCtx(context.Background(), where, model)
+}
+
+func (b *Base[T]) FetchRowCtx(ctx context.Context, where meta.Where, model T) error {
 	b.isEmpty = false
-	err := b.Table.FetchRow(where, model)
+	err := b.Table.FetchRowCtx(ctx, where, model)
 	if err != nil {
 		return err
 	}
@@ -115,8 +129,12 @@ func (b *Base[T]) FetchRow(where meta.Where, model T) error {
 }
 
 func (b *Base[T]) LockRow(where meta.Where, model T) error {
+	return b.LockRowCtx(context.Background(), where, model)
+}
+
+func (b *Base[T]) LockRowCtx(ctx context.Context, where meta.Where, model T) error {
 	b.isEmpty = false
-	err := b.Table.LockRow(where, model)
+	err := b.Table.LockRowCtx(ctx, where, model)
 	if err != nil {
 		return err
 	}

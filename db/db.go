@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	ds "database/sql"
 	"fmt"
 
@@ -39,13 +40,36 @@ type DbInterface[T itf.RowInterface] interface {
 	FetchPageByWhere(string, sql.WhereInterface, T, int, int) (*meta.Page[T], error)
 	FetchPageBySelect(*sql.Select, T) (*meta.Page[T], error)
 	Count(string, sql.WhereInterface) (int64, error)
+	TransactionCtx(context.Context, func(*Tx) error, *ds.TxOptions) error
+	QueryCtx(context.Context, string, T, ...any) ([]T, error)
+	ExecCtx(context.Context, string) error
+	DescCtx(context.Context, *sql.Desc, T) ([]T, error)
+	ShowTablesCtx(context.Context, *sql.ShowTables, T) ([]T, error)
+	InsertCtx(context.Context, *sql.Insert) (int64, error)
+	UpdateCtx(context.Context, *sql.Update) (int64, error)
+	DeleteCtx(context.Context, *sql.Delete) (int64, error)
+	BatchInsertCtx(context.Context, *sql.Batch) (int64, error)
+	SelectCtx(context.Context, *sql.Select, T) ([]T, error)
+	FetchRowCtx(context.Context, string, meta.Where, T) error
+	LockRowCtx(context.Context, string, meta.Where, T) error
+	FetchAllCtx(context.Context, string, meta.Where, T) ([]T, error)
+	FetchAllByWhereCtx(context.Context, string, sql.WhereInterface, T) ([]T, error)
+	FetchBySelectCtx(context.Context, *sql.Select, T) ([]T, error)
+	FetchPageCtx(context.Context, string, meta.Where, T, int, int) (*meta.Page[T], error)
+	FetchPageByWhereCtx(context.Context, string, sql.WhereInterface, T, int, int) (*meta.Page[T], error)
+	FetchPageBySelectCtx(context.Context, *sql.Select, T) (*meta.Page[T], error)
+	CountCtx(context.Context, string, sql.WhereInterface) (int64, error)
 }
 
 type ConnInterface interface {
 	Query(string, ...any) (*ds.Rows, error)
+	QueryContext(context.Context, string, ...any) (*ds.Rows, error)
 	Exec(string, ...any) (ds.Result, error)
+	ExecContext(context.Context, string, ...any) (ds.Result, error)
 	Prepare(string) (*ds.Stmt, error)
+	PrepareContext(context.Context, string) (*ds.Stmt, error)
 	QueryRow(string, ...any) *ds.Row
+	QueryRowContext(context.Context, string, ...any) *ds.Row
 }
 
 func min(left, right int) int {
@@ -72,8 +96,8 @@ func getFields[T itf.RowInterface](columns []string, has []string, length int, m
 	return fields
 }
 
-func queryAll[T itf.RowInterface](m ConnInterface, query string, model T, args ...any) ([]T, error) {
-	data, err := m.Query(query, args...)
+func queryAll[T itf.RowInterface](ctx context.Context, m ConnInterface, query string, model T, args ...any) ([]T, error) {
+	data, err := m.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +115,8 @@ func queryAll[T itf.RowInterface](m ConnInterface, query string, model T, args .
 	return rows, nil
 }
 
-func Query[T itf.RowInterface](m ConnInterface, query string, model T, args ...any) ([]T, error) {
-	data, err := m.Query(query, args...)
+func Query[T itf.RowInterface](ctx context.Context, m ConnInterface, query string, model T, args ...any) ([]T, error) {
+	data, err := m.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,9 +141,9 @@ func Query[T itf.RowInterface](m ConnInterface, query string, model T, args ...a
 	return rows, nil
 }
 
-func Exec(m ConnInterface, stament string) error {
+func Exec(ctx context.Context, m ConnInterface, stament string) error {
 	debug.Info("sql: %s", stament)
-	result, err := m.Exec(stament)
+	result, err := m.ExecContext(ctx, stament)
 
 	if err != nil {
 		return err
@@ -135,9 +159,9 @@ func Exec(m ConnInterface, stament string) error {
 	return nil
 }
 
-func prepare(m ConnInterface, pre sql.SqlInterface) (ds.Result, error) {
+func prepare(ctx context.Context, m ConnInterface, pre sql.SqlInterface) (ds.Result, error) {
 	debug.Info("sql: %s", pre)
-	smt, err := m.Prepare(pre.Prepare())
+	smt, err := m.PrepareContext(ctx, pre.Prepare())
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +171,8 @@ func prepare(m ConnInterface, pre sql.SqlInterface) (ds.Result, error) {
 	return smt.Exec(pre.Args()...)
 }
 
-func Insert(m ConnInterface, insert *sql.Insert) (int64, error) {
-	result, err := prepare(m, insert)
+func Insert(ctx context.Context, m ConnInterface, insert *sql.Insert) (int64, error) {
+	result, err := prepare(ctx, m, insert)
 	if err != nil {
 		return 0, err
 	}
@@ -156,8 +180,8 @@ func Insert(m ConnInterface, insert *sql.Insert) (int64, error) {
 	return result.LastInsertId()
 }
 
-func Update(m ConnInterface, update *sql.Update) (int64, error) {
-	result, err := prepare(m, update)
+func Update(ctx context.Context, m ConnInterface, update *sql.Update) (int64, error) {
+	result, err := prepare(ctx, m, update)
 	if err != nil {
 		return 0, err
 	}
@@ -165,8 +189,8 @@ func Update(m ConnInterface, update *sql.Update) (int64, error) {
 	return result.RowsAffected()
 }
 
-func Delete(m ConnInterface, del *sql.Delete) (int64, error) {
-	result, err := prepare(m, del)
+func Delete(ctx context.Context, m ConnInterface, del *sql.Delete) (int64, error) {
+	result, err := prepare(ctx, m, del)
 	if err != nil {
 		return 0, err
 	}
@@ -174,8 +198,8 @@ func Delete(m ConnInterface, del *sql.Delete) (int64, error) {
 	return result.RowsAffected()
 }
 
-func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
-	result, err := prepare(m, batch)
+func BatchInsert(ctx context.Context, m ConnInterface, batch *sql.Batch) (int64, error) {
+	result, err := prepare(ctx, m, batch)
 	if err != nil {
 		return 0, err
 	}
@@ -183,22 +207,22 @@ func BatchInsert(m ConnInterface, batch *sql.Batch) (int64, error) {
 	return result.RowsAffected()
 }
 
-func ShowTables[T itf.RowInterface](m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
-	return queryAll(m, show.Prepare(), model, show.Args()...)
+func ShowTables[T itf.RowInterface](ctx context.Context, m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
+	return queryAll(ctx, m, show.Prepare(), model, show.Args()...)
 }
 
-func Desc[T itf.RowInterface](m ConnInterface, desc *sql.Desc, model T) ([]T, error) {
-	return queryAll(m, desc.Prepare(), model, desc.Args()...)
+func Desc[T itf.RowInterface](ctx context.Context, m ConnInterface, desc *sql.Desc, model T) ([]T, error) {
+	return queryAll(ctx, m, desc.Prepare(), model, desc.Args()...)
 }
 
-func Select[T itf.RowInterface](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
-	return Query(m, sel.Prepare(), model, sel.Args()...)
+func Select[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.Select, model T) ([]T, error) {
+	return Query(ctx, m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchRow[T itf.ModelInterface](m ConnInterface, table string, where meta.Where, model T) error {
+func FetchRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) error {
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1)
-	result := m.QueryRow(sel.Prepare(), sel.Args()...)
+	result := m.QueryRowContext(ctx, sel.Prepare(), sel.Args()...)
 
 	return parseError(result.Scan(model.Fields()...), model)
 }
@@ -216,39 +240,39 @@ func parseError[T itf.ModelInterface](err error, model T) error {
 	return err
 }
 
-func LockRow[T itf.ModelInterface](m ConnInterface, table string, where meta.Where, model T) error {
+func LockRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) error {
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1).ForUpdate()
-	result := m.QueryRow(sel.Prepare(), sel.Args()...)
+	result := m.QueryRowContext(ctx, sel.Prepare(), sel.Args()...)
 
 	return parseError(result.Scan(model.Fields()...), model)
 }
 
-func FetchAll[T itf.RowInterface](m ConnInterface, table string, where meta.Where, model T) ([]T, error) {
+func FetchAll[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) ([]T, error) {
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...)
 
-	return queryAll(m, sel.Prepare(), model, sel.Args()...)
+	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchBySelect[T itf.RowInterface](m ConnInterface, sel *sql.Select, model T) ([]T, error) {
+func FetchBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.Select, model T) ([]T, error) {
 	sel.SetColumns(model.Columns())
 
-	return queryAll(m, sel.Prepare(), model, sel.Args()...)
+	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchAllByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
+func FetchAllByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
 	sel := sql.NewSelect(table, "")
 	sel.Where(where).Columns(model.Columns()...)
 
-	return queryAll(m, sel.Prepare(), model, sel.Args()...)
+	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchPage[T itf.RowInterface](m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
+func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
 	sel := sql.NewSelect(table, "")
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	rows, err := queryAll(m, sel.Prepare(), model, sel.Args()...)
+	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {
 		return nil, err
 	}
@@ -258,23 +282,23 @@ func FetchPage[T itf.RowInterface](m ConnInterface, table string, where meta.Whe
 		w.Eq(key, val)
 	}
 
-	return pageInfo(m, table, w, rows, pageSize)
+	return pageInfo(ctx, m, table, w, rows, pageSize)
 }
 
-func FetchPageByWhere[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
+func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
 	sel := sql.NewSelect(table, "")
 	sel.Where(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
 
-	rows, err := queryAll(m, sel.Prepare(), model, sel.Args()...)
+	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {
 		return nil, err
 	}
 
-	return pageInfo(m, table, where, rows, pageSize)
+	return pageInfo(ctx, m, table, where, rows, pageSize)
 }
 
-func FetchPageBySelect[T itf.RowInterface](m ConnInterface, sel *sql.Select, model T) (*meta.Page[T], error) {
-	rows, err := queryAll(m, sel.Prepare(), model, sel.Args()...)
+func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.Select, model T) (*meta.Page[T], error) {
+	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +333,7 @@ func FetchPageBySelect[T itf.RowInterface](m ConnInterface, sel *sql.Select, mod
 	return p, nil
 }
 
-func pageInfo[T itf.RowInterface](m ConnInterface, table string, where sql.WhereInterface, rows []T, pageSize int) (*meta.Page[T], error) {
+func pageInfo[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, rows []T, pageSize int) (*meta.Page[T], error) {
 	if len(rows) < pageSize {
 		page := meta.NewPage(rows)
 		page.TotalCount = int64(len(rows))
@@ -317,7 +341,7 @@ func pageInfo[T itf.RowInterface](m ConnInterface, table string, where sql.Where
 		return page, nil
 	}
 
-	count, err := Count(m, table, where)
+	count, err := Count(ctx, m, table, where)
 	if err != nil {
 		return nil, err
 	}
@@ -332,10 +356,10 @@ func pageInfo[T itf.RowInterface](m ConnInterface, table string, where sql.Where
 	return p, nil
 }
 
-func Count(m ConnInterface, table string, where sql.WhereInterface) (int64, error) {
+func Count(ctx context.Context, m ConnInterface, table string, where sql.WhereInterface) (int64, error) {
 	sel := sql.NewSelect(table, emptyStr)
 	sel.Where(where).ColMeta(meta.NewColFuncWithNull(meta.NewField(one, emptyStr, true), countField, zero, meta.Func_COUNT, nil))
-	row := m.QueryRow(sel.Prepare(), sel.Args()...)
+	row := m.QueryRowContext(ctx, sel.Prepare(), sel.Args()...)
 	count := int64(0)
 	err := row.Scan(&count)
 

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -88,6 +89,21 @@ func (m *Mysql[T]) Transaction(f func(tx *Tx) error) error {
 	return m.tx.Commit()
 }
 
+func (m *Mysql[T]) TransactionCtx(ctx context.Context, f func(tx *Tx) error, opts *sql.TxOptions) error {
+	if err := m.BeginCtx(ctx, opts); err != nil {
+		return err
+	}
+
+	if err := f(m.tx); err != nil {
+		if err := m.tx.Rollback(); err != nil {
+			debug.Erro("rollBack failure, error: %s", err)
+		}
+		return err
+	}
+
+	return m.tx.Commit()
+}
+
 func (m *Mysql[T]) Begin() error {
 	tx, err := m.database.Begin()
 	if err != nil {
@@ -97,9 +113,20 @@ func (m *Mysql[T]) Begin() error {
 	m.SetTx(NewTx(tx))
 	return nil
 }
+func (m *Mysql[T]) BeginCtx(ctx context.Context, opts *sql.TxOptions) error {
+	if opts == nil {
+		opts = &sql.TxOptions{Isolation: sql.LevelDefault}
+	}
+	tx, err := m.database.BeginTx(ctx, opts)
+	if err != nil {
+		return err
+	}
+
+	m.SetTx(NewTx(tx))
+	return nil
+}
 
 func (m *Mysql[T]) Commit() error {
-
 	if m.tx == nil {
 		return fmt.Errorf("transaction is not open or close")
 	}
@@ -122,15 +149,27 @@ func (m *Mysql[T]) InTransaction() bool {
 }
 
 func (m *Mysql[T]) Query(query string, model T, args ...any) ([]T, error) {
-	return Query(m.getDb(), query, model, args...)
+	return Query(context.Background(), m.getDb(), query, model, args...)
+}
+
+func (m *Mysql[T]) QueryCtx(ctx context.Context, query string, model T, args ...any) ([]T, error) {
+	return Query(ctx, m.getDb(), query, model, args...)
 }
 
 func (m *Mysql[T]) Exec(statement string) error {
-	return Exec(m.getDb(), statement)
+	return Exec(context.Background(), m.getDb(), statement)
+}
+
+func (m *Mysql[T]) ExecCtx(ctx context.Context, statement string) error {
+	return Exec(ctx, m.getDb(), statement)
 }
 
 func (m *Mysql[T]) Insert(insert *ds.Insert) (int64, error) {
-	return Insert(m.getDb(), insert)
+	return Insert(context.Background(), m.getDb(), insert)
+}
+
+func (m *Mysql[T]) InsertCtx(ctx context.Context, insert *ds.Insert) (int64, error) {
+	return Insert(ctx, m.getDb(), insert)
 }
 
 func (m *Mysql[T]) getDb() ConnInterface {
@@ -142,31 +181,59 @@ func (m *Mysql[T]) getDb() ConnInterface {
 }
 
 func (m *Mysql[T]) Update(update *ds.Update) (int64, error) {
-	return Update(m.getDb(), update)
+	return Update(context.Background(), m.getDb(), update)
+}
+
+func (m *Mysql[T]) UpdateCtx(ctx context.Context, update *ds.Update) (int64, error) {
+	return Update(ctx, m.getDb(), update)
 }
 
 func (m *Mysql[T]) Delete(del *ds.Delete) (int64, error) {
-	return Delete(m.getDb(), del)
+	return Delete(context.Background(), m.getDb(), del)
+}
+
+func (m *Mysql[T]) DeleteCtx(ctx context.Context, del *ds.Delete) (int64, error) {
+	return Delete(ctx, m.getDb(), del)
 }
 
 func (m *Mysql[T]) BatchInsert(batch *ds.Batch) (int64, error) {
-	return BatchInsert(m.getDb(), batch)
+	return BatchInsert(context.Background(), m.getDb(), batch)
+}
+
+func (m *Mysql[T]) BatchInsertCtx(ctx context.Context, batch *ds.Batch) (int64, error) {
+	return BatchInsert(ctx, m.getDb(), batch)
 }
 
 func (m *Mysql[T]) Desc(desc *ds.Desc, model T) ([]T, error) {
-	return Desc(m.getDb(), desc, model)
+	return Desc(context.Background(), m.getDb(), desc, model)
+}
+
+func (m *Mysql[T]) DescCtx(ctx context.Context, desc *ds.Desc, model T) ([]T, error) {
+	return Desc(ctx, m.getDb(), desc, model)
 }
 
 func (m *Mysql[T]) ShowTables(show *ds.ShowTables, model T) ([]T, error) {
-	return ShowTables(m.database, show, model)
+	return ShowTables(context.Background(), m.database, show, model)
+}
+
+func (m *Mysql[T]) ShowTablesCtx(ctx context.Context, show *ds.ShowTables, model T) ([]T, error) {
+	return ShowTables(ctx, m.database, show, model)
 }
 
 func (m *Mysql[T]) Select(sel *ds.Select, model T) ([]T, error) {
-	return Select(m.getDb(), sel, model)
+	return Select(context.Background(), m.getDb(), sel, model)
+}
+
+func (m *Mysql[T]) SelectCtx(ctx context.Context, sel *ds.Select, model T) ([]T, error) {
+	return Select(ctx, m.getDb(), sel, model)
 }
 
 func (m *Mysql[T]) FetchRow(table string, where meta.Where, model T) error {
-	return FetchRow(m.getDb(), table, where, model)
+	return FetchRow(context.Background(), m.getDb(), table, where, model)
+}
+
+func (m *Mysql[T]) FetchRowCtx(ctx context.Context, table string, where meta.Where, model T) error {
+	return FetchRow(ctx, m.getDb(), table, where, model)
 }
 
 func (m *Mysql[T]) LockRow(table string, where meta.Where, model T) error {
@@ -174,33 +241,69 @@ func (m *Mysql[T]) LockRow(table string, where meta.Where, model T) error {
 		return fmt.Errorf("transaction not open")
 	}
 
-	return LockRow(m.getDb(), table, where, model)
+	return LockRow(context.Background(), m.getDb(), table, where, model)
+}
+
+func (m *Mysql[T]) LockRowCtx(ctx context.Context, table string, where meta.Where, model T) error {
+	if !m.InTransaction() {
+		return fmt.Errorf("transaction not open")
+	}
+
+	return LockRow(ctx, m.getDb(), table, where, model)
 }
 
 func (m *Mysql[T]) FetchAll(table string, where meta.Where, model T) ([]T, error) {
-	return FetchAll(m.getDb(), table, where, model)
+	return FetchAll(context.Background(), m.getDb(), table, where, model)
+}
+
+func (m *Mysql[T]) FetchAllCtx(ctx context.Context, table string, where meta.Where, model T) ([]T, error) {
+	return FetchAll(ctx, m.getDb(), table, where, model)
 }
 
 func (m *Mysql[T]) FetchBySelect(s *ds.Select, model T) ([]T, error) {
-	return FetchBySelect(m.getDb(), s, model)
+	return FetchBySelect(context.Background(), m.getDb(), s, model)
+}
+
+func (m *Mysql[T]) FetchBySelectCtx(ctx context.Context, s *ds.Select, model T) ([]T, error) {
+	return FetchBySelect(ctx, m.getDb(), s, model)
 }
 
 func (m *Mysql[T]) FetchAllByWhere(table string, where ds.WhereInterface, model T) ([]T, error) {
-	return FetchAllByWhere(m.getDb(), table, where, model)
+	return FetchAllByWhere(context.Background(), m.getDb(), table, where, model)
+}
+
+func (m *Mysql[T]) FetchAllByWhereCtx(ctx context.Context, table string, where ds.WhereInterface, model T) ([]T, error) {
+	return FetchAllByWhere(ctx, m.getDb(), table, where, model)
 }
 
 func (m *Mysql[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return FetchPage(m.getDb(), table, where, model, page, pageSize)
+	return FetchPage(context.Background(), m.getDb(), table, where, model, page, pageSize)
+}
+
+func (m *Mysql[T]) FetchPageCtx(ctx context.Context, table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
+	return FetchPage(ctx, m.getDb(), table, where, model, page, pageSize)
 }
 
 func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return FetchPageByWhere(m.getDb(), table, where, model, page, pageSize)
+	return FetchPageByWhere(context.Background(), m.getDb(), table, where, model, page, pageSize)
+}
+
+func (m *Mysql[T]) FetchPageByWhereCtx(ctx context.Context, table string, where ds.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
+	return FetchPageByWhere(ctx, m.getDb(), table, where, model, page, pageSize)
 }
 
 func (m *Mysql[T]) Count(table string, where ds.WhereInterface) (int64, error) {
-	return Count(m.getDb(), table, where)
+	return Count(context.Background(), m.getDb(), table, where)
+}
+
+func (m *Mysql[T]) CountCtx(ctx context.Context, table string, where ds.WhereInterface) (int64, error) {
+	return Count(ctx, m.getDb(), table, where)
 }
 
 func (m *Mysql[T]) FetchPageBySelect(sel *ds.Select, model T) (*meta.Page[T], error) {
-	return FetchPageBySelect(m.getDb(), sel, model)
+	return FetchPageBySelect(context.Background(), m.getDb(), sel, model)
+}
+
+func (m *Mysql[T]) FetchPageBySelectCtx(ctx context.Context, sel *ds.Select, model T) (*meta.Page[T], error) {
+	return FetchPageBySelect(ctx, m.getDb(), sel, model)
 }

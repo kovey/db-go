@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/table"
@@ -27,6 +29,10 @@ func (b *BaseSharding[T]) NoAutoInc() {
 }
 
 func (b *BaseSharding[T]) Save(key any, model T) error {
+	return b.SaveCtx(context.Background(), key, model)
+}
+
+func (b *BaseSharding[T]) SaveCtx(ctx context.Context, key any, model T) error {
 	columns := model.Columns()
 	fields := model.Fields()
 	values := model.Values()
@@ -49,11 +55,11 @@ func (b *BaseSharding[T]) Save(key any, model T) error {
 	if !b.isInsert {
 		where := meta.NewWhere()
 		where.Add(b.primaryId.Name, b.primaryId.Value())
-		_, err := b.Table.Update(key, data, where)
+		_, err := b.Table.UpdateCtx(ctx, key, data, where)
 		return err
 	}
 
-	id, err := b.Table.Insert(key, data)
+	id, err := b.Table.InsertCtx(ctx, key, data)
 	if err != nil {
 		return err
 	}
@@ -86,6 +92,10 @@ func (b *BaseSharding[T]) Save(key any, model T) error {
 }
 
 func (b *BaseSharding[T]) Delete(key any, model T) error {
+	return b.DeleteCtx(context.Background(), key, model)
+}
+
+func (b *BaseSharding[T]) DeleteCtx(ctx context.Context, key any, model T) error {
 	where := meta.NewWhere()
 	columns := model.Columns()
 	values := model.Values()
@@ -96,13 +106,17 @@ func (b *BaseSharding[T]) Delete(key any, model T) error {
 		}
 	}
 
-	_, err := b.Table.Delete(key, where)
+	_, err := b.Table.DeleteCtx(ctx, key, where)
 	return err
 }
 
 func (b *BaseSharding[T]) FetchRow(key any, where meta.Where, model T) error {
+	return b.FetchRowCtx(context.Background(), key, where, model)
+}
+
+func (b *BaseSharding[T]) FetchRowCtx(ctx context.Context, key any, where meta.Where, model T) error {
 	b.isEmpty = false
-	err := b.Table.FetchRow(key, where, model)
+	err := b.Table.FetchRowCtx(ctx, key, where, model)
 	if err != nil {
 		return err
 	}
@@ -112,8 +126,12 @@ func (b *BaseSharding[T]) FetchRow(key any, where meta.Where, model T) error {
 }
 
 func (b *BaseSharding[T]) LockRow(key any, where meta.Where, model T) error {
+	return b.LockRowCtx(context.Background(), key, where, model)
+}
+
+func (b *BaseSharding[T]) LockRowCtx(ctx context.Context, key any, where meta.Where, model T) error {
 	b.isEmpty = false
-	err := b.Table.LockRow(key, where, model)
+	err := b.Table.LockRowCtx(ctx, key, where, model)
 	if err != nil {
 		return err
 	}

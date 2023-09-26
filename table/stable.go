@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/kovey/db-go/v2/itf"
@@ -19,6 +20,13 @@ type TableShardingInterface[T itf.ModelInterface] interface {
 	BatchInsert(any, []meta.Data) (int64, error)
 	FetchRow(any, meta.Where, T) error
 	LockRow(any, meta.Where, T) error
+	InsertCtx(context.Context, any, meta.Data) (int64, error)
+	UpdateCtx(context.Context, any, meta.Data, meta.Where) (int64, error)
+	DeleteCtx(context.Context, any, meta.Where) (int64, error)
+	DeleteWhereCtx(context.Context, any, sql.WhereInterface) (int64, error)
+	BatchInsertCtx(context.Context, any, []meta.Data) (int64, error)
+	FetchRowCtx(context.Context, any, meta.Where, T) error
+	LockRowCtx(context.Context, any, meta.Where, T) error
 }
 
 type TableSharding[T itf.ModelInterface] struct {
@@ -43,50 +51,23 @@ func (t *TableSharding[T]) GetTableName(key any) string {
 }
 
 func (t *TableSharding[T]) Insert(key any, data meta.Data) (int64, error) {
-	in := sql.NewInsert(t.GetTableName(key))
-	for field, value := range data {
-		in.Set(field, value)
-	}
-
-	return t.db.Insert(key, in)
+	return t.InsertCtx(context.Background(), key, data)
 }
 
 func (t *TableSharding[T]) Update(key any, data meta.Data, where meta.Where) (int64, error) {
-	up := sql.NewUpdate(t.GetTableName(key))
-	for field, value := range data {
-		up.Set(field, value)
-	}
-
-	up.WhereByMap(where)
-
-	return t.db.Update(key, up)
+	return t.UpdateCtx(context.Background(), key, data, where)
 }
 
 func (t *TableSharding[T]) Delete(key any, where meta.Where) (int64, error) {
-	del := sql.NewDelete(t.GetTableName(key))
-	del.WhereByMap(where)
-
-	return t.db.Delete(key, del)
+	return t.DeleteCtx(context.Background(), key, where)
 }
 
 func (t *TableSharding[T]) DeleteWhere(key any, where sql.WhereInterface) (int64, error) {
-	del := sql.NewDelete(t.GetTableName(key))
-	del.Where(where)
-
-	return t.db.Delete(key, del)
+	return t.DeleteWhereCtx(context.Background(), key, where)
 }
 
 func (t *TableSharding[T]) BatchInsert(key any, data []meta.Data) (int64, error) {
-	batch := sql.NewBatch(t.GetTableName(key))
-	for _, val := range data {
-		in := sql.NewInsert(t.GetTableName(key))
-		for field, value := range val {
-			in.Set(field, value)
-		}
-		batch.Add(in)
-	}
-
-	return t.db.BatchInsert(key, batch)
+	return t.BatchInsertCtx(context.Background(), key, data)
 }
 
 func (t *TableSharding[T]) FetchRow(key any, where meta.Where, model T) error {
@@ -111,4 +92,75 @@ func (t *TableSharding[T]) FetchPage(key any, where meta.Where, model T, page, p
 
 func (t *TableSharding[T]) FetchPageByWhere(key any, where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
 	return t.db.FetchPageByWhere(key, t.GetTableName(key), where, model, page, pageSize)
+}
+
+func (t *TableSharding[T]) InsertCtx(ctx context.Context, key any, data meta.Data) (int64, error) {
+	in := sql.NewInsert(t.GetTableName(key))
+	for field, value := range data {
+		in.Set(field, value)
+	}
+
+	return t.db.InsertCtx(ctx, key, in)
+}
+
+func (t *TableSharding[T]) UpdateCtx(ctx context.Context, key any, data meta.Data, where meta.Where) (int64, error) {
+	up := sql.NewUpdate(t.GetTableName(key))
+	for field, value := range data {
+		up.Set(field, value)
+	}
+
+	up.WhereByMap(where)
+
+	return t.db.UpdateCtx(ctx, key, up)
+}
+
+func (t *TableSharding[T]) DeleteCtx(ctx context.Context, key any, where meta.Where) (int64, error) {
+	del := sql.NewDelete(t.GetTableName(key))
+	del.WhereByMap(where)
+
+	return t.db.DeleteCtx(ctx, key, del)
+}
+
+func (t *TableSharding[T]) DeleteWhereCtx(ctx context.Context, key any, where sql.WhereInterface) (int64, error) {
+	del := sql.NewDelete(t.GetTableName(key))
+	del.Where(where)
+
+	return t.db.DeleteCtx(ctx, key, del)
+}
+
+func (t *TableSharding[T]) BatchInsertCtx(ctx context.Context, key any, data []meta.Data) (int64, error) {
+	batch := sql.NewBatch(t.GetTableName(key))
+	for _, val := range data {
+		in := sql.NewInsert(t.GetTableName(key))
+		for field, value := range val {
+			in.Set(field, value)
+		}
+		batch.Add(in)
+	}
+
+	return t.db.BatchInsertCtx(ctx, key, batch)
+}
+
+func (t *TableSharding[T]) FetchRowCtx(ctx context.Context, key any, where meta.Where, model T) error {
+	return t.db.FetchRowCtx(ctx, key, t.GetTableName(key), where, model)
+}
+
+func (t *TableSharding[T]) LockRowCtx(ctx context.Context, key any, where meta.Where, model T) error {
+	return t.db.LockRowCtx(ctx, key, t.GetTableName(key), where, model)
+}
+
+func (t *TableSharding[T]) FetchAllCtx(ctx context.Context, key any, where meta.Where, model T) ([]T, error) {
+	return t.db.FetchAllCtx(ctx, key, t.GetTableName(key), where, model)
+}
+
+func (t *TableSharding[T]) FetchAllByWhereCtx(ctx context.Context, key any, where sql.WhereInterface, model T) ([]T, error) {
+	return t.db.FetchAllByWhereCtx(ctx, key, t.GetTableName(key), where, model)
+}
+
+func (t *TableSharding[T]) FetchPageCtx(ctx context.Context, key any, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
+	return t.db.FetchPageCtx(ctx, key, t.GetTableName(key), where, model, page, pageSize)
+}
+
+func (t *TableSharding[T]) FetchPageByWhereCtx(ctx context.Context, key any, where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
+	return t.db.FetchPageByWhereCtx(ctx, key, t.GetTableName(key), where, model, page, pageSize)
 }
