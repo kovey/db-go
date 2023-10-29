@@ -124,7 +124,10 @@ func (b *Base[T]) FetchRowCtx(ctx context.Context, where meta.Where, model T) er
 		return err
 	}
 
-	b.isInsert = false
+	if !b.isEmpty {
+		b.isInsert = false
+	}
+
 	return nil
 }
 
@@ -139,7 +142,10 @@ func (b *Base[T]) LockRowCtx(ctx context.Context, where meta.Where, model T) err
 		return err
 	}
 
-	b.isInsert = false
+	if !b.isEmpty {
+		b.isInsert = false
+	}
+
 	return nil
 }
 
