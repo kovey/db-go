@@ -1,6 +1,9 @@
 package meta
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Func string
 
@@ -157,7 +160,12 @@ type Field struct {
 }
 
 func NewField(name, table string, isConstOrExpression bool) *Field {
-	return &Field{Name: name, Table: table, IsConstOrExpression: isConstOrExpression}
+	info := strings.Split(name, ".")
+	if len(info) == 1 {
+		return &Field{Name: name, Table: table, IsConstOrExpression: isConstOrExpression}
+	}
+
+	return &Field{Name: info[1], Table: info[0], IsConstOrExpression: isConstOrExpression}
 }
 
 func (f *Field) String() string {
@@ -205,11 +213,11 @@ func NewColumn(name string) *Column {
 }
 
 func (c *Column) SetTable(table string) {
-	if c.Name != nil {
+	if c.Name != nil && c.Name.Table != emptyStr {
 		c.Name.Table = table
 	}
 
-	if c.Ext != nil {
+	if c.Ext != nil && c.Ext.Table != emptyStr {
 		c.Ext.Table = table
 	}
 }
