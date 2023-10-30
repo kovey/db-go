@@ -213,11 +213,11 @@ func NewColumn(name string) *Column {
 }
 
 func (c *Column) SetTable(table string) {
-	if c.Name != nil && c.Name.Table != emptyStr {
+	if c.Name != nil && c.Name.Table == emptyStr {
 		c.Name.Table = table
 	}
 
-	if c.Ext != nil && c.Ext.Table != emptyStr {
+	if c.Ext != nil && c.Ext.Table == emptyStr {
 		c.Ext.Table = table
 	}
 }
