@@ -235,14 +235,14 @@ func (c *Column) String() string {
 	switch c.Func {
 	case Func_None:
 		return fmt.Sprintf(columnFormat, c.Name, c.Alias)
-	case Func_ISNULL:
-		return fmt.Sprintf(ifNull, Func_ISNULL, c.Name, c.Default, c.Alias)
+	case Func_IFNULL:
+		return fmt.Sprintf(ifNull, Func_IFNULL, c.Name, c.Default, c.Alias)
 	default:
 		val := c.funcName()
 		if !c.IsNull {
 			return fmt.Sprintf(columnFormat, val, c.Alias)
 		}
 
-		return fmt.Sprintf(ifNull, Func_ISNULL, val, c.Default, c.Alias)
+		return fmt.Sprintf(ifNull, Func_IFNULL, val, c.Default, c.Alias)
 	}
 }

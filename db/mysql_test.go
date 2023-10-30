@@ -204,6 +204,15 @@ func TestFatchAll(t *testing.T) {
 	}
 }
 
+func TestCount(t *testing.T) {
+	count, err := mysql.Count("product", nil)
+	if err != nil {
+		t.Fatalf("test count failure, error: %s", err)
+	}
+
+	t.Logf("count: %d", count)
+}
+
 func TestFatchRow(t *testing.T) {
 	row := Product{}
 	err := mysql.FetchRow("product", make(map[string]any), &row)
