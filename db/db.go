@@ -282,7 +282,7 @@ func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table s
 		w.Eq(key, val)
 	}
 
-	return pageInfo(ctx, m, table, w, rows, pageSize)
+	return pageInfo(ctx, m, table, w, rows, pageSize, page)
 }
 
 func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
@@ -294,7 +294,7 @@ func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, 
 		return nil, err
 	}
 
-	return pageInfo(ctx, m, table, where, rows, pageSize)
+	return pageInfo(ctx, m, table, where, rows, pageSize, page)
 }
 
 func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.Select, model T) (*meta.Page[T], error) {
@@ -304,7 +304,7 @@ func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface,
 	}
 
 	pageSize := sel.GetLimit()
-	if len(rows) < pageSize {
+	if sel.GetOffset() == 0 && len(rows) < pageSize {
 		p := meta.NewPage(rows)
 		p.TotalCount = int64(len(rows))
 		p.TotalPage = 1
@@ -333,8 +333,8 @@ func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface,
 	return p, nil
 }
 
-func pageInfo[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, rows []T, pageSize int) (*meta.Page[T], error) {
-	if len(rows) < pageSize {
+func pageInfo[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, rows []T, pageSize, curPage int) (*meta.Page[T], error) {
+	if curPage == 1 && len(rows) < pageSize {
 		page := meta.NewPage(rows)
 		page.TotalCount = int64(len(rows))
 		page.TotalPage = 1

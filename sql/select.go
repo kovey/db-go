@@ -152,6 +152,10 @@ func (s *Select) Offset(offset int) *Select {
 	return s
 }
 
+func (s *Select) GetOffset() int {
+	return s.offset
+}
+
 func (s *Select) Order(orders ...string) *Select {
 	for _, order := range orders {
 		s.orders = append(s.orders, formatOrder(order))
