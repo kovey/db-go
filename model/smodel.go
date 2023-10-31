@@ -40,12 +40,12 @@ func (b *BaseSharding[T]) SaveCtx(ctx context.Context, key any, model T) error {
 	data := meta.NewData()
 	for index, column := range columns {
 		if column == b.primaryId.Name {
+			primary = fields[index]
 			b.primaryId.Parse(values[index])
 			if b.primaryId.Null() {
 				continue
 			}
 
-			primary = fields[index]
 			continue
 		}
 
@@ -79,6 +79,8 @@ func (b *BaseSharding[T]) SaveCtx(ctx context.Context, key any, model T) error {
 		*tmp = int32(id)
 	case *int64:
 		*tmp = int64(id)
+	case *uint:
+		*tmp = uint(id)
 	case *uint8:
 		*tmp = uint8(id)
 	case *uint16:

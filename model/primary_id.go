@@ -33,6 +33,8 @@ func (p *PrimaryId) Parse(val any) {
 			p.IntValue = int(tmp)
 		case int64:
 			p.IntValue = int(tmp)
+		case uint:
+			p.IntValue = int(tmp)
 		case uint8:
 			p.IntValue = int(tmp)
 		case uint16:

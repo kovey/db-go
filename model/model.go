@@ -6,6 +6,7 @@ import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql/meta"
 	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/debug-go/debug"
 )
 
 type Base[T itf.ModelInterface] struct {
@@ -35,12 +36,12 @@ func (b *Base[T]) SaveCtx(ctx context.Context, model T) error {
 	var primary any
 	for index, column := range columns {
 		if column == b.primaryId.Name {
+			primary = fields[index]
 			b.primaryId.Parse(values[index])
 			if b.primaryId.Null() {
 				continue
 			}
 
-			primary = fields[index]
 			if !b.isInsert {
 				continue
 			}
@@ -80,6 +81,8 @@ func (b *Base[T]) SaveCtx(ctx context.Context, model T) error {
 		*tmp = int32(id)
 	case *int64:
 		*tmp = int64(id)
+	case *uint:
+		*tmp = uint(id)
 	case *uint8:
 		*tmp = uint8(id)
 	case *uint16:
@@ -88,6 +91,8 @@ func (b *Base[T]) SaveCtx(ctx context.Context, model T) error {
 		*tmp = uint32(id)
 	case *uint64:
 		*tmp = uint64(id)
+	default:
+		debug.Erro("type: %s", tmp)
 	}
 
 	return nil
