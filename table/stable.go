@@ -86,12 +86,12 @@ func (t *TableSharding[T]) FetchAllByWhere(key any, where sql.WhereInterface, mo
 	return t.db.FetchAllByWhere(key, t.GetTableName(key), where, model)
 }
 
-func (t *TableSharding[T]) FetchPage(key any, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPage(key, t.GetTableName(key), where, model, page, pageSize)
+func (t *TableSharding[T]) FetchPage(key any, where meta.Where, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPage(key, t.GetTableName(key), where, model, page, pageSize, orders...)
 }
 
-func (t *TableSharding[T]) FetchPageByWhere(key any, where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPageByWhere(key, t.GetTableName(key), where, model, page, pageSize)
+func (t *TableSharding[T]) FetchPageByWhere(key any, where sql.WhereInterface, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPageByWhere(key, t.GetTableName(key), where, model, page, pageSize, orders...)
 }
 
 func (t *TableSharding[T]) InsertCtx(ctx context.Context, key any, data meta.Data) (int64, error) {
@@ -157,10 +157,10 @@ func (t *TableSharding[T]) FetchAllByWhereCtx(ctx context.Context, key any, wher
 	return t.db.FetchAllByWhereCtx(ctx, key, t.GetTableName(key), where, model)
 }
 
-func (t *TableSharding[T]) FetchPageCtx(ctx context.Context, key any, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPageCtx(ctx, key, t.GetTableName(key), where, model, page, pageSize)
+func (t *TableSharding[T]) FetchPageCtx(ctx context.Context, key any, where meta.Where, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPageCtx(ctx, key, t.GetTableName(key), where, model, page, pageSize, orders...)
 }
 
-func (t *TableSharding[T]) FetchPageByWhereCtx(ctx context.Context, key any, where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPageByWhereCtx(ctx, key, t.GetTableName(key), where, model, page, pageSize)
+func (t *TableSharding[T]) FetchPageByWhereCtx(ctx context.Context, key any, where sql.WhereInterface, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPageByWhereCtx(ctx, key, t.GetTableName(key), where, model, page, pageSize, orders...)
 }

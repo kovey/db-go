@@ -49,12 +49,12 @@ func (self *{name}Table) FetchBySelect(sel *sql.Select) ([]*{name}Row, error) {
 	return self.Table.FetchBySelect(sel, &{name}Row{})
 }
 
-func (self *{name}Table) FetchPage(where meta.Where, page, pageSize int) (*meta.Page[*{name}Row], error) {
-	return self.Table.FetchPage(where, &{name}Row{}, page, pageSize)
+func (self *{name}Table) FetchPage(where meta.Where, page, pageSize int, orders ...string) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPage(where, &{name}Row{}, page, pageSize, orders...)
 }
 
-func (self *{name}Table) FetchPageByWhere(where sql.WhereInterface, page, pageSize int) (*meta.Page[*{name}Row], error) {
-	return self.Table.FetchPageByWhere(where, &{name}Row{}, page, pageSize)
+func (self *{name}Table) FetchPageByWhere(where sql.WhereInterface, page, pageSize int, orders ...string) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPageByWhere(where, &{name}Row{}, page, pageSize, orders...)
 }
 
 func (self *{name}Table) FetchAllCtx(ctx context.Context, where meta.Where) ([]*{name}Row, error) {
@@ -69,12 +69,12 @@ func (self *{name}Table) FetchBySelectCtx(ctx context.Context, sel *sql.Select) 
 	return self.Table.FetchBySelectCtx(ctx, sel, &{name}Row{})
 }
 
-func (self *{name}Table) FetchPageCtx(ctx context.Context, where meta.Where, page, pageSize int) (*meta.Page[*{name}Row], error) {
-	return self.Table.FetchPageCtx(ctx, where, &{name}Row{}, page, pageSize)
+func (self *{name}Table) FetchPageCtx(ctx context.Context, where meta.Where, page, pageSize int, orders ...string) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPageCtx(ctx, where, &{name}Row{}, page, pageSize, orders...)
 }
 
-func (self *{name}Table) FetchPageByWhereCtx(ctx context.Context, where sql.WhereInterface, page, pageSize int) (*meta.Page[*{name}Row], error) {
-	return self.Table.FetchPageByWhereCtx(ctx, where, &{name}Row{}, page, pageSize)
+func (self *{name}Table) FetchPageByWhereCtx(ctx context.Context, where sql.WhereInterface, page, pageSize int, orders ...string) (*meta.Page[*{name}Row], error) {
+	return self.Table.FetchPageByWhereCtx(ctx, where, &{name}Row{}, page, pageSize, orders...)
 }
 
 {table_comment}

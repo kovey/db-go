@@ -247,12 +247,12 @@ func (m *Mysql[T]) FetchAllByWhere(key any, table string, where ds.WhereInterfac
 	return m.GetConnection(m.GetShardingKey(key)).FetchAllByWhere(table, where, model)
 }
 
-func (m *Mysql[T]) FetchPage(key any, table string, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchPage(table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPage(key any, table string, where meta.Where, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPage(table, where, model, page, pageSize, orders...)
 }
 
-func (m *Mysql[T]) FetchPageByWhere(key any, table string, where ds.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhere(table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPageByWhere(key any, table string, where ds.WhereInterface, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhere(table, where, model, page, pageSize, orders...)
 }
 
 func (m *Mysql[T]) Count(key any, table string, where ds.WhereInterface) (int64, error) {
@@ -303,12 +303,12 @@ func (m *Mysql[T]) FetchAllByWhereCtx(ctx context.Context, key any, table string
 	return m.GetConnection(m.GetShardingKey(key)).FetchAllByWhereCtx(ctx, table, where, model)
 }
 
-func (m *Mysql[T]) FetchPageCtx(ctx context.Context, key any, table string, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchPageCtx(ctx, table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPageCtx(ctx context.Context, key any, table string, where meta.Where, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageCtx(ctx, table, where, model, page, pageSize, orders...)
 }
 
-func (m *Mysql[T]) FetchPageByWhereCtx(ctx context.Context, key any, table string, where ds.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
-	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhereCtx(ctx, table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPageByWhereCtx(ctx context.Context, key any, table string, where ds.WhereInterface, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return m.GetConnection(m.GetShardingKey(key)).FetchPageByWhereCtx(ctx, table, where, model, page, pageSize, orders...)
 }
 
 func (m *Mysql[T]) CountCtx(ctx context.Context, key any, table string, where ds.WhereInterface) (int64, error) {

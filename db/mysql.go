@@ -276,20 +276,20 @@ func (m *Mysql[T]) FetchAllByWhereCtx(ctx context.Context, table string, where d
 	return FetchAllByWhere(ctx, m.getDb(), table, where, model)
 }
 
-func (m *Mysql[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return FetchPage(context.Background(), m.getDb(), table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return FetchPage(context.Background(), m.getDb(), table, where, model, page, pageSize, orders...)
 }
 
-func (m *Mysql[T]) FetchPageCtx(ctx context.Context, table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return FetchPage(ctx, m.getDb(), table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPageCtx(ctx context.Context, table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return FetchPage(ctx, m.getDb(), table, where, model, page, pageSize, orders...)
 }
 
-func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return FetchPageByWhere(context.Background(), m.getDb(), table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPageByWhere(table string, where ds.WhereInterface, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return FetchPageByWhere(context.Background(), m.getDb(), table, where, model, page, pageSize, orders...)
 }
 
-func (m *Mysql[T]) FetchPageByWhereCtx(ctx context.Context, table string, where ds.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return FetchPageByWhere(ctx, m.getDb(), table, where, model, page, pageSize)
+func (m *Mysql[T]) FetchPageByWhereCtx(ctx context.Context, table string, where ds.WhereInterface, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return FetchPageByWhere(ctx, m.getDb(), table, where, model, page, pageSize, orders...)
 }
 
 func (m *Mysql[T]) Count(table string, where ds.WhereInterface) (int64, error) {

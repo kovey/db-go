@@ -245,12 +245,12 @@ func (ck *ClickHouse[T]) RollBack() error {
 	return nil
 }
 
-func (ck *ClickHouse[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return db.FetchPage(context.Background(), ck.getDb(), table, where, model, page, pageSize)
+func (ck *ClickHouse[T]) FetchPage(table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return db.FetchPage(context.Background(), ck.getDb(), table, where, model, page, pageSize, orders...)
 }
 
-func (ck *ClickHouse[T]) FetchPageByWhere(table string, where *ds.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return db.FetchPageByWhere(context.Background(), ck.getDb(), table, where, model, page, pageSize)
+func (ck *ClickHouse[T]) FetchPageByWhere(table string, where *ds.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return db.FetchPageByWhere(context.Background(), ck.getDb(), table, where, model, page, pageSize, orders...)
 }
 
 func (ck *ClickHouse[T]) Count(table string, where *ds.Where) (int64, error) {
@@ -352,12 +352,12 @@ func (ck *ClickHouse[T]) FetchAllByWhereCtx(ctx context.Context, table string, w
 	return db.FetchAllByWhere(ctx, ck.getDb(), table, where, model)
 }
 
-func (ck *ClickHouse[T]) FetchPageCtx(ctx context.Context, table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return db.FetchPage(ctx, ck.getDb(), table, where, model, page, pageSize)
+func (ck *ClickHouse[T]) FetchPageCtx(ctx context.Context, table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return db.FetchPage(ctx, ck.getDb(), table, where, model, page, pageSize, orders...)
 }
 
-func (ck *ClickHouse[T]) FetchPageByWhereCtx(ctx context.Context, table string, where *ds.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
-	return db.FetchPageByWhere(ctx, ck.getDb(), table, where, model, page, pageSize)
+func (ck *ClickHouse[T]) FetchPageByWhereCtx(ctx context.Context, table string, where *ds.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return db.FetchPageByWhere(ctx, ck.getDb(), table, where, model, page, pageSize, orders...)
 }
 
 func (ck *ClickHouse[T]) CountCtx(ctx context.Context, table string, where *ds.Where) (int64, error) {

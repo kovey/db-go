@@ -36,8 +36,8 @@ type DbInterface[T itf.RowInterface] interface {
 	FetchAll(string, meta.Where, T) ([]T, error)
 	FetchAllByWhere(string, sql.WhereInterface, T) ([]T, error)
 	FetchBySelect(*sql.Select, T) ([]T, error)
-	FetchPage(string, meta.Where, T, int, int) (*meta.Page[T], error)
-	FetchPageByWhere(string, sql.WhereInterface, T, int, int) (*meta.Page[T], error)
+	FetchPage(table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error)
+	FetchPageByWhere(table string, where sql.WhereInterface, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error)
 	FetchPageBySelect(*sql.Select, T) (*meta.Page[T], error)
 	Count(string, sql.WhereInterface) (int64, error)
 	TransactionCtx(context.Context, func(*Tx) error, *ds.TxOptions) error
@@ -55,8 +55,8 @@ type DbInterface[T itf.RowInterface] interface {
 	FetchAllCtx(context.Context, string, meta.Where, T) ([]T, error)
 	FetchAllByWhereCtx(context.Context, string, sql.WhereInterface, T) ([]T, error)
 	FetchBySelectCtx(context.Context, *sql.Select, T) ([]T, error)
-	FetchPageCtx(context.Context, string, meta.Where, T, int, int) (*meta.Page[T], error)
-	FetchPageByWhereCtx(context.Context, string, sql.WhereInterface, T, int, int) (*meta.Page[T], error)
+	FetchPageCtx(ctx context.Context, table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error)
+	FetchPageByWhereCtx(ctx context.Context, table string, where sql.WhereInterface, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error)
 	FetchPageBySelectCtx(context.Context, *sql.Select, T) (*meta.Page[T], error)
 	CountCtx(context.Context, string, sql.WhereInterface) (int64, error)
 }
@@ -268,9 +268,9 @@ func FetchAllByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, t
 	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 }
 
-func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T, page int, pageSize int) (*meta.Page[T], error) {
+func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
 	sel := sql.NewSelect(table, "")
-	sel.WhereByMap(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
+	sel.WhereByMap(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize).Order(orders...)
 
 	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {
@@ -285,9 +285,9 @@ func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table s
 	return pageInfo(ctx, m, table, w, rows, pageSize, page)
 }
 
-func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int) (*meta.Page[T], error) {
+func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
 	sel := sql.NewSelect(table, "")
-	sel.Where(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize)
+	sel.Where(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize).Order(orders...)
 
 	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {

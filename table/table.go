@@ -89,12 +89,12 @@ func (t *Table[T]) FetchBySelect(sel *sql.Select, model T) ([]T, error) {
 	return t.db.FetchBySelect(sel, model)
 }
 
-func (t *Table[T]) FetchPage(where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPage(t.table, where, model, page, pageSize)
+func (t *Table[T]) FetchPage(where meta.Where, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPage(t.table, where, model, page, pageSize, orders...)
 }
 
-func (t *Table[T]) FetchPageByWhere(where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPageByWhere(t.table, where, model, page, pageSize)
+func (t *Table[T]) FetchPageByWhere(where sql.WhereInterface, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPageByWhere(t.table, where, model, page, pageSize, orders...)
 }
 
 func (t *Table[T]) InsertCtx(ctx context.Context, data meta.Data) (int64, error) {
@@ -164,10 +164,10 @@ func (t *Table[T]) FetchBySelectCtx(ctx context.Context, sel *sql.Select, model 
 	return t.db.FetchBySelectCtx(ctx, sel, model)
 }
 
-func (t *Table[T]) FetchPageCtx(ctx context.Context, where meta.Where, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPageCtx(ctx, t.table, where, model, page, pageSize)
+func (t *Table[T]) FetchPageCtx(ctx context.Context, where meta.Where, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPageCtx(ctx, t.table, where, model, page, pageSize, orders...)
 }
 
-func (t *Table[T]) FetchPageByWhereCtx(ctx context.Context, where sql.WhereInterface, model T, page, pageSize int) (*meta.Page[T], error) {
-	return t.db.FetchPageByWhereCtx(ctx, t.table, where, model, page, pageSize)
+func (t *Table[T]) FetchPageByWhereCtx(ctx context.Context, where sql.WhereInterface, model T, page, pageSize int, orders ...string) (*meta.Page[T], error) {
+	return t.db.FetchPageByWhereCtx(ctx, t.table, where, model, page, pageSize, orders...)
 }
