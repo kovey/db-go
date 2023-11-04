@@ -15,6 +15,7 @@ type TableShardingInterface[T itf.ModelInterface] interface {
 	Database() *sharding.Mysql[T]
 	Insert(any, meta.Data) (int64, error)
 	Update(any, meta.Data, meta.Where) (int64, error)
+	UpdateWhere(any, meta.Data, sql.WhereInterface) (int64, error)
 	Delete(any, meta.Where) (int64, error)
 	DeleteWhere(any, sql.WhereInterface) (int64, error)
 	BatchInsert(any, []meta.Data) (int64, error)
@@ -22,6 +23,7 @@ type TableShardingInterface[T itf.ModelInterface] interface {
 	LockRow(any, meta.Where, T) error
 	InsertCtx(context.Context, any, meta.Data) (int64, error)
 	UpdateCtx(context.Context, any, meta.Data, meta.Where) (int64, error)
+	UpdateWhereCtx(context.Context, any, meta.Data, sql.WhereInterface) (int64, error)
 	DeleteCtx(context.Context, any, meta.Where) (int64, error)
 	DeleteWhereCtx(context.Context, any, sql.WhereInterface) (int64, error)
 	BatchInsertCtx(context.Context, any, []meta.Data) (int64, error)
@@ -56,6 +58,10 @@ func (t *TableSharding[T]) Insert(key any, data meta.Data) (int64, error) {
 
 func (t *TableSharding[T]) Update(key any, data meta.Data, where meta.Where) (int64, error) {
 	return t.UpdateCtx(context.Background(), key, data, where)
+}
+
+func (t *TableSharding[T]) UpdateWhere(key any, data meta.Data, where sql.WhereInterface) (int64, error) {
+	return t.UpdateWhereCtx(context.Background(), key, data, where)
 }
 
 func (t *TableSharding[T]) Delete(key any, where meta.Where) (int64, error) {
@@ -111,6 +117,16 @@ func (t *TableSharding[T]) UpdateCtx(ctx context.Context, key any, data meta.Dat
 
 	up.WhereByMap(where)
 
+	return t.db.UpdateCtx(ctx, key, up)
+}
+
+func (t *TableSharding[T]) UpdateWhereCtx(ctx context.Context, key any, data meta.Data, where sql.WhereInterface) (int64, error) {
+	up := sql.NewUpdate(t.GetTableName(key))
+	for field, value := range data {
+		up.Set(field, value)
+	}
+
+	up.Where(where)
 	return t.db.UpdateCtx(ctx, key, up)
 }
 

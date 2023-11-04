@@ -14,6 +14,7 @@ type TableInterface[T itf.ModelInterface] interface {
 	InTransation(*db.Tx)
 	Insert(meta.Data) (int64, error)
 	Update(meta.Data, meta.Where) (int64, error)
+	UpdateWhere(meta.Data, sql.WhereInterface) (int64, error)
 	Delete(meta.Where) (int64, error)
 	DeleteWhere(sql.WhereInterface) (int64, error)
 	BatchInsert([]meta.Data) (int64, error)
@@ -21,6 +22,7 @@ type TableInterface[T itf.ModelInterface] interface {
 	LockRow(meta.Where, T) error
 	InsertCtx(context.Context, meta.Data) (int64, error)
 	UpdateCtx(context.Context, meta.Data, meta.Where) (int64, error)
+	UpdateWhereCtx(context.Context, meta.Data, sql.WhereInterface) (int64, error)
 	DeleteCtx(context.Context, meta.Where) (int64, error)
 	DeleteWhereCtx(context.Context, sql.WhereInterface) (int64, error)
 	BatchInsertCtx(context.Context, []meta.Data) (int64, error)
@@ -55,6 +57,10 @@ func (t *Table[T]) Insert(data meta.Data) (int64, error) {
 
 func (t *Table[T]) Update(data meta.Data, where meta.Where) (int64, error) {
 	return t.UpdateCtx(context.Background(), data, where)
+}
+
+func (t *Table[T]) UpdateWhere(data meta.Data, where sql.WhereInterface) (int64, error) {
+	return t.UpdateWhereCtx(context.Background(), data, where)
 }
 
 func (t *Table[T]) Delete(where meta.Where) (int64, error) {
@@ -114,6 +120,16 @@ func (t *Table[T]) UpdateCtx(ctx context.Context, data meta.Data, where meta.Whe
 
 	up.WhereByMap(where)
 
+	return t.db.UpdateCtx(ctx, up)
+}
+
+func (t *Table[T]) UpdateWhereCtx(ctx context.Context, data meta.Data, where sql.WhereInterface) (int64, error) {
+	up := sql.NewUpdate(t.table)
+	for field, value := range data {
+		up.Set(field, value)
+	}
+
+	up.Where(where)
 	return t.db.UpdateCtx(ctx, up)
 }
 
