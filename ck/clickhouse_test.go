@@ -52,10 +52,10 @@ func (p *Product) SetEmpty() {
 
 func setup() {
 	conf := config.ClickHouse{
-		Username: "default", Password: "", Dbname: "test", Debug: false, OpenStrategy: "random", BlockSize: 1000000, PoolSize: 100,
-		Compress: 0, Timeout: config.Timeout{Read: 10, Write: 10},
+		Username: "default", Password: "", Dbname: "test", Debug: false, BlockSize: 1000000,
+		Compress: 0, Timeout: config.Timeout{Read: 10, Exec: 60, Dial: 30},
 		Cluster: config.Cluster{Open: "Off", Servers: make([]config.Addr, 0)},
-		Server:  config.Addr{Host: "127.0.0.1", Port: 29001},
+		Server:  config.Addr{Host: "127.0.0.1", Port: 29001}, ActiveMax: 10, LifeTime: 100, ConnectionMax: 20,
 	}
 	err := Init(conf)
 	if err != nil {

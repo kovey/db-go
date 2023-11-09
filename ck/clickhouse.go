@@ -2,12 +2,13 @@ package ck
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
+	"time"
 
-	"github.com/ClickHouse/clickhouse-go"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/kovey/db-go/v2/config"
 	"github.com/kovey/db-go/v2/db"
 	"github.com/kovey/db-go/v2/itf"
@@ -43,67 +44,46 @@ func Init(conf config.ClickHouse) error {
 }
 
 func OpenDB(conf config.ClickHouse) (*sql.DB, error) {
-	dsn := GetDSN(conf)
-	debug.Info("clickhouse dsn: %s", dsn)
-	db, err := sql.Open("clickhouse", dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	err = db.Ping()
-	if err != nil {
-		if exception, ok := err.(*clickhouse.Exception); ok {
-			err = fmt.Errorf("[%d] %s \n%s\n", exception.Code, exception.Message, exception.StackTrace)
-		}
-
-		return nil, err
-	}
-
-	return db, nil
-}
-
-func GetDSN(conf config.ClickHouse) string {
-	// tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000
-	dsn := "tcp://%s?%s"
-	host := fmt.Sprintf("%s:%d", conf.Server.Host, conf.Server.Port)
-	configs := make([]string, 0)
-	configs = append(configs, formatString("username", conf.Username))
-	configs = append(configs, formatString("password", conf.Password))
-	configs = append(configs, formatString("database", conf.Dbname))
-	configs = append(configs, formatInt("read_timeout", conf.Timeout.Read))
-	configs = append(configs, formatInt("write_timeout", conf.Timeout.Write))
-	configs = append(configs, formatInt("write_timeout", conf.Timeout.Write))
+	var addr []string
 	if conf.Cluster.Open == "On" {
-		configs = append(configs, formatList("alt_hosts", conf.Cluster.Servers))
-	}
-	configs = append(configs, formatString("connection_open_strategy", conf.OpenStrategy))
-	configs = append(configs, formatInt("block_size", conf.BlockSize))
-	configs = append(configs, formatInt("pool_size", conf.PoolSize))
-	configs = append(configs, formatBool("debug", conf.Debug))
-	configs = append(configs, formatInt("compress", conf.Compress))
-
-	return fmt.Sprintf(dsn, host, strings.Join(configs, "&"))
-}
-
-func formatBool(key string, value bool) string {
-	return fmt.Sprintf("%s=%t", key, value)
-}
-
-func formatString(key string, value string) string {
-	return fmt.Sprintf("%s=%s", key, value)
-}
-
-func formatInt(key string, value int) string {
-	return fmt.Sprintf("%s=%d", key, value)
-}
-
-func formatList(key string, servers []config.Addr) string {
-	hosts := make([]string, len(servers))
-	for index, server := range servers {
-		hosts[index] = fmt.Sprintf("%s:%d", server.Host, server.Port)
+		addr = make([]string, len(conf.Cluster.Servers))
+		for i, a := range conf.Cluster.Servers {
+			addr[i] = a.Info()
+		}
+	} else {
+		addr = []string{conf.Server.Info()}
 	}
 
-	return strings.Join(hosts, ",")
+	conn := clickhouse.OpenDB(&clickhouse.Options{
+		Addr: addr,
+		Auth: clickhouse.Auth{
+			Database: conf.Dbname,
+			Username: conf.Username,
+			Password: conf.Password,
+		},
+		TLS: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		Settings: clickhouse.Settings{
+			"max_execution_time": conf.Timeout.Exec,
+		},
+		DialTimeout: time.Duration(conf.Timeout.Dial) * time.Second,
+		Compression: &clickhouse.Compression{
+			Method: clickhouse.CompressionLZ4,
+		},
+		ConnOpenStrategy:     clickhouse.ConnOpenRoundRobin,
+		Debug:                conf.Debug,
+		BlockBufferSize:      uint8(conf.BlockSize),
+		MaxCompressionBuffer: conf.Compress,
+		ReadTimeout:          time.Duration(conf.Timeout.Read) * time.Second,
+		ClientInfo:           clickhouse.ClientInfo{},
+	})
+
+	conn.SetMaxIdleConns(conf.ActiveMax)
+	conn.SetMaxOpenConns(conf.ConnectionMax)
+	conn.SetConnMaxLifetime(time.Duration(conf.LifeTime) * time.Second)
+
+	return conn, nil
 }
 
 func (ck *ClickHouse[T]) getDb() db.ConnInterface {
