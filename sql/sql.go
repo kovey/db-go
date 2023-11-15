@@ -10,12 +10,16 @@ const (
 	valueFormat       = "`%s`"
 	folatFormat       = "%f"
 	numberFormat      = "%d"
-	stringFormat      = "%s"
+	otherFormat       = "%v"
 )
 
 type SqlInterface interface {
+	StrInterface
 	Args() []any
 	Prepare() string
+}
+
+type StrInterface interface {
 	String() string
 }
 
@@ -68,7 +72,11 @@ func String(s SqlInterface) string {
 		case uint, uint8, uint16, uint32, uint64, int, int8, int16, int32, int64:
 			sql = strings.Replace(sql, question, formatString(fmt.Sprintf(numberFormat, a)), 1)
 		default:
-			sql = strings.Replace(sql, question, formatString(fmt.Sprintf(stringFormat, a)), 1)
+			if tmp, ok := arg.(StrInterface); ok {
+				sql = strings.Replace(sql, question, formatString(tmp.String()), 1)
+			} else {
+				sql = strings.Replace(sql, question, formatString(fmt.Sprintf(otherFormat, a)), 1)
+			}
 		}
 	}
 
