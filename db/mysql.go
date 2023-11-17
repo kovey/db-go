@@ -80,9 +80,10 @@ func (m *Mysql[T]) Transaction(f func(tx *Tx) error) error {
 	}
 
 	if err := f(m.tx); err != nil {
-		if err := m.tx.Rollback(); err != nil {
-			debug.Erro("rollBack failure, error: %s", err)
+		if er := m.tx.Rollback(); err != nil {
+			debug.Erro("rollBack failure, error: %s", er)
 		}
+
 		return err
 	}
 
@@ -95,8 +96,8 @@ func (m *Mysql[T]) TransactionCtx(ctx context.Context, f func(tx *Tx) error, opt
 	}
 
 	if err := f(m.tx); err != nil {
-		if err := m.tx.Rollback(); err != nil {
-			debug.Erro("rollBack failure, error: %s", err)
+		if er := m.tx.Rollback(); err != nil {
+			debug.Erro("rollBack failure, error: %s", er)
 		}
 		return err
 	}
