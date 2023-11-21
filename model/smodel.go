@@ -28,6 +28,10 @@ func (b *BaseSharding[T]) NoAutoInc() {
 	b.primaryId.IsAutoInc = false
 }
 
+func (b *BaseSharding[T]) PrimaryId() string {
+	return b.primaryId.Name
+}
+
 func (b *BaseSharding[T]) Save(key any, model T) error {
 	return b.SaveCtx(context.Background(), key, model)
 }

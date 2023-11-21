@@ -115,8 +115,40 @@ func (self *{name}Row) Save() error {
 	return self.Base.Save(self)
 }
 
+func (self *{name}Row) FindByInt(id int64) error {
+	return self.FetchRow(meta.Where{self.PrimaryId(): id})
+}
+
+func (self *{name}Row) FindByIntCtx(ctx context.Context, id int64) error {
+	return self.FetchRowCtx(ctx, meta.Where{self.PrimaryId(): id})
+}
+
+func (self *{name}Row) FindByString(id string) error {
+	return self.FetchRow(meta.Where{self.PrimaryId(): id})
+}
+
+func (self *{name}Row) FindByStringCtx(ctx context.Context, id string) error {
+	return self.FetchRowCtx(ctx, meta.Where{self.PrimaryId(): id})
+}
+
 func (self *{name}Row) FetchRow(where meta.Where) error {
 	return self.Base.FetchRow(where, self)
+}
+
+func (self *{name}Row) LockByInt(id int64) error {
+	return self.LockRow(meta.Where{self.PrimaryId(): id})
+}
+
+func (self *{name}Row) LockByIntCtx(ctx context.Context, id int64) error {
+	return self.LockRowCtx(ctx, meta.Where{self.PrimaryId(): id})
+}
+
+func (self *{name}Row) LockByString(id string) error {
+	return self.LockRow(meta.Where{self.PrimaryId(): id})
+}
+
+func (self *{name}Row) LockByStringCtx(ctx context.Context, id string) error {
+	return self.LockRowCtx(ctx, meta.Where{self.PrimaryId(): id})
 }
 
 func (self *{name}Row) LockRow(where meta.Where) error {

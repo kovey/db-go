@@ -24,6 +24,10 @@ func (b *Base[T]) NoAutoInc() {
 	b.primaryId.IsAutoInc = false
 }
 
+func (b *Base[T]) PrimaryId() string {
+	return b.primaryId.Name
+}
+
 func (b *Base[T]) Save(model T) error {
 	return b.SaveCtx(context.Background(), model)
 }
