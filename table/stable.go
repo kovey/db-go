@@ -8,6 +8,7 @@ import (
 	"github.com/kovey/db-go/v2/sharding"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/pool/object"
 )
 
 type TableShardingInterface[T itf.ModelInterface] interface {
@@ -101,7 +102,13 @@ func (t *TableSharding[T]) FetchPageByWhere(key any, where sql.WhereInterface, m
 }
 
 func (t *TableSharding[T]) InsertCtx(ctx context.Context, key any, data meta.Data) (int64, error) {
-	in := sql.NewInsert(t.GetTableName(key))
+	var in *sql.Insert
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		in = sql.NewInsertBy(cc, t.GetTableName(key))
+	} else {
+		in = sql.NewInsert(t.GetTableName(key))
+	}
+
 	for field, value := range data {
 		in.Set(field, value)
 	}
@@ -110,7 +117,13 @@ func (t *TableSharding[T]) InsertCtx(ctx context.Context, key any, data meta.Dat
 }
 
 func (t *TableSharding[T]) UpdateCtx(ctx context.Context, key any, data meta.Data, where meta.Where) (int64, error) {
-	up := sql.NewUpdate(t.GetTableName(key))
+	var up *sql.Update
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		up = sql.NewUpdateBy(cc, t.GetTableName(key))
+	} else {
+		up = sql.NewUpdate(t.GetTableName(key))
+	}
+
 	for field, value := range data {
 		up.Set(field, value)
 	}
@@ -121,7 +134,13 @@ func (t *TableSharding[T]) UpdateCtx(ctx context.Context, key any, data meta.Dat
 }
 
 func (t *TableSharding[T]) UpdateWhereCtx(ctx context.Context, key any, data meta.Data, where sql.WhereInterface) (int64, error) {
-	up := sql.NewUpdate(t.GetTableName(key))
+	var up *sql.Update
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		up = sql.NewUpdateBy(cc, t.GetTableName(key))
+	} else {
+		up = sql.NewUpdate(t.GetTableName(key))
+	}
+
 	for field, value := range data {
 		up.Set(field, value)
 	}
@@ -131,21 +150,36 @@ func (t *TableSharding[T]) UpdateWhereCtx(ctx context.Context, key any, data met
 }
 
 func (t *TableSharding[T]) DeleteCtx(ctx context.Context, key any, where meta.Where) (int64, error) {
-	del := sql.NewDelete(t.GetTableName(key))
+	var del *sql.Delete
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		del = sql.NewDeleteBy(cc, t.GetTableName(key))
+	} else {
+		del = sql.NewDelete(t.GetTableName(key))
+	}
 	del.WhereByMap(where)
 
 	return t.db.DeleteCtx(ctx, key, del)
 }
 
 func (t *TableSharding[T]) DeleteWhereCtx(ctx context.Context, key any, where sql.WhereInterface) (int64, error) {
-	del := sql.NewDelete(t.GetTableName(key))
+	var del *sql.Delete
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		del = sql.NewDeleteBy(cc, t.GetTableName(key))
+	} else {
+		del = sql.NewDelete(t.GetTableName(key))
+	}
 	del.Where(where)
 
 	return t.db.DeleteCtx(ctx, key, del)
 }
 
 func (t *TableSharding[T]) BatchInsertCtx(ctx context.Context, key any, data []meta.Data) (int64, error) {
-	batch := sql.NewBatch(t.GetTableName(key))
+	var batch *sql.Batch
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		batch = sql.NewBatchBy(cc, t.GetTableName(key))
+	} else {
+		batch = sql.NewBatch(t.GetTableName(key))
+	}
 	for _, val := range data {
 		in := sql.NewInsert(t.GetTableName(key))
 		for field, value := range val {

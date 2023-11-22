@@ -3,6 +3,9 @@ package meta
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 const (
@@ -19,9 +22,18 @@ const (
 	qua             = "''"
 	strFormat       = "`%s`"
 	strTowFormat    = "`%s`.`%s`"
+	namespace       = "ko.db.sql.meta"
+	cw_name         = "CaseWhen"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, cw_name, func() any {
+		return &CaseWhen{ObjNoCtx: object.NewObjNoCtx(namespace, cw_name)}
+	})
+}
+
 type CaseWhen struct {
+	*object.ObjNoCtx
 	Conditions []*WhenThen
 	elseResult string
 	Alias      string
@@ -29,6 +41,18 @@ type CaseWhen struct {
 
 func NewCaseWhen(alias string) *CaseWhen {
 	return &CaseWhen{Alias: alias, Conditions: make([]*WhenThen, 0)}
+}
+
+func NewCaseWhenBy(ctx object.CtxInterface, alias string) *CaseWhen {
+	obj := ctx.GetNoCtx(namespace, cw_name).(*CaseWhen)
+	obj.Alias = alias
+	return obj
+}
+
+func (c *CaseWhen) Reset() {
+	c.Alias = emptyStr
+	c.elseResult = emptyStr
+	c.Conditions = nil
 }
 
 func (c *CaseWhen) AddWhenThen(when, then string) {

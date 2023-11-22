@@ -20,6 +20,17 @@ func NewBase[T itf.ModelInterface](tb table.TableInterface[T], primaryId *Primar
 	return &Base[T]{Table: tb, primaryId: primaryId, isInsert: true, isEmpty: false}
 }
 
+func (b *Base[T]) Reset() {
+	b.primaryId = nil
+	b.isInsert = false
+	b.isEmpty = false
+	b.Table = nil
+}
+
+func (b *Base[T]) SetPrimaryId(primaryId *PrimaryId) {
+	b.primaryId = primaryId
+}
+
 func (b *Base[T]) NoAutoInc() {
 	b.primaryId.IsAutoInc = false
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/kovey/db-go/v2/tools/tpl"
 	"github.com/kovey/debug-go/debug"
-	"github.com/kovey/debug-go/util"
 )
 
 type Table struct {
@@ -57,7 +56,7 @@ func UcFirst(name string) string {
 	return strings.ToUpper(name[:1]) + name[1:]
 }
 func now() string {
-	return time.Now().Format(util.Golang_Birthday_Time)
+	return time.Now().Format(time.DateTime)
 }
 
 func (t *Table) Format() string {
@@ -80,6 +79,7 @@ func (t *Table) Format() string {
 	content = strings.ReplaceAll(content, "{row_fields}", t.fields())
 	content = strings.ReplaceAll(content, "{primary_id}", t.Primary.ConstaintName(t.Name))
 	content = strings.ReplaceAll(content, "{imports}", t.imports())
+	content = strings.ReplaceAll(content, "{row_fields_reset}", t.resets())
 	switch t.Primary.GolangType {
 	case "string":
 		content = strings.ReplaceAll(content, "{primary_id_type}", "Str")
@@ -94,6 +94,15 @@ func (t *Table) Format() string {
 
 	content = strings.ReplaceAll(content, "{close_auto_inc}", closeAuto)
 	return content
+}
+
+func (t *Table) resets() string {
+	res := make([]string, len(t.Fields))
+	for index, f := range t.Fields {
+		res[index] = f.GolangDefalut
+	}
+
+	return strings.Join(res, "\n")
 }
 
 func (t *Table) fields() string {

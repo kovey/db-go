@@ -3,6 +3,9 @@ package sql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 const (
@@ -17,15 +20,32 @@ const (
 	le           = "<="
 	question     = "?"
 	or           = " OR "
+	having_name  = "Having"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, having_name, func() any {
+		return &Having{ObjNoCtx: object.NewObjNoCtx(namespace, having_name)}
+	})
+}
+
 type Having struct {
+	*object.ObjNoCtx
 	fields []string
 	args   []any
 }
 
 func NewHaving() *Having {
 	return &Having{fields: make([]string, 0), args: make([]any, 0)}
+}
+
+func NewHavingBy(ctx object.CtxInterface) *Having {
+	return ctx.GetNoCtx(namespace, having_name).(*Having)
+}
+
+func (h *Having) Reset() {
+	h.fields = nil
+	h.args = nil
 }
 
 func (w *Having) Eq(field string, value any) *Having {

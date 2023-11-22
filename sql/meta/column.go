@@ -3,6 +3,9 @@ package meta
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 type Func string
@@ -151,9 +154,21 @@ const (
 	columnFunc   = "%s(%s)"
 	divFunc      = "%s %s %s"
 	ifNull       = "%s(%s, %s) AS `%s`"
+	col_name     = "Column"
+	fl_name      = "Field"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, fl_name, func() any {
+		return &Field{ObjNoCtx: object.NewObjNoCtx(namespace, fl_name)}
+	})
+	pool.DefaultNoCtx(namespace, col_name, func() any {
+		return &Column{ObjNoCtx: object.NewObjNoCtx(namespace, col_name)}
+	})
+}
+
 type Field struct {
+	*object.ObjNoCtx
 	Name                string
 	Table               string
 	IsConstOrExpression bool
@@ -166,6 +181,20 @@ func NewField(name, table string, isConstOrExpression bool) *Field {
 	}
 
 	return &Field{Name: info[1], Table: info[0], IsConstOrExpression: isConstOrExpression}
+}
+
+func NewFieldBy(ctx object.CtxInterface, name, table string, isConstOrExpression bool) *Field {
+	obj := ctx.GetNoCtx(namespace, fl_name).(*Field)
+	obj.Name = name
+	obj.Table = table
+	obj.IsConstOrExpression = isConstOrExpression
+	return obj
+}
+
+func (f *Field) Reset() {
+	f.Name = emptyStr
+	f.Table = emptyStr
+	f.IsConstOrExpression = false
 }
 
 func (f *Field) String() string {
@@ -185,6 +214,7 @@ func (f *Field) String() string {
 }
 
 type Column struct {
+	*object.ObjNoCtx
 	Name    *Field
 	Ext     *Field
 	Alias   string
@@ -197,8 +227,21 @@ func NewColumnAlias(name, alias string) *Column {
 	return NewColumnFunc(NewField(name, emptyStr, false), alias, Func_None, nil)
 }
 
+func NewColumnAliasBy(ctx object.CtxInterface, name, alias string) *Column {
+	return NewColumnFuncBy(ctx, NewFieldBy(ctx, name, emptyStr, false), alias, Func_None, nil)
+}
+
 func NewColumnFunc(name *Field, alias string, f Func, ext *Field) *Column {
 	return &Column{Name: name, Alias: alias, Func: f, Ext: ext, Default: qua}
+}
+
+func NewColumnFuncBy(ctx object.CtxInterface, name *Field, alias string, f Func, ext *Field) *Column {
+	obj := ctx.GetNoCtx(namespace, col_name).(*Column)
+	obj.Name = name
+	obj.Alias = alias
+	obj.Func = f
+	obj.Ext = ext
+	return obj
 }
 
 func NewColFuncWithNull(name *Field, alias, defaultValue string, f Func, ext *Field) *Column {
@@ -208,8 +251,28 @@ func NewColFuncWithNull(name *Field, alias, defaultValue string, f Func, ext *Fi
 	return c
 }
 
+func NewColFuncWithNullBy(ctx object.CtxInterface, name *Field, alias, defaultValue string, f Func, ext *Field) *Column {
+	obj := NewColumnFuncBy(ctx, name, alias, f, ext)
+	obj.IsNull = true
+	obj.Default = defaultValue
+	return obj
+}
+
 func NewColumn(name string) *Column {
 	return NewColumnAlias(name, name)
+}
+
+func NewColumnBy(ctx object.CtxInterface, name string) *Column {
+	return NewColumnAliasBy(ctx, name, name)
+}
+
+func (c *Column) Reset() {
+	c.Name = nil
+	c.Ext = nil
+	c.Alias = emptyStr
+	c.Func = Func_None
+	c.IsNull = false
+	c.Default = emptyStr
 }
 
 func (c *Column) SetTable(table string) {

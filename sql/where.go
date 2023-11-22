@@ -3,6 +3,9 @@ package sql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 const (
@@ -12,15 +15,32 @@ const (
 	notInFormat     string = "%s NOT IN(%s)"
 	isNullFormat    string = "%s IS NULL"
 	isNotNullFormat string = "%s IS NOT NULL"
+	where_name             = "Where"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, where_name, func() any {
+		return &Where{ObjNoCtx: object.NewObjNoCtx(namespace, where_name)}
+	})
+}
+
 type Where struct {
+	*object.ObjNoCtx
 	Fields []string `json:"fields"`
 	Binds  []any    `json:"binds"`
 }
 
 func NewWhere() *Where {
 	return &Where{Fields: make([]string, 0), Binds: make([]any, 0)}
+}
+
+func NewWhereBy(ctx object.CtxInterface) *Where {
+	return ctx.GetNoCtx(namespace, where_name).(*Where)
+}
+
+func (w *Where) Reset() {
+	w.Fields = nil
+	w.Binds = nil
 }
 
 func (w *Where) Eq(field string, value any) {

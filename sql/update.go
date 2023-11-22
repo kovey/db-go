@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 const (
@@ -15,9 +17,17 @@ const (
 	updateAddFormat   = "= %s +"
 	subEq             = "-="
 	updateSubFormat   = "= %s -"
+	up_name           = "Update"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, up_name, func() any {
+		return &Update{ObjNoCtx: object.NewObjNoCtx(namespace, up_name), data: meta.NewData()}
+	})
+}
+
 type Update struct {
+	*object.ObjNoCtx
 	table  string
 	data   meta.Data
 	args   []any
@@ -29,8 +39,30 @@ func NewUpdate(table string) *Update {
 	return &Update{table: table, data: meta.NewData(), where: nil, format: updateFormat}
 }
 
+func NewUpdateBy(ctx object.CtxInterface, table string) *Update {
+	obj := ctx.GetNoCtx(namespace, up_name).(*Update)
+	obj.table = table
+	obj.format = updateFormat
+	return obj
+}
+
 func NewCkUpdate(table string) *Update {
 	return &Update{table: table, data: meta.NewData(), where: nil, format: updateCkFormat}
+}
+
+func NewCkUpdateBy(ctx object.CtxInterface, table string) *Update {
+	obj := ctx.GetNoCtx(namespace, up_name).(*Update)
+	obj.table = table
+	obj.format = updateCkFormat
+	return obj
+}
+
+func (u *Update) Reset() {
+	u.table = emptyStr
+	u.data = meta.NewData()
+	u.args = nil
+	u.where = nil
+	u.format = emptyStr
 }
 
 func (u *Update) Set(field string, value any) *Update {

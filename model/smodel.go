@@ -24,6 +24,17 @@ func NewBaseSharding[T ModelShardingInterface](tb table.TableShardingInterface[T
 	return &BaseSharding[T]{Table: tb, primaryId: primaryId, isInsert: true, isEmpty: false}
 }
 
+func (b *BaseSharding[T]) Reset() {
+	b.primaryId = nil
+	b.isInsert = false
+	b.isEmpty = false
+	b.Table = nil
+}
+
+func (b *BaseSharding[T]) SetPrimaryId(primaryId *PrimaryId) {
+	b.primaryId = primaryId
+}
+
 func (b *BaseSharding[T]) NoAutoInc() {
 	b.primaryId.IsAutoInc = false
 }

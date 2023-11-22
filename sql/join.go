@@ -5,9 +5,22 @@ import (
 	"strings"
 
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
+const (
+	join_name = "Join"
+)
+
+func init() {
+	pool.DefaultNoCtx(namespace, join_name, func() any {
+		return &Join{ObjNoCtx: object.NewObjNoCtx(namespace, join_name)}
+	})
+}
+
 type Join struct {
+	*object.ObjNoCtx
 	table   string
 	alias   string
 	columns []string
@@ -32,6 +45,44 @@ func NewJoinSub(sub *Select, alias, on string, columns ...string) *Join {
 	j := &Join{sub: sub, alias: alias, on: on, columns: make([]string, len(columns))}
 	j.init(columns)
 	return j
+}
+
+func NewJoinBy(ctx object.CtxInterface, table, alias, on string, columns ...string) *Join {
+	if alias == emptyStr {
+		if strings.Contains(table, dot) {
+			alias = strings.ReplaceAll(table, dot, underline)
+		} else {
+			alias = table
+		}
+	}
+
+	obj := ctx.GetNoCtx(namespace, join_name).(*Join)
+	obj.table = table
+	obj.alias = alias
+	obj.on = on
+	obj.columns = make([]string, len(columns))
+	obj.init(columns)
+
+	return obj
+}
+
+func NewJoinSubBy(ctx object.CtxInterface, sub *Select, alias, on string, columns ...string) *Join {
+	obj := ctx.GetNoCtx(namespace, join_name).(*Join)
+	obj.sub = sub
+	obj.alias = alias
+	obj.on = on
+	obj.columns = make([]string, len(columns))
+	obj.init(columns)
+
+	return obj
+}
+
+func (j *Join) Reset() {
+	j.table = emptyStr
+	j.alias = emptyStr
+	j.columns = nil
+	j.on = emptyStr
+	j.sub = nil
 }
 
 func (j *Join) tableName() string {

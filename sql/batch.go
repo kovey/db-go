@@ -3,14 +3,26 @@ package sql
 import (
 	"fmt"
 	"strings"
+
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 const (
 	batchFormat      = "INSERT INTO %s (%s) VALUES %s"
 	batchValueFormat = "(%s)"
+	namespace        = "ko.db.sql"
+	batch_name       = "Batch"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, batch_name, func() any {
+		return &Batch{ObjNoCtx: object.NewObjNoCtx(namespace, batch_name)}
+	})
+}
+
 type Batch struct {
+	*object.ObjNoCtx
 	ins          []*Insert
 	table        string
 	argsCount    int
@@ -20,6 +32,20 @@ type Batch struct {
 
 func NewBatch(table string) *Batch {
 	return &Batch{table: table, ins: make([]*Insert, 0), argsCount: 0}
+}
+
+func NewBatchBy(ctx object.CtxInterface, table string) *Batch {
+	obj := ctx.GetNoCtx(namespace, batch_name).(*Batch)
+	obj.table = table
+	return obj
+}
+
+func (b *Batch) Reset() {
+	b.ins = nil
+	b.table = emptyStr
+	b.argsCount = 0
+	b.args = nil
+	b.placeholders = nil
 }
 
 func (b *Batch) Add(insert *Insert) *Batch {

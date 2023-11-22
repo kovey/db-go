@@ -10,6 +10,7 @@ import (
 	"github.com/kovey/db-go/v2/db"
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/pool/object"
 )
 
 var (
@@ -48,7 +49,7 @@ func (p *Product) Values() []any {
 	}
 }
 
-func (p *Product) Clone() itf.RowInterface {
+func (p *Product) Clone(object.CtxInterface) itf.RowInterface {
 	return &Product{}
 }
 

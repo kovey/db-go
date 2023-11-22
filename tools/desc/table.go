@@ -7,6 +7,7 @@ import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/model"
 	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/pool/object"
 )
 
 type Table struct {
@@ -35,7 +36,7 @@ func (t *Table) Values() []any {
 	return []any{t.Name, t.Comment}
 }
 
-func (t *Table) Clone() itf.RowInterface {
+func (t *Table) Clone(object.CtxInterface) itf.RowInterface {
 	return &Table{}
 }
 

@@ -1,9 +1,11 @@
 package itf
 
+import "github.com/kovey/pool/object"
+
 type RowInterface interface {
 	Columns() []string
 	Fields() []any
-	Clone() RowInterface
+	Clone(object.CtxInterface) RowInterface
 }
 
 type ModelInterface interface {
@@ -23,7 +25,7 @@ func (r *Row) Fields() []any {
 	return nil
 }
 
-func (r *Row) Clone() RowInterface {
+func (r *Row) Clone(object.CtxInterface) RowInterface {
 	return &Row{}
 }
 

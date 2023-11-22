@@ -5,13 +5,23 @@ import (
 	"strings"
 
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 const (
-	format string = "INSERT INTO %s (%s) VALUES (%s)"
+	format   = "INSERT INTO %s (%s) VALUES (%s)"
+	ins_name = "Insert"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, ins_name, func() any {
+		return &Insert{ObjNoCtx: object.NewObjNoCtx(namespace, ins_name), data: meta.NewData(), placeholder: make(map[string]string)}
+	})
+}
+
 type Insert struct {
+	*object.ObjNoCtx
 	data        meta.Data
 	table       string
 	placeholder map[string]string
@@ -21,6 +31,20 @@ type Insert struct {
 
 func NewInsert(table string) *Insert {
 	return &Insert{table: table, data: meta.NewData(), placeholder: make(map[string]string)}
+}
+
+func NewInsertBy(ctx object.CtxInterface, table string) *Insert {
+	obj := ctx.GetNoCtx(namespace, ins_name).(*Insert)
+	obj.table = table
+	return obj
+}
+
+func (i *Insert) Reset() {
+	i.data = meta.NewData()
+	i.table = emptyStr
+	i.placeholder = make(map[string]string)
+	i.args = nil
+	i.fields = nil
 }
 
 func (i *Insert) Set(field string, value any) *Insert {

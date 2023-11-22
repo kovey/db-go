@@ -7,6 +7,7 @@ import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/model"
 	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/pool/object"
 )
 
 type Desc struct {
@@ -44,7 +45,7 @@ func (t *Desc) Values() []any {
 	return []any{t.Field, t.Type, t.Null, t.Key, t.Default, t.Extra, t.Comment}
 }
 
-func (t *Desc) Clone() itf.RowInterface {
+func (t *Desc) Clone(object.CtxInterface) itf.RowInterface {
 	return &Desc{}
 }
 

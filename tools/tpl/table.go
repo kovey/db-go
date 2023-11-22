@@ -20,6 +20,8 @@ import(
 	"github.com/kovey/db-go/v2/model"
 	"github.com/kovey/db-go/v2/table"
 	"github.com/kovey/db-go/v2/itf"
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 {imports}
 )
 
@@ -28,13 +30,31 @@ const (
 {column_const}
 )
 
+func init() {
+	pool.DefaultNoCtx("ko.tables.{package_name}", "{name}Table", func() any {
+		return &{name}Table{ObjNoCtx: object.NewObjNoCtx("ko.tables.{package_name}", "{name}Table"), Table: table.NewTable[*{name}Row](Table_{name})}
+	})
+	pool.DefaultNoCtx("ko.tables.{package_name}", "{name}Row", func() any {
+		return &{name}Row{ObjNoCtx: object.NewObjNoCtx("ko.tables.{package_name}", "{name}Row")}
+	})
+}
+
 {table_comment}
 type {name}Table struct {
+	*object.ObjNoCtx
 	*table.Table[*{name}Row]
 }
 
 func New{name}Table() *{name}Table {
 	return &{name}Table{Table: table.NewTable[*{name}Row](Table_{name})}
+}
+
+func New{name}TableBy(ctx object.CtxInterface) *{name}Table {
+	return ctx.GetNoCtx("ko.tables.{package_name}", "{name}Table").(*{name}Table)
+}
+
+func (self *{name}Table) Reset() {
+	self.InTransaction(nil)
 }
 
 func (self *{name}Table) FetchAll(where meta.Where) ([]*{name}Row, error) {
@@ -79,6 +99,7 @@ func (self *{name}Table) FetchPageByWhereCtx(ctx context.Context, where sql.Wher
 
 {table_comment}
 type {name}Row struct {
+	*object.ObjNoCtx
 	*model.Base[*{name}Row]
 {row_fields}
 }
@@ -89,8 +110,26 @@ func New{name}Row() *{name}Row {
 	return self
 }
 
-func (self *{name}Row) Clone() itf.RowInterface {
-	return &{name}Row{}
+func New{name}RowBy(ctx object.CtxInterface) *{name}Row {
+	self := ctx.GetNoCtx("ko.tables.{package_name}", "{name}Row").(*{name}Row)
+	if self.Base == nil {
+		self.Base = model.NewBase[*{name}Row](New{name}TableBy(ctx), nil)
+	}
+	if self.Base.Table == nil {
+		self.Base.Table = New{name}TableBy(ctx)
+	}
+	self.Base.SetPrimaryId(model.NewPrimaryIdBy(ctx, {primary_id}, model.{primary_id_type}))
+	{close_auto_inc}
+	return self
+}
+
+func (self *{name}Row) Reset() {
+	self.Base.Reset()
+{row_fields_reset}
+}
+
+func (self *{name}Row) Clone(ctx object.CtxInterface) itf.RowInterface {
+	return New{name}RowBy(ctx)
 }
 
 func (self *{name}Row) Columns() []string {
@@ -177,10 +216,17 @@ func (self *{name}Row) DeleteCtx(ctx context.Context) error {
 	`
 	Field = "	%s %s `db:\"%s\"` %s"
 
-	Decimal        = `	"github.com/shopspring/decimal"`
-	Sql            = `	"database/sql"`
-	Meta_Column    = `		%s,`
-	Meta_Fields    = `		&self.%s,`
-	Meta_Values    = `		self.%s,`
-	Close_Auto_Inc = "self.NoAutoInc()"
+	Decimal                  = `	"github.com/shopspring/decimal"`
+	Sql                      = `	ds "database/sql"`
+	Meta_Column              = `		%s,`
+	Meta_Fields              = `		&self.%s,`
+	Meta_Values              = `		self.%s,`
+	Close_Auto_Inc           = "self.NoAutoInc()"
+	Field_Reset_Str          = `	self.%s = ""`
+	Field_Reset_Num          = `	self.%s = 0`
+	Field_Reset_Bool         = `	self.%s = false`
+	Field_Reset_Decimal      = `	self.%s = decimal.Zero`
+	Field_Reset_Nil          = `	self.%s = nil`
+	Field_Reset_Sql_Null     = `	self.%s = ds.Null%s{}`
+	Field_Reset_Decimal_Null = `	self.%s = decimal.NullDecimal{}`
 )

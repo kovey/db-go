@@ -8,6 +8,7 @@ import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/pool/object"
 )
 
 const (
@@ -107,8 +108,13 @@ func queryAll[T itf.RowInterface](ctx context.Context, m ConnInterface, query st
 	}
 	defer data.Close()
 	rows := make([]T, 0)
+	cc, ok := ctx.(object.CtxInterface)
+	if !ok {
+		cc = nil
+	}
+
 	for data.Next() {
-		tmp := model.Clone()
+		tmp := model.Clone(cc)
 		if err := data.Scan(tmp.Fields()...); err != nil {
 			return nil, err
 		}
@@ -139,8 +145,12 @@ func Query[T itf.RowInterface](ctx context.Context, m ConnInterface, query strin
 	has := model.Columns()
 	length := min(len(columns), len(has))
 	rows := make([]T, 0)
+	cc, ok := ctx.(object.CtxInterface)
+	if !ok {
+		cc = nil
+	}
 	for data.Next() {
-		tmp := model.Clone()
+		tmp := model.Clone(cc)
 		if err := data.Scan(getFields(columns, has, length, tmp)...); err != nil {
 			return nil, err
 		}
@@ -232,7 +242,12 @@ func Select[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.S
 }
 
 func FetchRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) error {
-	sel := sql.NewSelect(table, "")
+	var sel *sql.Select
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		sel = sql.NewSelectBy(cc, table, emptyStr)
+	} else {
+		sel = sql.NewSelect(table, emptyStr)
+	}
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1)
 	stmt, err := m.PrepareContext(ctx, sel.Prepare())
 	if err != nil {
@@ -256,7 +271,12 @@ func parseError[T itf.ModelInterface](err error, model T) error {
 }
 
 func LockRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) error {
-	sel := sql.NewSelect(table, "")
+	var sel *sql.Select
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		sel = sql.NewSelectBy(cc, table, emptyStr)
+	} else {
+		sel = sql.NewSelect(table, emptyStr)
+	}
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1).ForUpdate()
 	stmt, err := m.PrepareContext(ctx, sel.Prepare())
 	if err != nil {
@@ -267,7 +287,12 @@ func LockRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table s
 }
 
 func FetchAll[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) ([]T, error) {
-	sel := sql.NewSelect(table, "")
+	var sel *sql.Select
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		sel = sql.NewSelectBy(cc, table, emptyStr)
+	} else {
+		sel = sql.NewSelect(table, emptyStr)
+	}
 	sel.WhereByMap(where).Columns(model.Columns()...)
 
 	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
@@ -280,14 +305,24 @@ func FetchBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface, sel
 }
 
 func FetchAllByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
-	sel := sql.NewSelect(table, "")
+	var sel *sql.Select
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		sel = sql.NewSelectBy(cc, table, emptyStr)
+	} else {
+		sel = sql.NewSelect(table, emptyStr)
+	}
 	sel.Where(where).Columns(model.Columns()...)
 
 	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 }
 
 func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
-	sel := sql.NewSelect(table, "")
+	var sel *sql.Select
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		sel = sql.NewSelectBy(cc, table, emptyStr)
+	} else {
+		sel = sql.NewSelect(table, emptyStr)
+	}
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize).Order(orders...)
 
 	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
@@ -304,7 +339,12 @@ func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table s
 }
 
 func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
-	sel := sql.NewSelect(table, "")
+	var sel *sql.Select
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		sel = sql.NewSelectBy(cc, table, emptyStr)
+	} else {
+		sel = sql.NewSelect(table, emptyStr)
+	}
 	sel.Where(where).Columns(model.Columns()...).Limit(pageSize).Offset((page - 1) * pageSize).Order(orders...)
 
 	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
@@ -380,7 +420,12 @@ func pageInfo[T itf.RowInterface](ctx context.Context, m ConnInterface, table st
 }
 
 func Count(ctx context.Context, m ConnInterface, table string, where sql.WhereInterface) (int64, error) {
-	sel := sql.NewSelect(table, emptyStr)
+	var sel *sql.Select
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		sel = sql.NewSelectBy(cc, table, emptyStr)
+	} else {
+		sel = sql.NewSelect(table, emptyStr)
+	}
 	sel.Where(where).ColMeta(meta.NewColFuncWithNull(meta.NewField(one, emptyStr, true), countField, zero, meta.Func_COUNT, nil))
 	stmt, err := m.PrepareContext(ctx, sel.Prepare())
 	if err != nil {

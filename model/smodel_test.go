@@ -9,6 +9,7 @@ import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sharding"
 	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/pool/object"
 )
 
 var (
@@ -47,8 +48,8 @@ func (p *ProductSharding) Values() []any {
 	}
 }
 
-func (p *ProductSharding) Clone() itf.RowInterface {
-	return &Product{}
+func (p *ProductSharding) Clone(object.CtxInterface) itf.RowInterface {
+	return &ProductSharding{}
 }
 
 func NewProTableSharding() *ProTableSharding {

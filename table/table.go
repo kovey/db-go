@@ -7,11 +7,12 @@ import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/pool/object"
 )
 
 type TableInterface[T itf.ModelInterface] interface {
 	Database() db.DbInterface[T]
-	InTransation(*db.Tx)
+	InTransaction(*db.Tx)
 	Insert(meta.Data) (int64, error)
 	Update(meta.Data, meta.Where) (int64, error)
 	UpdateWhere(meta.Data, sql.WhereInterface) (int64, error)
@@ -47,7 +48,7 @@ func (t *Table[T]) Database() db.DbInterface[T] {
 	return t.db
 }
 
-func (t *Table[T]) InTransation(tx *db.Tx) {
+func (t *Table[T]) InTransaction(tx *db.Tx) {
 	t.db.SetTx(tx)
 }
 
@@ -104,7 +105,12 @@ func (t *Table[T]) FetchPageByWhere(where sql.WhereInterface, model T, page, pag
 }
 
 func (t *Table[T]) InsertCtx(ctx context.Context, data meta.Data) (int64, error) {
-	in := sql.NewInsert(t.table)
+	var in *sql.Insert
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		in = sql.NewInsertBy(cc, t.table)
+	} else {
+		in = sql.NewInsert(t.table)
+	}
 	for field, value := range data {
 		in.Set(field, value)
 	}
@@ -113,7 +119,12 @@ func (t *Table[T]) InsertCtx(ctx context.Context, data meta.Data) (int64, error)
 }
 
 func (t *Table[T]) UpdateCtx(ctx context.Context, data meta.Data, where meta.Where) (int64, error) {
-	up := sql.NewUpdate(t.table)
+	var up *sql.Update
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		up = sql.NewUpdateBy(cc, t.table)
+	} else {
+		up = sql.NewUpdate(t.table)
+	}
 	for field, value := range data {
 		up.Set(field, value)
 	}
@@ -124,7 +135,13 @@ func (t *Table[T]) UpdateCtx(ctx context.Context, data meta.Data, where meta.Whe
 }
 
 func (t *Table[T]) UpdateWhereCtx(ctx context.Context, data meta.Data, where sql.WhereInterface) (int64, error) {
-	up := sql.NewUpdate(t.table)
+	var up *sql.Update
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		up = sql.NewUpdateBy(cc, t.table)
+	} else {
+		up = sql.NewUpdate(t.table)
+	}
+
 	for field, value := range data {
 		up.Set(field, value)
 	}
@@ -134,21 +151,37 @@ func (t *Table[T]) UpdateWhereCtx(ctx context.Context, data meta.Data, where sql
 }
 
 func (t *Table[T]) DeleteCtx(ctx context.Context, where meta.Where) (int64, error) {
-	del := sql.NewDelete(t.table)
+	var del *sql.Delete
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		del = sql.NewDeleteBy(cc, t.table)
+	} else {
+		del = sql.NewDelete(t.table)
+	}
 	del.WhereByMap(where)
 
 	return t.db.DeleteCtx(ctx, del)
 }
 
 func (t *Table[T]) DeleteWhereCtx(ctx context.Context, where sql.WhereInterface) (int64, error) {
-	del := sql.NewDelete(t.table)
+	var del *sql.Delete
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		del = sql.NewDeleteBy(cc, t.table)
+	} else {
+		del = sql.NewDelete(t.table)
+	}
 	del.Where(where)
 
 	return t.db.DeleteCtx(ctx, del)
 }
 
 func (t *Table[T]) BatchInsertCtx(ctx context.Context, data []meta.Data) (int64, error) {
-	batch := sql.NewBatch(t.table)
+	var batch *sql.Batch
+	if cc, ok := ctx.(object.CtxInterface); ok {
+		batch = sql.NewBatchBy(cc, t.table)
+	} else {
+		batch = sql.NewBatch(t.table)
+	}
+
 	for _, val := range data {
 		in := sql.NewInsert(t.table)
 		for field, value := range val {

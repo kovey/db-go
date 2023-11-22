@@ -8,15 +8,16 @@ import (
 )
 
 type Field struct {
-	Name       string
-	Type       string
-	DbField    string
-	IsNull     bool
-	HasSql     bool
-	HasDecimal bool
-	GolangType string
-	Comment    string
-	IsAutoInc  bool
+	Name          string
+	Type          string
+	DbField       string
+	IsNull        bool
+	HasSql        bool
+	HasDecimal    bool
+	GolangType    string
+	Comment       string
+	IsAutoInc     bool
+	GolangDefalut string
 }
 
 func NewField(name, t, comment string, isNull bool) *Field {
@@ -51,63 +52,115 @@ func (f *Field) ToValue() string {
 
 func (f *Field) parse() string {
 	if strings.Contains(f.Type, Mysql_Binary) || strings.Contains(f.Type, Mysql_Blob) {
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Nil, f.Name)
 		return "[]byte"
 	}
 
 	if strings.Contains(f.Type, Mysql_BigInt) {
 		if f.IsNull {
 			f.HasSql = true
-			return "sql.NullInt64"
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Int64")
+			return "ds.NullInt64"
 		}
 
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Num, f.Name)
 		return "int64"
 	}
 
 	if strings.Contains(f.Type, Mysql_Int) {
 		if f.IsNull {
 			f.HasSql = true
-			return "sql.NullInt32"
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Int32")
+			return "ds.NullInt32"
 		}
 
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Num, f.Name)
 		return "int32"
+	}
+
+	if strings.Contains(f.Type, Mysql_TinyInt) {
+		if f.IsNull {
+			f.HasSql = true
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Int8")
+			return "ds.NullInt8"
+		}
+
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Num, f.Name)
+		return "int8"
+	}
+
+	if strings.Contains(f.Type, Mysql_SmallInt) {
+		if f.IsNull {
+			f.HasSql = true
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Int16")
+			return "ds.NullInt16"
+		}
+
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Num, f.Name)
+		return "int16"
+	}
+
+	if strings.Contains(f.Type, Mysql_MediumInt) {
+		if f.IsNull {
+			f.HasSql = true
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Int")
+			return "ds.NullInt"
+		}
+
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Num, f.Name)
+		return "int"
 	}
 
 	if strings.Contains(f.Type, Mysql_Decimal) {
 		f.HasDecimal = true
+		if f.IsNull {
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Decimal_Null, f.Name)
+			return "decimal.NullDecimal"
+		}
+
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Decimal, f.Name)
 		return "decimal.Decimal"
 	}
 
 	if strings.Contains(f.Type, Mysql_Double) {
 		if f.IsNull {
 			f.HasSql = true
-			return "sql.NullFloat64"
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Float64")
+			return "ds.NullFloat64"
 		}
 
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Num, f.Name)
 		return "float64"
 	}
 
 	if strings.Contains(f.Type, Mysql_Float) {
 		if f.IsNull {
 			f.HasSql = true
-			return "sql.NullFloat64"
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Float32")
+			return "ds.NullFloat32"
 		}
 
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Num, f.Name)
 		return "float32"
 	}
 
 	if strings.Contains(f.Type, Mysql_Bool) {
 		if f.IsNull {
 			f.HasSql = true
-			return "sql.NullBool"
+			f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "Bool")
+			return "ds.NullBool"
 		}
 
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Bool, f.Name)
 		return "bool"
 	}
 
 	if f.IsNull {
 		f.HasSql = true
-		return "sql.NullString"
+		f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Sql_Null, f.Name, "String")
+		return "ds.NullString"
 	}
 
+	f.GolangDefalut = fmt.Sprintf(tpl.Field_Reset_Str, f.Name)
 	return "string"
 }

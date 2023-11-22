@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/pool"
+	"github.com/kovey/pool/object"
 )
 
 const (
@@ -26,9 +28,17 @@ const (
 	dot          = "."
 	underline    = "_"
 	star         = "*"
+	sel_name     = "Select"
 )
 
+func init() {
+	pool.DefaultNoCtx(namespace, sel_name, func() any {
+		return &Select{ObjNoCtx: object.NewObjNoCtx(namespace, sel_name)}
+	})
+}
+
 type Select struct {
+	*object.ObjNoCtx
 	table     string
 	alias     string
 	columns   []string
@@ -65,6 +75,45 @@ func NewSelect(table string, alias string) *Select {
 		table: table, alias: alias, columns: make([]string, 0), where: nil, orWhere: nil, limit: 0, offset: 0,
 		orders: make([]string, 0), groups: make([]string, 0), having: nil, joins: make([]string, 0), forUpdate: emptyStr,
 	}
+}
+
+func NewSelectSubBy(ctx object.CtxInterface, sub *Select, alias string) *Select {
+	obj := ctx.GetNoCtx(namespace, sel_name).(*Select)
+	obj.sub = sub
+	obj.alias = alias
+	return obj
+}
+
+func NewSelectBy(ctx object.CtxInterface, table, alias string) *Select {
+	if alias == emptyStr {
+		if strings.Contains(table, dot) {
+			alias = strings.ReplaceAll(table, dot, underline)
+		} else {
+			alias = table
+		}
+	}
+
+	obj := ctx.GetNoCtx(namespace, sel_name).(*Select)
+	obj.table = table
+	obj.alias = alias
+	return obj
+}
+
+func (s *Select) Reset() {
+	s.table = emptyStr
+	s.alias = emptyStr
+	s.columns = nil
+	s.where = nil
+	s.orWhere = nil
+	s.limit = 0
+	s.offset = 0
+	s.orders = nil
+	s.groups = nil
+	s.having = nil
+	s.joins = nil
+	s.forUpdate = emptyStr
+	s.sub = nil
+	s.joinArgs = nil
 }
 
 func (s *Select) Columns(columns ...string) *Select {
