@@ -12,6 +12,7 @@ type ModelInterface interface {
 	RowInterface
 	Values() []any
 	SetEmpty()
+	SetFetch()
 }
 
 type Row struct {

@@ -133,13 +133,7 @@ func (b *BaseSharding[T]) FetchRow(key any, where meta.Where, model T) error {
 
 func (b *BaseSharding[T]) FetchRowCtx(ctx context.Context, key any, where meta.Where, model T) error {
 	b.isEmpty = false
-	err := b.Table.FetchRowCtx(ctx, key, where, model)
-	if err != nil {
-		return err
-	}
-
-	b.isInsert = false
-	return nil
+	return b.Table.FetchRowCtx(ctx, key, where, model)
 }
 
 func (b *BaseSharding[T]) LockRow(key any, where meta.Where, model T) error {
@@ -148,13 +142,7 @@ func (b *BaseSharding[T]) LockRow(key any, where meta.Where, model T) error {
 
 func (b *BaseSharding[T]) LockRowCtx(ctx context.Context, key any, where meta.Where, model T) error {
 	b.isEmpty = false
-	err := b.Table.LockRowCtx(ctx, key, where, model)
-	if err != nil {
-		return err
-	}
-
-	b.isInsert = false
-	return nil
+	return b.Table.LockRowCtx(ctx, key, where, model)
 }
 
 func (b *BaseSharding[T]) Empty() bool {
@@ -163,4 +151,8 @@ func (b *BaseSharding[T]) Empty() bool {
 
 func (b *BaseSharding[T]) SetEmpty() {
 	b.isEmpty = true
+}
+
+func (b *BaseSharding[T]) SetFetch() {
+	b.isInsert = false
 }

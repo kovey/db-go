@@ -138,17 +138,7 @@ func (b *Base[T]) FetchRow(where meta.Where, model T) error {
 }
 
 func (b *Base[T]) FetchRowCtx(ctx context.Context, where meta.Where, model T) error {
-	b.isEmpty = false
-	err := b.Table.FetchRowCtx(ctx, where, model)
-	if err != nil {
-		return err
-	}
-
-	if !b.isEmpty {
-		b.isInsert = false
-	}
-
-	return nil
+	return b.Table.FetchRowCtx(ctx, where, model)
 }
 
 func (b *Base[T]) LockRow(where meta.Where, model T) error {
@@ -156,17 +146,7 @@ func (b *Base[T]) LockRow(where meta.Where, model T) error {
 }
 
 func (b *Base[T]) LockRowCtx(ctx context.Context, where meta.Where, model T) error {
-	b.isEmpty = false
-	err := b.Table.LockRowCtx(ctx, where, model)
-	if err != nil {
-		return err
-	}
-
-	if !b.isEmpty {
-		b.isInsert = false
-	}
-
-	return nil
+	return b.Table.LockRowCtx(ctx, where, model)
 }
 
 func (b *Base[T]) Empty() bool {
@@ -175,4 +155,10 @@ func (b *Base[T]) Empty() bool {
 
 func (b *Base[T]) SetEmpty() {
 	b.isEmpty = true
+	b.isInsert = true
+}
+
+func (b *Base[T]) SetFetch() {
+	b.isInsert = false
+	b.isEmpty = false
 }

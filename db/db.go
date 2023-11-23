@@ -107,6 +107,12 @@ func queryAll[T itf.RowInterface](ctx context.Context, m ConnInterface, query st
 		return nil, err
 	}
 	defer data.Close()
+	columns, err := data.Columns()
+	if err != nil {
+		return nil, err
+	}
+	has := model.Columns()
+	length := min(len(columns), len(has))
 	rows := make([]T, 0)
 	cc, ok := ctx.(object.CtxInterface)
 	if !ok {
@@ -115,8 +121,12 @@ func queryAll[T itf.RowInterface](ctx context.Context, m ConnInterface, query st
 
 	for data.Next() {
 		tmp := model.Clone(cc)
-		if err := data.Scan(tmp.Fields()...); err != nil {
+		if err := data.Scan(getFields(columns, has, length, tmp)...); err != nil {
 			return nil, err
+		}
+
+		if tt, ok := tmp.(itf.ModelInterface); ok {
+			tt.SetFetch()
 		}
 
 		rows = append(rows, tmp.(T))
@@ -153,6 +163,10 @@ func Query[T itf.RowInterface](ctx context.Context, m ConnInterface, query strin
 		tmp := model.Clone(cc)
 		if err := data.Scan(getFields(columns, has, length, tmp)...); err != nil {
 			return nil, err
+		}
+
+		if tt, ok := tmp.(itf.ModelInterface); ok {
+			tt.SetFetch()
 		}
 
 		rows = append(rows, tmp.(T))
@@ -253,17 +267,20 @@ func FetchRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table 
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	result := stmt.QueryRowContext(ctx, sel.Args()...)
 	return parseError(result.Scan(model.Fields()...), model)
 }
 
 func parseError[T itf.ModelInterface](err error, model T) error {
 	if err == nil {
+		model.SetFetch()
 		return nil
 	}
 
+	model.SetEmpty()
 	if err == ds.ErrNoRows {
-		model.SetEmpty()
 		return nil
 	}
 
@@ -282,6 +299,8 @@ func LockRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table s
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	result := stmt.QueryRowContext(ctx, sel.Args()...)
 	return parseError(result.Scan(model.Fields()...), model)
 }
@@ -378,6 +397,7 @@ func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface,
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, sel.Args()...)
 	count := int64(0)
@@ -431,6 +451,7 @@ func Count(ctx context.Context, m ConnInterface, table string, where sql.WhereIn
 	if err != nil {
 		return 0, err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, sel.Args()...)
 	count := int64(0)

@@ -50,6 +50,9 @@ func (p *Product) Clone(object.CtxInterface) itf.RowInterface {
 func (p *Product) SetEmpty() {
 }
 
+func (p *Product) SetFetch() {
+}
+
 func setup() {
 	conf := config.Mysql{
 		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,

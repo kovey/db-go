@@ -129,6 +129,10 @@ func (self *{name}Row) Reset() {
 }
 
 func (self *{name}Row) Clone(ctx object.CtxInterface) itf.RowInterface {
+	if ctx == nil {
+		return New{name}Row()
+	}
+
 	return New{name}RowBy(ctx)
 }
 
