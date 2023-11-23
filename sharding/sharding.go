@@ -27,14 +27,28 @@ type Mysql[T itf.ModelInterface] struct {
 	tx          *Tx
 }
 
-func NewMysql[T itf.ModelInterface](isMaster bool) *Mysql[T] {
-	return &Mysql[T]{connections: make(map[int]*db.Mysql[T], 0), isMaster: isMaster, tx: NewTx()}
+func NewMysqlBy[T itf.ModelInterface](isMaster bool) *Mysql[T] {
+	return &Mysql[T]{connections: make(map[int]*db.Mysql[T]), isMaster: isMaster, tx: NewTx()}
+}
+
+func NewMysql[T itf.ModelInterface]() *Mysql[T] {
+	return &Mysql[T]{connections: make(map[int]*db.Mysql[T])}
+}
+
+func (m *Mysql[T]) Set(isMaster bool, tx *Tx) {
+	m.isMaster = isMaster
+	m.tx = tx
 }
 
 func (m *Mysql[T]) SetTx(tx *Tx) {
 	for key, tx := range tx.txs {
 		m.tx.Add(key, tx)
 	}
+}
+
+func (m *Mysql[T]) Reset() {
+	m.isMaster = false
+	m.tx = nil
 }
 
 func (m *Mysql[T]) Transaction(f func(tx *Tx) error) error {

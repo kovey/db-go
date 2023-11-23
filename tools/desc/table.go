@@ -37,7 +37,7 @@ func (t *Table) Values() []any {
 }
 
 func (t *Table) Clone(object.CtxInterface) itf.RowInterface {
-	return &Table{}
+	return NewTable()
 }
 
 func NewTable() *Table {

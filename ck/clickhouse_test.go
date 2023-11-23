@@ -51,6 +51,9 @@ func (p *Product) Clone(object.CtxInterface) itf.RowInterface {
 func (p *Product) SetEmpty() {
 }
 
+func (p *Product) SetFetch() {
+}
+
 func setup() {
 	conf := config.ClickHouse{
 		Username: "default", Password: "", Dbname: "test", Debug: false, BlockSize: 1000000,

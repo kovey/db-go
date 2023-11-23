@@ -26,7 +26,7 @@ func ssetup() {
 
 	sharding.Init(mas, mas)
 
-	shardDb = sharding.NewMysql[*Product](true)
+	shardDb = sharding.NewMysqlBy[*Product](true)
 	sql := []string{"CREATE TABLE `{table}` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
@@ -60,7 +60,7 @@ func steardown() {
 }
 
 func TestTableShardingInsert(t *testing.T) {
-	shardTable = NewTableSharding[*Product]("product", true)
+	shardTable = NewTableShardingBy[*Product]("product", true)
 	data := make(map[string]any, 5)
 	data["name"] = "kovey"
 	data["date"] = "2021-01-01"
@@ -88,7 +88,7 @@ func TestTableShardingInsert(t *testing.T) {
 }
 
 func TestTableShardingUpdate(t *testing.T) {
-	shardTable = NewTableSharding[*Product]("product", true)
+	shardTable = NewTableShardingBy[*Product]("product", true)
 	data := make(map[string]any)
 	data["name"] = "test"
 	where := make(map[string]any)
@@ -111,7 +111,7 @@ func TestTableShardingUpdate(t *testing.T) {
 }
 
 func TestTableShardingDelete(t *testing.T) {
-	shardTable = NewTableSharding[*Product]("product", true)
+	shardTable = NewTableShardingBy[*Product]("product", true)
 	where := make(map[string]any)
 	where["id"] = 1
 

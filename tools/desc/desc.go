@@ -46,7 +46,7 @@ func (t *Desc) Values() []any {
 }
 
 func (t *Desc) Clone(object.CtxInterface) itf.RowInterface {
-	return &Desc{}
+	return NewDesc()
 }
 
 type DescTable struct {

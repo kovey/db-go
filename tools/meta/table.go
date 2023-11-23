@@ -18,10 +18,11 @@ type Table struct {
 	HasDecimal  bool
 	Database    string
 	Comment     string
+	Type        string
 }
 
-func NewTable(name, comment, p, database string) *Table {
-	return &Table{DbTableName: name, Name: convert(name), Fields: make([]*Field, 0), Package: p, Database: database, Comment: comment}
+func NewTable(name, comment, p, database, t string) *Table {
+	return &Table{DbTableName: name, Name: convert(name), Fields: make([]*Field, 0), Package: p, Database: database, Comment: comment, Type: t}
 }
 
 func (t *Table) SetPrimary(f *Field) {
@@ -65,7 +66,12 @@ func (t *Table) Format() string {
 		panic(t.DbTableName)
 	}
 
-	content := strings.ReplaceAll(tpl.Table, "{name}", t.Name)
+	tplStr := tpl.Table
+	if t.Type == "s" {
+		tplStr = tpl.Table_Sharding
+	}
+
+	content := strings.ReplaceAll(tplStr, "{name}", t.Name)
 	content = strings.ReplaceAll(content, "{package_name}", t.Package)
 	content = strings.ReplaceAll(content, "{orm_version}", Version)
 	content = strings.ReplaceAll(content, "{database}", t.Database)

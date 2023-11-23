@@ -37,8 +37,16 @@ type TableSharding[T itf.ModelInterface] struct {
 	db    *sharding.Mysql[T]
 }
 
-func NewTableSharding[T itf.ModelInterface](table string, isMaster bool) *TableSharding[T] {
-	return &TableSharding[T]{db: sharding.NewMysql[T](isMaster), table: table}
+func NewTableSharding[T itf.ModelInterface](table string) *TableSharding[T] {
+	return &TableSharding[T]{db: sharding.NewMysql[T](), table: table}
+}
+
+func NewTableShardingBy[T itf.ModelInterface](table string, isMaster bool) *TableSharding[T] {
+	return &TableSharding[T]{db: sharding.NewMysqlBy[T](isMaster), table: table}
+}
+
+func (t *TableSharding[T]) Set(isMaster bool, tx *sharding.Tx) {
+	t.db.Set(isMaster, tx)
 }
 
 func (t *TableSharding[T]) InTransaction(tx *sharding.Tx) {

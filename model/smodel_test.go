@@ -53,7 +53,7 @@ func (p *ProductSharding) Clone(object.CtxInterface) itf.RowInterface {
 }
 
 func NewProTableSharding() *ProTableSharding {
-	return &ProTableSharding{table.NewTableSharding[*ProductSharding]("product", true)}
+	return &ProTableSharding{table.NewTableShardingBy[*ProductSharding]("product", true)}
 }
 
 func NewProductSharding() *ProductSharding {
@@ -74,7 +74,7 @@ func ssetup() {
 
 	sharding.Init(mas, mas)
 
-	shardDb = sharding.NewMysql[*ProductSharding](true)
+	shardDb = sharding.NewMysqlBy[*ProductSharding](true)
 	sql := []string{"CREATE TABLE `{table}` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",

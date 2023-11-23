@@ -50,6 +50,9 @@ func (p *Product) Clone(object.CtxInterface) itf.RowInterface {
 func (p *Product) SetEmpty() {
 }
 
+func (p *Product) SetFetch() {
+}
+
 func setup() {
 	mas := make([]config.Mysql, 2)
 
@@ -62,7 +65,7 @@ func setup() {
 
 	Init(mas, mas)
 
-	mysql = NewMysql[*Product](true)
+	mysql = NewMysqlBy[*Product](true)
 	sql := []string{"CREATE TABLE `{table}` (",
 		"`id` INT NOT NULL AUTO_INCREMENT,",
 		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
