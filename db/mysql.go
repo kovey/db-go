@@ -47,9 +47,7 @@ func Init(conf config.Mysql) error {
 
 func OpenDB(conf config.Mysql) (*sql.DB, error) {
 	debug.Info("connection to %s:%d, dbname: %s", conf.Host, conf.Port, conf.Dbname)
-	db, err := sql.Open("mysql", fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?charset=%s", conf.Username, conf.Password, conf.Host, conf.Port, conf.Dbname, conf.Charset,
-	))
+	db, err := sql.Open("mysql", conf.ToDSN())
 	if err != nil {
 		return nil, err
 	}
