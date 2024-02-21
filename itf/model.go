@@ -36,3 +36,6 @@ func (r *Row) Values() []any {
 
 func (r *Row) SetEmpty() {
 }
+
+func (r *Row) SetFetch() {
+}
