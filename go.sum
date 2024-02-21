@@ -28,8 +28,8 @@ github.com/klauspost/compress v1.17.2 h1:RlWWUY/Dr4fL8qk9YG7DTZ7PDgME2V4csBXA8L/
 github.com/klauspost/compress v1.17.2/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
 github.com/kovey/debug-go v0.0.5 h1:c81KNW/mganMHZOAj9n8FY1e9Zz203GwPNJCnpfsVRQ=
 github.com/kovey/debug-go v0.0.5/go.mod h1:J88EXuunCnkLg62OEafQHDzkD2hq8r3Vi2Lkv+KHd9U=
-github.com/kovey/pool v0.0.6 h1:zDaDetAQnkKXhLiuKVFuhSZge1fapvcbERVgomyy7do=
-github.com/kovey/pool v0.0.6/go.mod h1:Pf7Dtjwz3DhhIx94ZKMr+j6KKdDf+Ewd5EcAHq2VGTo=
+github.com/kovey/pool v0.0.7 h1:ucHJj5tC9ERlUfzOTlupP1B4ggSL9ST6wdNnr3brUXA=
+github.com/kovey/pool v0.0.7/go.mod h1:Pf7Dtjwz3DhhIx94ZKMr+j6KKdDf+Ewd5EcAHq2VGTo=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

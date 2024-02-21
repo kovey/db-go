@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.15.0
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/kovey/debug-go v0.0.5
-	github.com/kovey/pool v0.0.6
+	github.com/kovey/pool v0.0.7
 )
 
 require (
