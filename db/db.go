@@ -8,6 +8,7 @@ import (
 	"github.com/kovey/db-go/v2/itf"
 	"github.com/kovey/db-go/v2/sql"
 	"github.com/kovey/db-go/v2/sql/meta"
+	"github.com/kovey/debug-go/debug"
 	"github.com/kovey/pool/object"
 )
 
@@ -175,15 +176,17 @@ func Query[T itf.RowInterface](ctx context.Context, m ConnInterface, query strin
 	return rows, nil
 }
 
-func Exec(ctx context.Context, m ConnInterface, stament string) error {
-	stmt, err := m.PrepareContext(ctx, stament)
+func Exec(ctx context.Context, m ConnInterface, statment string) error {
+	stmt, err := m.PrepareContext(ctx, statment)
 	if err != nil {
+		debug.Erro("exec prepare error: %s, sql: %s", err, statment)
 		return err
 	}
 
 	defer stmt.Close()
 	result, err := stmt.ExecContext(ctx)
 	if err != nil {
+		debug.Erro("exec error: %s, sql: %s", err, statment)
 		return err
 	}
 
@@ -210,6 +213,7 @@ func prepare(ctx context.Context, m ConnInterface, pre sql.SqlInterface) (ds.Res
 func Insert(ctx context.Context, m ConnInterface, insert *sql.Insert) (int64, error) {
 	result, err := prepare(ctx, m, insert)
 	if err != nil {
+		debug.Erro("insert error: %s, sql: %s", err, insert)
 		return 0, err
 	}
 
@@ -219,6 +223,7 @@ func Insert(ctx context.Context, m ConnInterface, insert *sql.Insert) (int64, er
 func Update(ctx context.Context, m ConnInterface, update *sql.Update) (int64, error) {
 	result, err := prepare(ctx, m, update)
 	if err != nil {
+		debug.Erro("update error: %s, sql: %s", err, update)
 		return 0, err
 	}
 
@@ -228,6 +233,7 @@ func Update(ctx context.Context, m ConnInterface, update *sql.Update) (int64, er
 func Delete(ctx context.Context, m ConnInterface, del *sql.Delete) (int64, error) {
 	result, err := prepare(ctx, m, del)
 	if err != nil {
+		debug.Erro("delete error: %s, sql: %s", err, del)
 		return 0, err
 	}
 
@@ -237,6 +243,7 @@ func Delete(ctx context.Context, m ConnInterface, del *sql.Delete) (int64, error
 func BatchInsert(ctx context.Context, m ConnInterface, batch *sql.Batch) (int64, error) {
 	result, err := prepare(ctx, m, batch)
 	if err != nil {
+		debug.Erro("batch insert error: %s, sql: %s", err, batch)
 		return 0, err
 	}
 
@@ -244,15 +251,29 @@ func BatchInsert(ctx context.Context, m ConnInterface, batch *sql.Batch) (int64,
 }
 
 func ShowTables[T itf.RowInterface](ctx context.Context, m ConnInterface, show *sql.ShowTables, model T) ([]T, error) {
-	return queryAll(ctx, m, show.Prepare(), model, show.Args()...)
+	rows, err := queryAll(ctx, m, show.Prepare(), model, show.Args()...)
+	if err != nil {
+		debug.Erro("show tables error: %s, sql: %s", err, show)
+	}
+
+	return rows, err
 }
 
 func Desc[T itf.RowInterface](ctx context.Context, m ConnInterface, desc *sql.Desc, model T) ([]T, error) {
-	return queryAll(ctx, m, desc.Prepare(), model, desc.Args()...)
+	rows, err := queryAll(ctx, m, desc.Prepare(), model, desc.Args()...)
+	if err != nil {
+		debug.Erro("desc error: %s, sql: %s", err, desc)
+	}
+
+	return rows, err
 }
 
 func Select[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.Select, model T) ([]T, error) {
-	return Query(ctx, m, sel.Prepare(), model, sel.Args()...)
+	rows, err := Query(ctx, m, sel.Prepare(), model, sel.Args()...)
+	if err != nil {
+		debug.Erro("select error: %s, sql: %s", err, sel)
+	}
+	return rows, err
 }
 
 func FetchRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) error {
@@ -265,12 +286,17 @@ func FetchRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table 
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1)
 	stmt, err := m.PrepareContext(ctx, sel.Prepare())
 	if err != nil {
+		debug.Erro("fetch row error: %s, sql: %s", err, sel)
 		return err
 	}
 	defer stmt.Close()
 
 	result := stmt.QueryRowContext(ctx, sel.Args()...)
-	return parseError(result.Scan(model.Fields()...), model)
+	err = parseError(result.Scan(model.Fields()...), model)
+	if err != nil {
+		debug.Erro("fetch row error: %s, sql: %s", err, sel)
+	}
+	return err
 }
 
 func parseError[T itf.ModelInterface](err error, model T) error {
@@ -297,12 +323,18 @@ func LockRow[T itf.ModelInterface](ctx context.Context, m ConnInterface, table s
 	sel.WhereByMap(where).Columns(model.Columns()...).Limit(1).ForUpdate()
 	stmt, err := m.PrepareContext(ctx, sel.Prepare())
 	if err != nil {
+		debug.Erro("lock row error: %s, sql: %s", err, sel)
 		return err
 	}
 	defer stmt.Close()
 
 	result := stmt.QueryRowContext(ctx, sel.Args()...)
-	return parseError(result.Scan(model.Fields()...), model)
+	err = parseError(result.Scan(model.Fields()...), model)
+	if err != nil {
+		debug.Erro("lock row error: %s, sql: %s", err, sel)
+	}
+
+	return err
 }
 
 func FetchAll[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T) ([]T, error) {
@@ -314,13 +346,23 @@ func FetchAll[T itf.RowInterface](ctx context.Context, m ConnInterface, table st
 	}
 	sel.WhereByMap(where).Columns(model.Columns()...)
 
-	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
+	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
+	if err != nil {
+		debug.Erro("fetch all error: %s, sql: %s", err, sel)
+	}
+
+	return rows, err
 }
 
 func FetchBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.Select, model T) ([]T, error) {
 	sel.SetColumns(model.Columns())
 
-	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
+	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
+	if err != nil {
+		debug.Erro("fetch by select error: %s, sql: %s", err, sel)
+	}
+
+	return rows, err
 }
 
 func FetchAllByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where sql.WhereInterface, model T) ([]T, error) {
@@ -332,7 +374,12 @@ func FetchAllByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, t
 	}
 	sel.Where(where).Columns(model.Columns()...)
 
-	return queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
+	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
+	if err != nil {
+		debug.Erro("fetch all by where error: %s, sql: %s", err, sel)
+	}
+
+	return rows, err
 }
 
 func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table string, where meta.Where, model T, page int, pageSize int, orders ...string) (*meta.Page[T], error) {
@@ -346,6 +393,7 @@ func FetchPage[T itf.RowInterface](ctx context.Context, m ConnInterface, table s
 
 	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {
+		debug.Erro("fetch page error: %s, sql: %s", err, sel)
 		return nil, err
 	}
 
@@ -368,6 +416,7 @@ func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, 
 
 	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {
+		debug.Erro("fetch page by where error: %s, sql: %s", err, sel)
 		return nil, err
 	}
 
@@ -377,6 +426,7 @@ func FetchPageByWhere[T itf.RowInterface](ctx context.Context, m ConnInterface, 
 func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface, sel *sql.Select, model T) (*meta.Page[T], error) {
 	rows, err := queryAll(ctx, m, sel.Prepare(), model, sel.Args()...)
 	if err != nil {
+		debug.Erro("fetch page by select error: %s, sql: %s", err, sel)
 		return nil, err
 	}
 
@@ -395,6 +445,7 @@ func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface,
 	sel.SetColMeta(cols)
 	stmt, err := m.PrepareContext(ctx, sel.Prepare())
 	if err != nil {
+		debug.Erro("fetch page by select count error: %s, sql: %s", err, sel)
 		return nil, err
 	}
 	defer stmt.Close()
@@ -403,6 +454,7 @@ func FetchPageBySelect[T itf.RowInterface](ctx context.Context, m ConnInterface,
 	count := int64(0)
 	err = row.Scan(&count)
 	if err != nil {
+		debug.Erro("fetch page by select count error: %s, sql: %s", err, sel)
 		return nil, err
 	}
 
@@ -449,6 +501,7 @@ func Count(ctx context.Context, m ConnInterface, table string, where sql.WhereIn
 	sel.Where(where).ColMeta(meta.NewColFuncWithNull(meta.NewField(one, emptyStr, true), countField, zero, meta.Func_COUNT, nil))
 	stmt, err := m.PrepareContext(ctx, sel.Prepare())
 	if err != nil {
+		debug.Erro("count error: %s, sql: %s", err, sel)
 		return 0, err
 	}
 	defer stmt.Close()
@@ -456,5 +509,9 @@ func Count(ctx context.Context, m ConnInterface, table string, where sql.WhereIn
 	row := stmt.QueryRowContext(ctx, sel.Args()...)
 	count := int64(0)
 	err = row.Scan(&count)
+	if err != nil {
+		debug.Erro("count error: %s, sql: %s", err, sel)
+	}
+
 	return count, err
 }

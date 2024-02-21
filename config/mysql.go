@@ -8,16 +8,16 @@ import (
 )
 
 type Mysql struct {
-	Host          string `yaml:"host"`
-	Port          int    `yaml:"port"`
-	Username      string `yaml:"username"`
-	Password      string `yaml:"password"`
-	Dbname        string `yaml:"dbname"`
-	Charset       string `yaml:"charset"`
-	ActiveMax     int    `yaml:"active_max"`
-	ConnectionMax int    `yaml:"connection_max"`
-	LifeTime      int    `yaml:"life_time"`
-	Dev           string `yaml:"dev"`
+	Host          string `yaml:"host" json:"host"`
+	Port          int    `yaml:"port" json:"port"`
+	Username      string `yaml:"username" json:"username"`
+	Password      string `yaml:"password" json:"password"`
+	Dbname        string `yaml:"dbname" json:"dbname"`
+	Charset       string `yaml:"charset" json:"charset"`
+	ActiveMax     int    `yaml:"active_max" json:"active_max"`
+	ConnectionMax int    `yaml:"connection_max" json:"connection_max"`
+	LifeTime      int    `yaml:"life_time" json:"life_time"`
+	Dev           string `yaml:"dev" json:"dev"`
 }
 
 func (m *Mysql) ToDSN() string {
