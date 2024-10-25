@@ -1,31 +1,22 @@
 package sql
 
-import "testing"
+import (
+	"testing"
 
-func TestHavingPrepare(t *testing.T) {
-	where := NewHaving()
-	where.Eq("age", 18).Neq("name", "kovey").Like("nickname", "%golang%").Between("id", 1, 100).Gt("balance", 1000).Ge("count", 10).Lt("sum", 15).Le("people", 100)
-	where.In("sex", []any{0, 1, 2}).NotIn("lang", []any{"php", "java", "ruby", "rust"}).IsNull("content").IsNotNull("title").Statement("last_id > 0")
+	"github.com/kovey/db-go/v3"
+)
 
-	expected := "HAVING (`age` = ? AND `name` <> ? AND `nickname` LIKE ? AND `id` BETWEEN ? AND ? AND `balance` > ? AND `count` >= ? AND `sum` < ? AND `people` <= ? AND `sex` IN(?,?,?) AND `lang` NOT IN(?,?,?,?) AND `content` IS NULL AND `title` IS NOT NULL AND last_id > 0)"
-	realData := where.Prepare()
-	if expected != realData {
-		t.Errorf("expected: %s realData: %s", expected, realData)
-	}
+func TestHaving(t *testing.T) {
+	h := NewHaving()
+	sub := NewQuery()
+	sub.Table("user").Columns("user_id").Where("status", "<>", 1)
+	t.Logf("sub prepare: %s", sub.Prepare())
+	t.Logf("sub binds: %v", sub.Binds())
+	h.Between("a.id", 10, 20).Express(Raw("b.name = ?", "kovey")).Having("a.age", ">", 100).In("a.sex", []any{1, 2, 3}).InBy("b.status", sub).IsNotNull("a.mail").IsNull("b.avatar")
+	h.NotIn("c.id", []any{123, 45}).NotInBy("c.test", sub).OrHaving(func(o ksql.HavingInterface) {
+		o.Between("d.info", 100, 200).Having("d.other", "like", "%kk%")
+	})
 
-	args := where.Args()
-	t.Logf("args: %v", args)
-	if len(args) != 16 {
-		t.Fatal("args len is error")
-	}
-
-	orData := where.OrPrepare()
-	t.Logf("or having: %s", orData)
-	expected = "HAVING (`age` = ? OR `name` <> ? OR `nickname` LIKE ? OR `id` BETWEEN ? AND ? OR `balance` > ? OR `count` >= ? OR `sum` < ? OR `people` <= ? OR `sex` IN(?,?,?) OR `lang` NOT IN(?,?,?,?) OR `content` IS NULL OR `title` IS NOT NULL OR last_id > 0)"
-	t.Logf("or having: %s", expected)
-	if expected != orData {
-		t.Fatal("or where is error")
-	}
-
-	t.Logf("sql: %s", where)
+	t.Logf("prepare: %s", h.Prepare())
+	t.Logf("binds: %v", h.Binds())
 }

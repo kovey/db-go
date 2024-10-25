@@ -1,154 +1,56 @@
 package sql
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/kovey/db-go/v2/sql/meta"
-	"github.com/kovey/pool"
-	"github.com/kovey/pool/object"
-)
-
-const (
-	updateFormat      = "UPDATE %s SET %s %s"
-	updateCkFormat    = "ALTER TABLE %s UPDATE %s %s"
-	updatePlaceFormat = "%s = ?"
-	addEq             = "+="
-	updateAddFormat   = "= %s +"
-	subEq             = "-="
-	updateSubFormat   = "= %s -"
-	up_name           = "Update"
-)
-
-func init() {
-	pool.DefaultNoCtx(namespace, up_name, func() any {
-		return &Update{ObjNoCtx: object.NewObjNoCtx(namespace, up_name), data: meta.NewData()}
-	})
-}
+import "github.com/kovey/db-go/v3"
 
 type Update struct {
-	*object.ObjNoCtx
-	table  string
-	data   meta.Data
-	args   []any
-	where  WhereInterface
-	format string
+	*base
+	columns []string
+	where   ksql.WhereInterface
 }
 
-func NewUpdate(table string) *Update {
-	return &Update{table: table, data: meta.NewData(), where: nil, format: updateFormat}
-}
-
-func NewUpdateBy(ctx object.CtxInterface, table string) *Update {
-	obj := ctx.GetNoCtx(namespace, up_name).(*Update)
-	obj.table = table
-	obj.format = updateFormat
-	return obj
-}
-
-func NewCkUpdate(table string) *Update {
-	return &Update{table: table, data: meta.NewData(), where: nil, format: updateCkFormat}
-}
-
-func NewCkUpdateBy(ctx object.CtxInterface, table string) *Update {
-	obj := ctx.GetNoCtx(namespace, up_name).(*Update)
-	obj.table = table
-	obj.format = updateCkFormat
-	return obj
-}
-
-func (u *Update) Reset() {
-	u.table = emptyStr
-	u.data = meta.NewData()
-	u.args = nil
-	u.where = nil
-	u.format = emptyStr
-}
-
-func (u *Update) Set(field string, value any) *Update {
-	u.data[field] = value
+func NewUpdate() *Update {
+	u := &Update{base: &base{hasPrepared: false}}
+	u.keyword("UPDATE ")
 	return u
 }
 
-func (u *Update) Args() []any {
-	if u.where == nil {
-		return u.args
-	}
-
-	return append(u.args, u.where.Args()...)
+func (u *Update) Table(table string) ksql.UpdateInterface {
+	Column(table, &u.builder)
+	u.builder.WriteString(" SET ")
+	return u
 }
 
-func (u *Update) getPlaceholder() []string {
-	placeholders := make([]string, len(u.data))
-	u.args = make([]any, len(u.data))
-	index := 0
-	for field, v := range u.data {
-		t, ok := v.(string)
-		if !ok {
-			placeholders[index] = fmt.Sprintf(updatePlaceFormat, formatValue(field))
-			u.args[index] = v
-			index++
-			continue
-		}
+func (u *Update) Set(column string, data any) ksql.UpdateInterface {
+	u.columns = append(u.columns, column)
+	u.binds = append(u.binds, data)
+	return u
+}
 
-		var value = t
-		var op = eq
-		if len(value) > 2 {
-			prefix := t[0:2]
-			if prefix == addEq {
-				value = t[2:]
-				op = fmt.Sprintf(updateAddFormat, field)
-			} else if prefix == subEq {
-				value = t[2:]
-				op = fmt.Sprintf(updateSubFormat, field)
-			}
-		}
-
-		u.args[index] = value
-		placeholders[index] = fmt.Sprintf(whereFields, formatValue(field), op)
-		index++
-	}
-
-	return placeholders
+func (u *Update) Where(where ksql.WhereInterface) ksql.UpdateInterface {
+	u.where = where
+	return u
 }
 
 func (u *Update) Prepare() string {
-	if u.where == nil {
-		return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), comma), emptyStr)
+	if u.hasPrepared {
+		return u.base.Prepare()
 	}
 
-	return fmt.Sprintf(u.format, formatValue(u.table), strings.Join(u.getPlaceholder(), comma), u.where.Prepare())
-}
+	u.hasPrepared = true
+	for index, column := range u.columns {
+		if index > 0 {
+			u.builder.WriteString(",")
+		}
 
-func (u *Update) Where(w WhereInterface) *Update {
-	u.where = w
-	return u
-}
-
-func (u *Update) WhereByMap(where meta.Where) *Update {
-	if u.where == nil {
-		u.where = NewWhere()
+		Column(column, &u.builder)
+		u.builder.WriteString(" = ?")
 	}
 
-	for field, value := range where {
-		u.where.Eq(field, value)
+	if u.where != nil {
+		u.builder.WriteString(" WHERE ")
+		u.builder.WriteString(u.where.Prepare())
+		u.binds = append(u.binds, u.where.Binds()...)
 	}
 
-	return u
-}
-
-func (u *Update) WhereByList(where meta.List) *Update {
-	if u.where == nil {
-		u.where = NewWhere()
-	}
-
-	for _, value := range where {
-		u.where.Statement(value)
-	}
-
-	return u
-}
-
-func (u *Update) String() string {
-	return String(u)
+	return u.base.Prepare()
 }

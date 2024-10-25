@@ -1,137 +1,96 @@
 package sql
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
-	"github.com/kovey/db-go/v2/sql/meta"
-	"github.com/kovey/pool"
-	"github.com/kovey/pool/object"
+	"github.com/kovey/db-go/v3"
 )
-
-const (
-	join_name = "Join"
-)
-
-func init() {
-	pool.DefaultNoCtx(namespace, join_name, func() any {
-		return &Join{ObjNoCtx: object.NewObjNoCtx(namespace, join_name)}
-	})
-}
 
 type Join struct {
-	*object.ObjNoCtx
-	table   string
-	alias   string
-	columns []string
-	on      string
-	sub     *Select
+	*base
+	table     string
+	as        string
+	t         string
+	isExpress bool
 }
 
-func NewJoin(table, alias, on string, columns ...string) *Join {
-	if alias == emptyStr {
-		if strings.Contains(table, dot) {
-			alias = strings.ReplaceAll(table, dot, underline)
-		} else {
-			alias = table
+func NewJoin(t string) *Join {
+	return &Join{base: &base{hasPrepared: false}, t: t}
+}
+
+func (j *Join) Type() string {
+	return j.t
+}
+
+func (j *Join) Table(table string) ksql.JoinInterface {
+	j.table = table
+	return j
+}
+
+func (j *Join) As(as string) ksql.JoinInterface {
+	j.as = as
+	return j
+}
+
+func (j *Join) _on(column, op, val, condition string) *Join {
+	if j.isExpress {
+		return j
+	}
+
+	if j.builder.Len() == 0 {
+		if j.t != "" {
+			j.builder.WriteString(j.t)
+			j.builder.WriteString(" ")
+			Column(j.table, &j.builder)
+			if j.as != "" {
+				j.builder.WriteString(" AS ")
+				Column(j.as, &j.builder)
+			}
+			j.builder.WriteString(" ON ")
+		}
+	} else {
+		j.builder.WriteString(" ")
+		j.builder.WriteString(condition)
+		j.builder.WriteString(" ")
+	}
+
+	Column(column, &j.builder)
+	j.builder.WriteString(op)
+	if strings.Contains(val, ".") {
+		if _, err := strconv.ParseFloat(val, 64); err != nil {
+			Column(val, &j.builder)
+			return j
 		}
 	}
-	j := &Join{table: table, alias: alias, on: on, columns: make([]string, len(columns))}
-	j.init(columns)
+
+	j.builder.WriteString(val)
 	return j
 }
 
-func NewJoinSub(sub *Select, alias, on string, columns ...string) *Join {
-	j := &Join{sub: sub, alias: alias, on: on, columns: make([]string, len(columns))}
-	j.init(columns)
+func (j *Join) On(column, op, val string) ksql.JoinInterface {
+	return j._on(column, op, val, "AND")
+}
+
+func (j *Join) OnOr(call func(join ksql.JoinOnInterface)) ksql.JoinInterface {
+	if j.builder.Len() == 0 {
+		return j
+	}
+
+	join := NewJoin("")
+	call(join)
+	j.builder.WriteString(" OR (")
+	j.builder.WriteString(join.Prepare())
+	j.builder.WriteString(")")
 	return j
 }
 
-func NewJoinBy(ctx object.CtxInterface, table, alias, on string, columns ...string) *Join {
-	if alias == emptyStr {
-		if strings.Contains(table, dot) {
-			alias = strings.ReplaceAll(table, dot, underline)
-		} else {
-			alias = table
-		}
-	}
-
-	obj := ctx.GetNoCtx(namespace, join_name).(*Join)
-	obj.table = table
-	obj.alias = alias
-	obj.on = on
-	obj.columns = make([]string, len(columns))
-	obj.init(columns)
-
-	return obj
-}
-
-func NewJoinSubBy(ctx object.CtxInterface, sub *Select, alias, on string, columns ...string) *Join {
-	obj := ctx.GetNoCtx(namespace, join_name).(*Join)
-	obj.sub = sub
-	obj.alias = alias
-	obj.on = on
-	obj.columns = make([]string, len(columns))
-	obj.init(columns)
-
-	return obj
-}
-
-func (j *Join) Reset() {
-	j.table = emptyStr
-	j.alias = emptyStr
-	j.columns = nil
-	j.on = emptyStr
-	j.sub = nil
-}
-
-func (j *Join) tableName() string {
-	if j.sub == nil {
-		return formatValue(j.table)
-	}
-
-	return fmt.Sprintf(subFormat, j.sub.Prepare())
-}
-
-func (j *Join) init(columns []string) {
-	for index, column := range columns {
-		col := meta.NewColumn(column)
-		col.SetTable(j.alias)
-		j.columns[index] = col.String()
-	}
-}
-
-func (j *Join) Columns(columns ...string) *Join {
-	for _, column := range columns {
-		col := meta.NewColumn(column)
-		col.SetTable(j.alias)
-		j.columns = append(j.columns, col.String())
-	}
-
+func (j *Join) Express(ex ksql.ExpressInterface) ksql.JoinInterface {
+	j.isExpress = true
+	j.builder.Reset()
+	j.builder.WriteString(j.t)
+	j.builder.WriteString(" ")
+	j.builder.WriteString(ex.Statement())
+	j.binds = append(j.binds, ex.Binds()...)
 	return j
-}
-
-func (j *Join) ColMeta(columns ...*meta.Column) *Join {
-	for _, column := range columns {
-		column.SetTable(j.alias)
-		j.columns = append(j.columns, column.String())
-	}
-
-	return j
-}
-
-func (j *Join) CaseWhen(caseWhens ...*meta.CaseWhen) *Join {
-	for _, caseWhen := range caseWhens {
-		j.columns = append(j.columns, caseWhen.String())
-	}
-
-	return j
-}
-
-func (j *Join) args() []any {
-	if j.sub == nil {
-		return nil
-	}
-
-	return j.sub.Args()
 }

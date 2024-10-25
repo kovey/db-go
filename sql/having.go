@@ -1,146 +1,141 @@
 package sql
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/kovey/pool"
-	"github.com/kovey/pool/object"
+	"github.com/kovey/db-go/v3"
 )
-
-const (
-	havingFormat = "HAVING (%s)"
-	whereFields  = "%s %s ?"
-	eq           = "="
-	neq          = "<>"
-	like         = "LIKE"
-	gt           = ">"
-	ge           = ">="
-	lt           = "<"
-	le           = "<="
-	question     = "?"
-	or           = " OR "
-	having_name  = "Having"
-)
-
-func init() {
-	pool.DefaultNoCtx(namespace, having_name, func() any {
-		return &Having{ObjNoCtx: object.NewObjNoCtx(namespace, having_name)}
-	})
-}
 
 type Having struct {
-	*object.ObjNoCtx
-	fields []string
-	args   []any
+	*base
 }
 
 func NewHaving() *Having {
-	return &Having{fields: make([]string, 0), args: make([]any, 0)}
+	return &Having{base: &base{hasPrepared: false}}
 }
 
-func NewHavingBy(ctx object.CtxInterface) *Having {
-	return ctx.GetNoCtx(namespace, having_name).(*Having)
-}
-
-func (h *Having) Reset() {
-	h.fields = nil
-	h.args = nil
-}
-
-func (w *Having) Eq(field string, value any) *Having {
-	return w.set(eq, field, value)
-}
-
-func (w *Having) set(op string, field string, value any) *Having {
-	w.fields = append(w.fields, fmt.Sprintf(whereFields, formatValue(field), op))
-	w.args = append(w.args, value)
-	return w
-}
-
-func (w *Having) Neq(field string, value any) *Having {
-	return w.set(neq, field, value)
-}
-
-func (w *Having) Like(field string, value any) *Having {
-	return w.set(like, field, value)
-}
-
-func (w *Having) Between(field string, from any, to any) *Having {
-	w.fields = append(w.fields, fmt.Sprintf(betweenFormat, formatValue(field), question, question))
-	w.args = append(w.args, from, to)
-	return w
-}
-
-func (w *Having) Gt(field string, value any) *Having {
-	return w.set(gt, field, value)
-}
-
-func (w *Having) Ge(field string, value any) *Having {
-	return w.set(ge, field, value)
-}
-
-func (w *Having) Lt(field string, value any) *Having {
-	return w.set(lt, field, value)
-}
-
-func (w *Having) Le(field string, value any) *Having {
-	return w.set(le, field, value)
-}
-
-func (w *Having) setIn(format string, field string, value []any) *Having {
-	placeholders := make([]string, len(value))
-	for i := 0; i < len(value); i++ {
-		placeholders[i] = question
+func (w *Having) Having(column string, op string, data any) ksql.HavingInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
 	}
 
-	w.fields = append(w.fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, comma)))
-	w.args = append(w.args, value...)
+	Column(column, &w.builder)
+	w.builder.WriteString(" ")
+	w.builder.WriteString(op)
+	w.builder.WriteString(" ?")
+	w.binds = append(w.binds, data)
 	return w
 }
 
-func (w *Having) In(field string, value []any) *Having {
-	return w.setIn(inFormat, field, value)
-}
+func (w *Having) In(column string, data []any) ksql.HavingInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
 
-func (w *Having) NotIn(field string, value []any) *Having {
-	return w.setIn(notInFormat, field, value)
-}
+	Column(column, &w.builder)
+	w.builder.WriteString(" IN (")
+	for i := 0; i < len(data); i++ {
+		if i > 0 {
+			w.builder.WriteString(",")
+		}
+		w.builder.WriteString("?")
+	}
 
-func (w *Having) setNull(format string, field string) *Having {
-	w.fields = append(w.fields, fmt.Sprintf(format, formatValue(field)))
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, data...)
 	return w
 }
 
-func (w *Having) IsNull(field string) *Having {
-	return w.setNull(isNullFormat, field)
-}
+func (w *Having) NotIn(column string, data []any) ksql.HavingInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
 
-func (w *Having) IsNotNull(field string) *Having {
-	return w.setNull(isNotNullFormat, field)
-}
+	Column(column, &w.builder)
+	w.builder.WriteString(" NOT IN (")
+	for i := 0; i < len(data); i++ {
+		if i > 0 {
+			w.builder.WriteString(",")
+		}
+		w.builder.WriteString("?")
+	}
 
-func (w *Having) Statement(statement string) *Having {
-	w.fields = append(w.fields, statement)
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, data...)
 	return w
 }
 
-func (w *Having) Args() []any {
-	return w.args
+func (w *Having) _is(column string, op string) ksql.HavingInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+	Column(column, &w.builder)
+	w.builder.WriteString(" IS ")
+	w.builder.WriteString(op)
+	return w
 }
 
-func (w *Having) prepare(op string) string {
-	return fmt.Sprintf(havingFormat, strings.Join(w.fields, op))
+func (w *Having) IsNull(column string) ksql.HavingInterface {
+	return w._is(column, "NULL")
 }
 
-func (w *Having) Prepare() string {
-	return w.prepare(and)
+func (w *Having) IsNotNull(column string) ksql.HavingInterface {
+	return w._is(column, "NOT NULL")
 }
 
-func (w *Having) OrPrepare() string {
-	return w.prepare(or)
+func (w *Having) Express(raw ksql.ExpressInterface) ksql.HavingInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+
+	w.builder.WriteString(raw.Statement())
+	w.binds = append(w.binds, raw.Binds()...)
+	return w
 }
 
-func (w *Having) String() string {
-	return String(w)
+func (w *Having) OrHaving(call func(o ksql.HavingInterface)) ksql.HavingInterface {
+	w.builder.WriteString(" OR (")
+	n := NewHaving()
+	call(n)
+	w.builder.WriteString(n.Prepare())
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, n.binds...)
+
+	return w
+}
+
+func (w *Having) _inBy(column string, sub ksql.QueryInterface, op string) ksql.HavingInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+	Column(column, &w.builder)
+	w.builder.WriteString(" ")
+	w.builder.WriteString(op)
+	w.builder.WriteString(" (")
+	w.builder.WriteString(sub.Prepare())
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, sub.Binds()...)
+	return w
+}
+
+func (w *Having) InBy(column string, sub ksql.QueryInterface) ksql.HavingInterface {
+	return w._inBy(column, sub, "IN")
+}
+
+func (w *Having) NotInBy(column string, sub ksql.QueryInterface) ksql.HavingInterface {
+	return w._inBy(column, sub, "NOT IN")
+}
+
+func (w *Having) Between(column string, begin, end any) ksql.HavingInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+
+	Column(column, &w.builder)
+	w.builder.WriteString(" BETWEEN ? ")
+	w.builder.WriteString(" AND ? ")
+	w.binds = append(w.binds, begin, end)
+	return w
+}
+
+func (w *Having) Empty() bool {
+	return w.builder.Len() == 0
 }

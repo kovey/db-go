@@ -1,25 +1,13 @@
 package sql
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/kovey/db-go/v2/sql/meta"
-)
+func TestDetele(t *testing.T) {
+	d := NewDelete()
+	w := NewWhere()
+	w.Where("id", "=", 1)
+	d.Table("user").Where(w)
 
-func TestDeletePrepare(t *testing.T) {
-	del := NewDelete("product")
-	where := NewWhere()
-	where.Like("nickname", "%hello%")
-	del.Where(where)
-	del.WhereByMap(meta.Where{"id": 1, "name": "kovey"}).WhereByList([]string{"last_id > 0"})
-	t.Logf("sql: %s", del)
-}
-
-func TestCkDeletePrepare(t *testing.T) {
-	del := NewCkDelete("product")
-	where := NewWhere()
-	where.Like("nickname", "%hello%")
-	del.Where(where)
-	del.WhereByMap(meta.Where{"id": 1, "name": "kovey"}).WhereByList([]string{"last_id > 0"})
-	t.Logf("sql: %s", del)
+	t.Logf("prepare: %s", d.Prepare())
+	t.Logf("binds: %v", d.Binds())
 }

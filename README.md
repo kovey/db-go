@@ -1,166 +1,81 @@
-## kovey mysql database by golang
+## kovey sql by golang
 #### Description
-###### This is a mysql database library, no reflect
+###### This is a database library, no reflect
 ###### Usage
-    go get -u github.com/kovey/db-go
+    go get -u github.com/kovey/db-go/v3
 ### Examples
 ```golang
 import (
-	"fmt"
-	"os"
-	"strings"
-	"testing"
+	"context"
 
-	"github.com/kovey/db-go/v2/config"
-	"github.com/kovey/db-go/v2/db"
-	"github.com/kovey/db-go/v2/itf"
-	"github.com/kovey/db-go/v2/sql/meta"
-	"github.com/kovey/db-go/v2/table"
+	"github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/model"
+	"github.com/kovey/db-go/v3/db"
+	"time"
 )
 
-var (
-	mysql *db.Mysql[*Product]
-)
-
-type ProTable struct {
-	table.Table[*Product]
+type User struct {
+	*model.Model  `db:"-" json:"-"` // model
+	Account       string            `db:"account" json:"account"`                 // 账号
+	CreateDate    time.Time         `db:"create_date" json:"create_date"`         // 创建日期
+	CreateTime    int64             `db:"create_time" json:"create_time"`         // 创建时间
+	Id            int64             `db:"id" json:"id"`                           // 主键
+	Nickname      string            `db:"nickname" json:"nickname"`               // 昵称
+	Password      string            `db:"password" json:"password"`               // 密码
+	Status        int               `db:"status" json:"status"`                   // 状态 0 - 正常 1 - 封禁
+	UpdateTime    int64             `db:"update_time" json:"update_time"`         // 更新时间
 }
 
-type Product struct {
-	*Base[*Product]
-	Id      int
-	Name    string
-	Date    string
-	Time    string
-	Sex     int
-	Content string
+func NewUser() *User {
+	return &User{Model: model.NewModel("user", "id", model.Type_Int)}
 }
 
-func (p *Product) Columns() []*meta.Column {
-	return []*meta.Column{
-		meta.NewColumn("id"), meta.NewColumn("name"), meta.NewColumn("date"), meta.NewColumn("time"), meta.NewColumn("sex"), meta.NewColumn("content"),
-	}
+func (self *User) Save(ctx context.Context) error {
+	return self.Model.Save(ctx, self)
 }
 
-func (p *Product) Fields() []any {
-	return []any{
-		&p.Id, &p.Name, &p.Date, &p.Time, &p.Sex, &p.Content,
-	}
+func (self *User) Clone() ksql.RowInterface {
+	return NewUser()
 }
 
-func (p *Product) Values() []any {
-	return []any{
-		p.Id, p.Name, p.Date, p.Time, p.Sex, p.Content,
-	}
+func (self *User) Values() []any {
+	return []any{&self.Account, &self.CreateDate, &self.CreateTime, &self.Email, &self.Id, &self.Nickname, &self.Password, &self.Status, &self.UpdateTime}
 }
 
-func (p *Product) Clone() itf.RowInterface {
-	return &Product{}
+func (self *User) Columns() []string {
+	return []string{"account", "create_date", "create_time", "id", "nickname", "password", "status", "update_time"}
 }
 
-func NewProTable() *ProTable {
-	return &ProTable{*table.NewTable[*Product]("product")}
-}
-
-func NewProduct() *Product {
-	return &Product{NewBase[*Product](NewProTable(), NewPrimaryId("id", Int)), 0, "", "", "", 0, "{}"}
+func (self *User) Delete(ctx context.Context) error {
+	return self.Model.Delete(ctx, self)
 }
 
 func setup() {
-	conf := config.Mysql{
-		Host: "127.0.0.1", Port: 3306, Username: "root", Password: "root", Dbname: "test", Charset: "utf8mb4", ActiveMax: 10, ConnectionMax: 10,
-	}
-	err := db.Init(conf)
-	if err != nil {
-		fmt.Printf("init mysql error: %s", err)
-	}
-
-	mysql = db.NewMysql[*Product]()
-	sql := []string{"CREATE TABLE `test`.`product` (",
-		"`id` INT NOT NULL AUTO_INCREMENT,",
-		"`name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '名称',",
-		"`date` DATE NOT NULL DEFAULT '1970-01-01' COMMENT '日期',",
-		"`time` TIMESTAMP(6) NOT NULL COMMENT '时间',",
-		"`sex` INT NOT NULL DEFAULT 0 COMMENT '性别',",
-		"`content` JSON NOT NULL COMMENT '内容',",
-		"PRIMARY KEY (`id`))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+	conf := db.Config{
+		DriverName:     "mysql",
+		DataSourceName: "root:some34QA@123@tcp(127.0.0.1:3306)/test_dev?charset=utf8mb4&parseTime=true",
+		MaxIdleTime:    time.Second * 60,
+		MaxLifeTime:    time.Second * 120,
+		MaxIdleConns:   10,
+		MaxOpenConns:   50,
 	}
 
-	e := mysql.Exec(strings.Join(sql, ""))
-	if e != nil {
-		fmt.Printf("init table error: %s", e)
+	if err := db.Init(conf); err != nil {
+		panic(err)
 	}
 
+    // TODO
+    db.Table(context.Background(), "user", func (table ksql.TableInterface) {
+    })
 	ssetup()
 }
 
 func teardown() {
-	if err := mysql.Exec("drop table product"); err != nil {
+	if err := db.DropTable(context.Background(), "user"); err != nil {
 		fmt.Printf("drop table failure, error: %s", err)
 	}
 
 	steardown()
-}
-
-func TestModelSave(t *testing.T) {
-	pro := NewProduct()
-	pro.Name = "kovey"
-	pro.Date = "2021-08-12"
-	pro.Time = "2021-08-12 13:12:12"
-	pro.Sex = 1
-	pro.Content = "{\"where\":123}"
-
-	err := pro.Save(pro)
-	if err != nil {
-		t.Errorf("product save fail, error: %s", err)
-	}
-
-	t.Logf("id: %d", pro.Id)
-
-	pro1 := NewProduct()
-	where := make(map[string]any)
-	where["id"] = pro.Id
-
-	if err := pro1.FetchRow(where, pro1); err != nil {
-		t.Errorf("FetchRow failure, error: %s", err)
-	}
-	pro1.Name = "chelsea"
-	if err := pro1.Save(pro1); err != nil {
-		t.Fatalf("save failure, error: %s", err)
-	}
-}
-
-func TestModelFetchRow(t *testing.T) {
-	where := make(map[string]any)
-	where["id"] = 1
-	pr1 := NewProduct()
-	err := pr1.FetchRow(where, pr1)
-	if err != nil {
-		t.Errorf("fetch row err: %s", err)
-	}
-
-	t.Logf("pr1: %v", pr1)
-}
-
-func TestModelDelete(t *testing.T) {
-	where := make(map[string]any)
-	where["id"] = 1
-	pr1 := NewProduct()
-	err := pr1.FetchRow(where, pr1)
-	if err != nil {
-		t.Errorf("fetch row err: %s", err)
-	}
-
-	err = pr1.Delete(pr1)
-	if err != nil {
-		t.Errorf("delete row err: %s", err)
-	}
-
-	pr2 := NewProduct()
-	if err := pr2.FetchRow(where, pr2); err != nil {
-		t.Fatalf("FetchRow failure, error: %s", err)
-	}
-	t.Logf("pr2: %t", pr2.Empty())
 }
 
 func TestMain(m *testing.M) {

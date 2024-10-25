@@ -1,140 +1,141 @@
 package sql
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/kovey/pool"
-	"github.com/kovey/pool/object"
+	"github.com/kovey/db-go/v3"
 )
-
-const (
-	whereFormat     string = "WHERE (%s)"
-	betweenFormat   string = "%s BETWEEN %s AND %s"
-	inFormat        string = "%s IN(%s)"
-	notInFormat     string = "%s NOT IN(%s)"
-	isNullFormat    string = "%s IS NULL"
-	isNotNullFormat string = "%s IS NOT NULL"
-	where_name             = "Where"
-)
-
-func init() {
-	pool.DefaultNoCtx(namespace, where_name, func() any {
-		return &Where{ObjNoCtx: object.NewObjNoCtx(namespace, where_name)}
-	})
-}
 
 type Where struct {
-	*object.ObjNoCtx
-	Fields []string `json:"fields"`
-	Binds  []any    `json:"binds"`
+	*base
 }
 
 func NewWhere() *Where {
-	return &Where{Fields: make([]string, 0), Binds: make([]any, 0)}
+	return &Where{base: &base{hasPrepared: false}}
 }
 
-func NewWhereBy(ctx object.CtxInterface) *Where {
-	return ctx.GetNoCtx(namespace, where_name).(*Where)
-}
-
-func (w *Where) Reset() {
-	w.Fields = nil
-	w.Binds = nil
-}
-
-func (w *Where) Eq(field string, value any) {
-	w.set(eq, field, value)
-}
-
-func (w *Where) set(op string, field string, value any) {
-	w.Fields = append(w.Fields, fmt.Sprintf(whereFields, formatValue(field), op))
-	w.Binds = append(w.Binds, value)
-}
-
-func (w *Where) Neq(field string, value any) {
-	w.set(neq, field, value)
-}
-
-func (w *Where) Like(field string, value any) {
-	w.set(like, field, value)
-}
-
-func (w *Where) Between(field string, from any, to any) {
-	w.Fields = append(w.Fields, fmt.Sprintf(betweenFormat, formatValue(field), question, question))
-	w.Binds = append(w.Binds, from, to)
-}
-
-func (w *Where) Gt(field string, value any) {
-	w.set(gt, field, value)
-}
-
-func (w *Where) Ge(field string, value any) {
-	w.set(ge, field, value)
-}
-
-func (w *Where) Lt(field string, value any) {
-	w.set(lt, field, value)
-}
-
-func (w *Where) Le(field string, value any) {
-	w.set(le, field, value)
-}
-
-func (w *Where) setIn(format string, field string, value []any) {
-	placeholders := make([]string, len(value))
-	for i := 0; i < len(value); i++ {
-		placeholders[i] = question
+func (w *Where) Where(column string, op string, data any) ksql.WhereInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
 	}
 
-	w.Fields = append(w.Fields, fmt.Sprintf(format, formatValue(field), strings.Join(placeholders, comma)))
-	w.Binds = append(w.Binds, value...)
+	Column(column, &w.builder)
+	w.builder.WriteString(" ")
+	w.builder.WriteString(op)
+	w.builder.WriteString(" ?")
+	w.binds = append(w.binds, data)
+	return w
 }
 
-func (w *Where) In(field string, value []any) {
-	w.setIn(inFormat, field, value)
-}
-
-func (w *Where) NotIn(field string, value []any) {
-	w.setIn(notInFormat, field, value)
-}
-
-func (w *Where) setNull(format string, field string) {
-	w.Fields = append(w.Fields, fmt.Sprintf(format, formatValue(field)))
-}
-
-func (w *Where) IsNull(field string) {
-	w.setNull(isNullFormat, field)
-}
-
-func (w *Where) IsNotNull(field string) {
-	w.setNull(isNotNullFormat, field)
-}
-
-func (w *Where) Statement(statement string) {
-	w.Fields = append(w.Fields, statement)
-}
-
-func (w *Where) Args() []any {
-	return w.Binds
-}
-
-func (w *Where) prepare(op string) string {
-	if len(w.Fields) == 0 {
-		return emptyStr
+func (w *Where) In(column string, data []any) ksql.WhereInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
 	}
 
-	return fmt.Sprintf(whereFormat, strings.Join(w.Fields, op))
+	Column(column, &w.builder)
+	w.builder.WriteString(" IN (")
+	for i := 0; i < len(data); i++ {
+		if i > 0 {
+			w.builder.WriteString(",")
+		}
+		w.builder.WriteString("?")
+	}
+
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, data...)
+	return w
 }
 
-func (w *Where) Prepare() string {
-	return w.prepare(and)
+func (w *Where) NotIn(column string, data []any) ksql.WhereInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+
+	Column(column, &w.builder)
+	w.builder.WriteString(" NOT IN (")
+	for i := 0; i < len(data); i++ {
+		if i > 0 {
+			w.builder.WriteString(",")
+		}
+		w.builder.WriteString("?")
+	}
+
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, data...)
+	return w
 }
 
-func (w *Where) OrPrepare() string {
-	return w.prepare(or)
+func (w *Where) _is(column string, op string) ksql.WhereInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+	Column(column, &w.builder)
+	w.builder.WriteString(" IS ")
+	w.builder.WriteString(op)
+	return w
 }
 
-func (w *Where) String() string {
-	return String(w)
+func (w *Where) IsNull(column string) ksql.WhereInterface {
+	return w._is(column, "NULL")
+}
+
+func (w *Where) IsNotNull(column string) ksql.WhereInterface {
+	return w._is(column, "NOT NULL")
+}
+
+func (w *Where) Express(raw ksql.ExpressInterface) ksql.WhereInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+
+	w.builder.WriteString(raw.Statement())
+	w.binds = append(w.binds, raw.Binds()...)
+	return w
+}
+
+func (w *Where) OrWhere(call func(o ksql.WhereInterface)) ksql.WhereInterface {
+	w.builder.WriteString(" OR (")
+	n := NewWhere()
+	call(n)
+	w.builder.WriteString(n.Prepare())
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, n.binds...)
+
+	return w
+}
+
+func (w *Where) _inBy(column string, sub ksql.QueryInterface, op string) ksql.WhereInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+	Column(column, &w.builder)
+	w.builder.WriteString(" ")
+	w.builder.WriteString(op)
+	w.builder.WriteString(" (")
+	w.builder.WriteString(sub.Prepare())
+	w.builder.WriteString(")")
+	w.binds = append(w.binds, sub.Binds()...)
+	return w
+}
+
+func (w *Where) InBy(column string, sub ksql.QueryInterface) ksql.WhereInterface {
+	return w._inBy(column, sub, "IN")
+}
+
+func (w *Where) NotInBy(column string, sub ksql.QueryInterface) ksql.WhereInterface {
+	return w._inBy(column, sub, "NOT IN")
+}
+
+func (w *Where) Between(column string, begin, end any) ksql.WhereInterface {
+	if w.builder.Len() > 0 {
+		w.builder.WriteString(" AND ")
+	}
+
+	Column(column, &w.builder)
+	w.builder.WriteString(" BETWEEN ? ")
+	w.builder.WriteString(" AND ? ")
+	w.binds = append(w.binds, begin, end)
+	return w
+}
+
+func (w *Where) Empty() bool {
+	return w.builder.Len() == 0
 }
