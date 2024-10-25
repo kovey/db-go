@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	ks "github.com/kovey/db-go/v3/sql"
 )
 
@@ -176,7 +176,11 @@ func Transaction(ctx context.Context, call func(ctx context.Context, db *Connect
 	}
 	conn := &Connection{Tx: tx}
 	if err := call(ctx, conn); err != nil {
-		tx.Rollback()
+		var commitErr = err
+		if err := tx.Rollback(); err != nil {
+			return &TxErr{CommitErr: commitErr, RollbackErr: err}
+		}
+
 		return err
 	}
 
