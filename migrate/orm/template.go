@@ -14,9 +14,10 @@ package {{.Package}}
 // Do'nt Edit!!!
 // Do'nt Edit!!!
 // {{.Comment}}
-// table: {{.Table}}
-// orm version: {{.Version}}
-// created time: {{.CreateTime}}
+// from database: {{.DbName}}
+// table:         {{.Table}}
+// orm version:   {{.Version}}
+// created time:  {{.CreateTime}}
 
 import(
 	"context"
@@ -25,12 +26,16 @@ import(
 	"github.com/kovey/db-go/v3/model" {{range .Imports}}{{"\n"}}"{{.}}"{{end}}
 )
 
+const (
+	Table_{{.Name}} = "{{.Table}}" // {{.Comment}}{{range .Consts}}{{"\n"}}Table_{{.Table}}_{{.Column}} = "{{.Name}}" // {{.Comment}}{{end}}
+)
+
 type {{.Name}} struct {
 	*model.Model {{.ModelTag | safe}} // model {{range .Fields}}{{"\n"}}{{.Name}} {{if .CanNull}}*{{end}}{{.Type}} {{.Tag | safe}} // {{.Comment}}{{end}}
 }
 
 func New{{.Name}}() *{{.Name}} {
-	return &{{.Name}}{Model: model.NewModel("{{.Table}}", "{{.PrimaryId}}", model.{{.PrimaryType}})}
+	return &{{.Name}}{Model: model.NewModel(Table_{{.Name}}, "{{.PrimaryId}}", model.{{.PrimaryType}})}
 }
 
 func (self *{{.Name}}) Save(ctx context.Context) error {
@@ -63,6 +68,13 @@ type field struct {
 	CanNull bool
 }
 
+type constInfo struct {
+	Table   string
+	Column  string
+	Name    string
+	Comment string
+}
+
 type modelTpl struct {
 	Imports     []string
 	Package     string
@@ -78,6 +90,8 @@ type modelTpl struct {
 	CreateTime  string
 	ModelTag    string
 	HasSql      bool
+	Consts      []constInfo
+	DbName      string
 }
 
 func (m *modelTpl) Parse() ([]byte, error) {
