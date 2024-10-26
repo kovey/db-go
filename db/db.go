@@ -7,7 +7,6 @@ import (
 	"time"
 
 	ksql "github.com/kovey/db-go/v3"
-	ks "github.com/kovey/db-go/v3/sql"
 )
 
 var Err_Un_Support_Operate = errors.New("unsupport operate")
@@ -59,7 +58,7 @@ func Init(conf Config) error {
 }
 
 func InsertBy(ctx context.Context, conn ksql.ConnectionInterface, table string, data *Data) (int64, error) {
-	op := ks.NewInsert()
+	op := NewInsert()
 	op.Table(table)
 	data.Range(func(key string, val any) {
 		op.Add(key, val)
@@ -73,7 +72,7 @@ func Insert(ctx context.Context, table string, data *Data) (int64, error) {
 }
 
 func UpdateBy(ctx context.Context, conn ksql.ConnectionInterface, table string, data *Data, where ksql.WhereInterface) (int64, error) {
-	op := ks.NewUpdate()
+	op := NewUpdate()
 	op.Table(table)
 	data.Range(func(key string, val any) {
 		op.Set(key, val)
@@ -88,7 +87,7 @@ func Update(ctx context.Context, table string, data *Data, where ksql.WhereInter
 }
 
 func DeleteBy(ctx context.Context, conn ksql.ConnectionInterface, table string, where ksql.WhereInterface) (int64, error) {
-	op := ks.NewDelete()
+	op := NewDelete()
 	op.Table(table).Where(where)
 
 	return conn.Exec(ctx, op)
@@ -188,26 +187,26 @@ func Transaction(ctx context.Context, call func(ctx context.Context, db *Connect
 }
 
 func Find[T FindType](ctx context.Context, table string, model ksql.ModelInterface, id T) error {
-	query := ks.NewQuery()
+	query := NewQuery()
 	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id)
 	return QueryRow(ctx, query, model)
 }
 
 func Table(ctx context.Context, table string, call func(table ksql.TableInterface)) error {
-	ta := NewTableBuilder().Table(table)
+	ta := NewTable().Table(table)
 	call(ta)
 	return ta.Exec(ctx)
 }
 
 func Schema(ctx context.Context, schema string, call func(schema ksql.SchemaInterface)) error {
-	sc := ks.NewSchema().Schema(schema)
+	sc := NewSchema().Schema(schema)
 	call(sc)
 	_, err := Exec(ctx, sc)
 	return err
 }
 
 func DropTableBy(ctx context.Context, conn ksql.ConnectionInterface, table string) error {
-	op := ks.NewDropTable().Table(table)
+	op := NewDropTable().Table(table)
 	_, err := conn.Exec(ctx, op)
 	return err
 }

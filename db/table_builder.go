@@ -4,7 +4,6 @@ import (
 	"context"
 
 	ksql "github.com/kovey/db-go/v3"
-	"github.com/kovey/db-go/v3/sql"
 )
 
 type TableBuilder struct {
@@ -31,7 +30,7 @@ func (ta *TableBuilder) Create() ksql.TableInterface {
 	}
 
 	ta.createMode = true
-	ta.create = sql.NewTable()
+	ta.create = NewCreateTable()
 	if ta.table != "" {
 		ta.create.Table(ta.table)
 	}
@@ -44,7 +43,7 @@ func (ta *TableBuilder) Alter() ksql.TableInterface {
 	}
 
 	ta.alterMode = true
-	ta.alter = sql.NewAlter()
+	ta.alter = NewAlterTable()
 	if ta.table != "" {
 		ta.alter.Table(ta.table)
 	}

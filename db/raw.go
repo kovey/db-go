@@ -2,10 +2,9 @@ package db
 
 import (
 	"context"
-	ds "database/sql"
+	"database/sql"
 
-	"github.com/kovey/db-go/v3"
-	"github.com/kovey/db-go/v3/sql"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 func InsertRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
@@ -94,7 +93,7 @@ func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.Connectio
 	}
 
 	if err := row.Scan(model.Values()...); err != nil {
-		if err == ds.ErrNoRows {
+		if err == sql.ErrNoRows {
 			return nil
 		}
 
@@ -125,7 +124,7 @@ func _hasRaw(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.Expres
 }
 
 func HasTableBy(ctx context.Context, conn ksql.ConnectionInterface, table string) (bool, error) {
-	raw := sql.Raw("SHOW TABLES LIKE '" + table + "'")
+	raw := Raw("SHOW TABLES LIKE '" + table + "'")
 	return _hasRaw(ctx, conn, raw)
 }
 
@@ -134,7 +133,7 @@ func HasTable(ctx context.Context, table string) (bool, error) {
 }
 
 func HasColumnBy(ctx context.Context, conn ksql.ConnectionInterface, table, column string) (bool, error) {
-	raw := sql.Raw("SHOW COLUMNS FROM `" + table + "` LIKE '" + column + "'")
+	raw := Raw("SHOW COLUMNS FROM `" + table + "` LIKE '" + column + "'")
 	return _hasRaw(ctx, conn, raw)
 }
 
@@ -143,7 +142,7 @@ func HasColumn(ctx context.Context, table, column string) (bool, error) {
 }
 
 func HasIndexBy(ctx context.Context, conn ksql.ConnectionInterface, table, index string) (bool, error) {
-	raw := sql.Raw("SHOW INDEX FROM `"+table+"` WHERE Key_name = ?", index)
+	raw := Raw("SHOW INDEX FROM `"+table+"` WHERE Key_name = ?", index)
 	return _hasRaw(ctx, conn, raw)
 }
 

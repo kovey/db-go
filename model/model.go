@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
-	"github.com/kovey/db-go/v3/sql"
 )
 
 var Err_Affect_No_Rows = errors.New("affect no rows")
@@ -117,7 +116,7 @@ func (m *Model) insert(ctx context.Context, data *db.Data) (int64, error) {
 		return db.Insert(ctx, m.table, data)
 	}
 
-	op := sql.NewInsert()
+	op := db.NewInsert()
 	op.Table(m.table)
 	data.Range(func(key string, val any) {
 		op.Add(key, val)
@@ -127,13 +126,13 @@ func (m *Model) insert(ctx context.Context, data *db.Data) (int64, error) {
 }
 
 func (m *Model) update(ctx context.Context, data *db.Data) (int64, error) {
-	w := sql.NewWhere()
+	w := db.NewWhere()
 	w.Where(m.primaryId, "=", data.Get(m.primaryId))
 	if m.conn == nil {
 		return db.Update(ctx, m.table, data, w)
 	}
 
-	u := sql.NewUpdate()
+	u := db.NewUpdate()
 	u.Table(m.Table())
 	data.Range(func(key string, val any) {
 		if key == m.primaryId {
@@ -193,7 +192,7 @@ func (m *Model) Delete(ctx context.Context, model ksql.ModelInterface) error {
 		return err
 	}
 
-	w := sql.NewWhere()
+	w := db.NewWhere()
 	data := m.toData(model)
 	w.Where(m.primaryId, "=", data.Get(m.primaryId))
 	if m.conn == nil {
@@ -209,7 +208,7 @@ func (m *Model) Delete(ctx context.Context, model ksql.ModelInterface) error {
 		return nil
 	}
 
-	op := sql.NewDelete()
+	op := db.NewDelete()
 	op.Table(m.table).Where(w)
 	id, err := m.conn.Delete(ctx, op)
 	if err != nil {

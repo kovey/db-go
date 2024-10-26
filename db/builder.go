@@ -4,7 +4,6 @@ import (
 	"context"
 
 	ksql "github.com/kovey/db-go/v3"
-	"github.com/kovey/db-go/v3/sql"
 )
 
 type Builder[T ksql.RowInterface] struct {
@@ -13,7 +12,7 @@ type Builder[T ksql.RowInterface] struct {
 }
 
 func NewBuilder[T ksql.RowInterface](model T) *Builder[T] {
-	return &Builder[T]{query: sql.NewQuery(), conn: model.Conn()}
+	return &Builder[T]{query: NewQuery(), conn: model.Conn()}
 }
 
 func (b *Builder[T]) Table(table string) ksql.BuilderInterface[T] {
@@ -239,7 +238,7 @@ func (b *Builder[T]) SumInt(ctx context.Context, column string) (uint64, error) 
 }
 
 func (b *Builder[T]) Count(ctx context.Context) (uint64, error) {
-	b.ColumnsExpress(sql.Raw("COUNT(1) as count"))
+	b.ColumnsExpress(Raw("COUNT(1) as count"))
 	stmt, err := b._conn().Prepare(ctx, b.query)
 	if err != nil {
 		return 0, err
