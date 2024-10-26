@@ -26,7 +26,7 @@ import(
 )
 
 type {{.Name}} struct {
-	*model.Model {{.ModelTag | safe}} // model {{range .Fields}}{{"\n"}}{{.Name}} {{.Type}} {{.Tag | safe}} // {{.Comment}}{{end}}
+	*model.Model {{.ModelTag | safe}} // model {{range .Fields}}{{"\n"}}{{.Name}} {{if .CanNull}}*{{end}}{{.Type}} {{.Tag | safe}} // {{.Comment}}{{end}}
 }
 
 func New{{.Name}}() *{{.Name}} {
@@ -60,6 +60,7 @@ type field struct {
 	Type    string
 	Comment string
 	Tag     string
+	CanNull bool
 }
 
 type modelTpl struct {
@@ -76,6 +77,7 @@ type modelTpl struct {
 	Version     string
 	CreateTime  string
 	ModelTag    string
+	HasSql      bool
 }
 
 func (m *modelTpl) Parse() ([]byte, error) {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/migrate/mysql"
 	"github.com/kovey/db-go/v3/migrate/schema"
@@ -49,6 +49,7 @@ func Orm(driverName, dsn, dir, dbname string) error {
 		var values []string
 		for _, column := range table.Fields() {
 			f := field{Name: formatName(column.Name()), Comment: column.Comment(), Type: getType(column.Type()), Tag: tag(column.Name())}
+			f.CanNull = column.Nullable()
 			tpl.Fields = append(tpl.Fields, f)
 			if f.Type == "time.Time" {
 				tpl.Imports = append(tpl.Imports, "time")
