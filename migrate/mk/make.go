@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kovey/db-go/migrate/core"
+	"github.com/kovey/db-go/migrate/mk/template"
 	"github.com/kovey/db-go/v3/db"
-	"github.com/kovey/db-go/v3/migrate/core"
-	"github.com/kovey/db-go/v3/migrate/mk/template"
 	"github.com/kovey/debug-go/debug"
 )
 

@@ -9,11 +9,11 @@ import (
 
 	"github.com/kovey/cli-go/app"
 	"github.com/kovey/cli-go/gui"
-	"github.com/kovey/db-go/v3/migrate/core"
-	"github.com/kovey/db-go/v3/migrate/diff"
-	"github.com/kovey/db-go/v3/migrate/mk"
-	"github.com/kovey/db-go/v3/migrate/orm"
-	"github.com/kovey/db-go/v3/migrate/version"
+	"github.com/kovey/db-go/migrate/core"
+	"github.com/kovey/db-go/migrate/diff"
+	"github.com/kovey/db-go/migrate/mk"
+	"github.com/kovey/db-go/migrate/orm"
+	"github.com/kovey/db-go/migrate/version"
 	"github.com/kovey/debug-go/debug"
 )
 

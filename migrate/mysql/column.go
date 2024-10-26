@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kovey/db-go/v3"
-	"github.com/kovey/db-go/v3/migrate/schema"
+	"github.com/kovey/db-go/migrate/schema"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 type Column struct {

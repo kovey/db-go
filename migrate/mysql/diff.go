@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kovey/db-go/migrate/schema"
 	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
-	"github.com/kovey/db-go/v3/migrate/schema"
 	"github.com/kovey/db-go/v3/sql"
 )
 
