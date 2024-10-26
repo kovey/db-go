@@ -103,12 +103,12 @@ func TestCreateTable(t *testing.T) {
 
 func TestAlterTable(t *testing.T) {
     err := db.Table(context.Background(), "user", func (table ksql.TableInterface) {
-		table.Alter()
-		table.AddString("foo", 63).Comment("foo").Default("")
+	    table.Alter()
+	    table.AddString("foo", 63).Comment("foo").Default("")
         table.DropColumn("boo").DropIndex("idx_xxxx")
 	    table.ChangeColumn("nickname", "nick", "varchar", 31, 0).Comment("nickname").Default("")
-		table.Engine("InnoDB").Charset("utf8mb4").Collate("utf8mb4_0900_ai_ci")
-		table.AddUnique("idx_nick", "nick")
+	    table.Engine("InnoDB").Charset("utf8mb4").Collate("utf8mb4_0900_ai_ci")
+	    table.AddUnique("idx_nick", "nick")
     })
 
     if err != nil {
