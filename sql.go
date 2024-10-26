@@ -143,6 +143,25 @@ type AlterInterface interface {
 	Charset(charset string) AlterInterface
 	Collate(collate string) AlterInterface
 	Engine(engine string) AlterInterface
+	AddDecimal(column string, length, scale int) ColumnInterface
+	AddDouble(column string, length, scale int) ColumnInterface
+	AddFloat(column string, length, scale int) ColumnInterface
+	AddBinary(column string, length int) ColumnInterface
+	AddGeoMetry(column string) ColumnInterface
+	AddPolygon(column string) ColumnInterface
+	AddPoint(column string) ColumnInterface
+	AddLineString(column string) ColumnInterface
+	AddBlob(column string) ColumnInterface
+	AddText(column string) ColumnInterface
+	AddSet(column string, sets []string) ColumnInterface
+	AddEnum(column string, options []string) ColumnInterface
+	AddDate(column string) ColumnInterface
+	AddDateTime(column string) ColumnInterface
+	AddTimestamp(column string) ColumnInterface
+	AddBigInt(column string) ColumnInterface
+	AddInt(column string) ColumnInterface
+	AddString(column string, length int) ColumnInterface
+	AddChar(column string, length int) ColumnInterface
 }
 
 type DeleteInterface interface {
@@ -197,6 +216,25 @@ type CreateTableInterface interface {
 	Collate(collate string) CreateTableInterface
 	Comment(comment string) CreateTableInterface
 	AddPrimary(column string) CreateTableInterface
+	AddDecimal(column string, length, scale int) ColumnInterface
+	AddDouble(column string, length, scale int) ColumnInterface
+	AddFloat(column string, length, scale int) ColumnInterface
+	AddBinary(column string, length int) ColumnInterface
+	AddGeoMetry(column string) ColumnInterface
+	AddPolygon(column string) ColumnInterface
+	AddPoint(column string) ColumnInterface
+	AddLineString(column string) ColumnInterface
+	AddBlob(column string) ColumnInterface
+	AddText(column string) ColumnInterface
+	AddSet(column string, sets []string) ColumnInterface
+	AddEnum(column string, options []string) ColumnInterface
+	AddDate(column string) ColumnInterface
+	AddDateTime(column string) ColumnInterface
+	AddTimestamp(column string) ColumnInterface
+	AddBigInt(column string) ColumnInterface
+	AddInt(column string) ColumnInterface
+	AddString(column string, length int) ColumnInterface
+	AddChar(column string, length int) ColumnInterface
 }
 
 type DropTableInterface interface {

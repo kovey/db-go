@@ -1,7 +1,7 @@
 package sql
 
 import (
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/sql/table"
 )
 
@@ -20,6 +20,82 @@ func NewTable() *Table {
 	ta := &Table{base: &base{hasPrepared: false}, engine: "InnoDB", charset: "utf8mb4", collate: "utf8mb4_general_ci"}
 	ta.keyword("CREATE TABLE ")
 	return ta
+}
+
+func (ta *Table) AddDecimal(column string, length, scale int) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Decimal, length, scale)
+}
+
+func (ta *Table) AddDouble(column string, length, scale int) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Double, length, scale)
+}
+
+func (ta *Table) AddFloat(column string, length, scale int) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Float, length, scale)
+}
+
+func (ta *Table) AddBinary(column string, length int) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Binary, length, 0)
+}
+
+func (ta *Table) AddGeoMetry(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_GeoMetry, 0, 0)
+}
+
+func (ta *Table) AddPolygon(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Polygon, 0, 0)
+}
+
+func (ta *Table) AddPoint(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Point, 0, 0)
+}
+
+func (ta *Table) AddLineString(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_LineString, 0, 0)
+}
+
+func (ta *Table) AddBlob(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Blob, 0, 0)
+}
+
+func (ta *Table) AddText(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Text, 0, 0)
+}
+
+func (ta *Table) AddSet(column string, sets []string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Set, 0, 0, sets...)
+}
+
+func (ta *Table) AddEnum(column string, options []string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Enum, 0, 0, options...)
+}
+
+func (ta *Table) AddDate(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Date, 0, 0)
+}
+
+func (ta *Table) AddDateTime(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_DateTime, 0, 0)
+}
+
+func (ta *Table) AddTimestamp(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Timestamp, 0, 0)
+}
+
+func (ta *Table) AddBigInt(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_BigInt, 20, 0)
+}
+
+func (ta *Table) AddInt(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Int, 11, 0)
+}
+
+func (ta *Table) AddString(column string, length int) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_VarChar, length, 0)
+}
+
+func (ta *Table) AddChar(column string, length int) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_Char, length, 0)
 }
 
 func (ta *Table) AddColumn(column, t string, length, scale int, sets ...string) ksql.ColumnInterface {
