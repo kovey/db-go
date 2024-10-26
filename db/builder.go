@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/sql"
 )
 
@@ -188,6 +188,78 @@ func (b *Builder[T]) _conn() ksql.ConnectionInterface {
 	}
 
 	return database
+}
+
+func (b *Builder[T]) SumFloat(ctx context.Context, column string) (float64, error) {
+	b.Func("SUM", column, column)
+	stmt, err := b._conn().Prepare(ctx, b.query)
+	if err != nil {
+		return 0, err
+	}
+
+	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
+	if row.Err() != nil {
+		return 0, err
+	}
+
+	var sum *float64
+	if err := row.Scan(&sum); err != nil {
+		return 0, err
+	}
+
+	if sum == nil {
+		return 0, nil
+	}
+
+	return *sum, nil
+}
+
+func (b *Builder[T]) SumInt(ctx context.Context, column string) (uint64, error) {
+	b.Func("SUM", column, column)
+	stmt, err := b._conn().Prepare(ctx, b.query)
+	if err != nil {
+		return 0, err
+	}
+
+	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
+	if row.Err() != nil {
+		return 0, err
+	}
+
+	var sum *uint64
+	if err := row.Scan(&sum); err != nil {
+		return 0, err
+	}
+
+	if sum == nil {
+		return 0, nil
+	}
+
+	return *sum, nil
+}
+
+func (b *Builder[T]) Count(ctx context.Context) (uint64, error) {
+	b.ColumnsExpress(sql.Raw("COUNT(1) as count"))
+	stmt, err := b._conn().Prepare(ctx, b.query)
+	if err != nil {
+		return 0, err
+	}
+
+	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
+	if row.Err() != nil {
+		return 0, err
+	}
+
+	var count *uint64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	if count == nil {
+		return 0, nil
+	}
+
+	return *count, nil
 }
 
 func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {

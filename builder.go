@@ -38,6 +38,9 @@ type BuilderInterface[T RowInterface] interface {
 	All(context.Context, *[]T) error
 	First(context.Context, T) error
 	Exist(ctx context.Context) (bool, error)
+	Count(ctx context.Context) (uint64, error)
+	SumInt(ctx context.Context, column string) (uint64, error)
+	SumFloat(ctx context.Context, column string) (float64, error)
 }
 
 type TableInterface interface {
