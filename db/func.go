@@ -48,3 +48,12 @@ var NewAlterTable NewAlterTableFun = func() ksql.AlterInterface {
 var NewTable NewTableFun = func() ksql.TableInterface {
 	return NewTableBuilder()
 }
+
+func ToList[T any](data []T) []any {
+	tmp := make([]any, len(data))
+	for i, v := range data {
+		tmp[i] = v
+	}
+
+	return tmp
+}

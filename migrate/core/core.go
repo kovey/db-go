@@ -52,6 +52,10 @@ func (m *migrates) Get(key uint64) migplug.MigrateInterface {
 	return m.data[key]
 }
 
+func (m *migrates) Keys() []uint64 {
+	return m.keys
+}
+
 var mig = newMigrates()
 
 func AddMigrate(mi migplug.MigrateInterface) {
@@ -102,11 +106,7 @@ func Show(driverName, dsn, path string) error {
 		return err
 	}
 
-	var ids []any
-	mig.Range(func(key uint64, mi migplug.MigrateInterface) {
-		ids = append(ids, mi.Id())
-	})
-
+	ids := db.ToList(mig.Keys())
 	table := gui.NewTable()
 	if len(ids) == 0 {
 		table.Add("No migrations")
