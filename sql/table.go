@@ -82,6 +82,13 @@ func (ta *Table) AddTimestamp(column string) ksql.ColumnInterface {
 	return ta.AddColumn(column, table.Type_Timestamp, 0, 0)
 }
 
+func (ta *Table) AddSmallInt(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_SmallInt, 3, 0)
+}
+func (ta *Table) AddTinyInt(column string) ksql.ColumnInterface {
+	return ta.AddColumn(column, table.Type_TinyInt, 1, 0)
+}
+
 func (ta *Table) AddBigInt(column string) ksql.ColumnInterface {
 	return ta.AddColumn(column, table.Type_BigInt, 20, 0)
 }
@@ -118,6 +125,10 @@ func (ta *Table) AddIndex(name string, t ksql.IndexType, column ...string) ksql.
 
 func (ta *Table) AddPrimary(column string) ksql.CreateTableInterface {
 	return ta.AddIndex("", ksql.Index_Type_Primary, column)
+}
+
+func (ta *Table) AddUnique(name string, columns ...string) ksql.CreateTableInterface {
+	return ta.AddIndex(name, ksql.Index_Type_Unique, columns...)
 }
 
 func (ta *Table) Table(table string) ksql.CreateTableInterface {

@@ -126,7 +126,7 @@ type ColumnInterface interface {
 	Nullable() ColumnInterface
 	AutoIncrement() ColumnInterface
 	Unsigned() ColumnInterface
-	Default(value string, isKeyword bool) ColumnInterface
+	Default(value string) ColumnInterface
 	Comment(comment string) ColumnInterface
 }
 
@@ -140,6 +140,7 @@ type AlterInterface interface {
 	ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ColumnInterface
 	Comment(comment string) AlterInterface
 	AddPrimary(column string) AlterInterface
+	AddUnique(name string, columns ...string) AlterInterface
 	Charset(charset string) AlterInterface
 	Collate(collate string) AlterInterface
 	Engine(engine string) AlterInterface
@@ -158,6 +159,8 @@ type AlterInterface interface {
 	AddDate(column string) ColumnInterface
 	AddDateTime(column string) ColumnInterface
 	AddTimestamp(column string) ColumnInterface
+	AddSmallInt(column string) ColumnInterface
+	AddTinyInt(column string) ColumnInterface
 	AddBigInt(column string) ColumnInterface
 	AddInt(column string) ColumnInterface
 	AddString(column string, length int) ColumnInterface
@@ -216,6 +219,7 @@ type CreateTableInterface interface {
 	Collate(collate string) CreateTableInterface
 	Comment(comment string) CreateTableInterface
 	AddPrimary(column string) CreateTableInterface
+	AddUnique(name string, columns ...string) CreateTableInterface
 	AddDecimal(column string, length, scale int) ColumnInterface
 	AddDouble(column string, length, scale int) ColumnInterface
 	AddFloat(column string, length, scale int) ColumnInterface
@@ -231,6 +235,8 @@ type CreateTableInterface interface {
 	AddDate(column string) ColumnInterface
 	AddDateTime(column string) ColumnInterface
 	AddTimestamp(column string) ColumnInterface
+	AddSmallInt(column string) ColumnInterface
+	AddTinyInt(column string) ColumnInterface
 	AddBigInt(column string) ColumnInterface
 	AddInt(column string) ColumnInterface
 	AddString(column string, length int) ColumnInterface

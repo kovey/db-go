@@ -3,7 +3,7 @@ package table
 import (
 	"fmt"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 type Default struct {
@@ -80,8 +80,8 @@ func (c *Column) Unsigned() ksql.ColumnInterface {
 	return c
 }
 
-func (c *Column) Default(value string, isKeyword bool) ksql.ColumnInterface {
-	c.def = &Default{Value: value, IsKeyword: isKeyword}
+func (c *Column) Default(value string) ksql.ColumnInterface {
+	c.def = &Default{Value: value, IsKeyword: ksql.IsDefaultKeyword(value)}
 	return c
 }
 

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/migplug"
 	"github.com/kovey/db-go/v3/model"
@@ -70,10 +70,12 @@ func Migrate(ctx context.Context, t MigrateType) {
 	debug.Info("migrate end.")
 }
 
-func Has(ctx context.Context, id uint64) bool {
-	check(ctx)
-	ok, _ := model.Query(newMigrateTable()).Where("migrate_id", "=", id).Exist(ctx)
-	return ok
+func Has(ctx context.Context, id uint64) (bool, error) {
+	if err := check(ctx); err != nil {
+		return false, err
+	}
+
+	return model.Query(newMigrateTable()).Where("migrate_id", "=", id).Exist(ctx)
 }
 
 func Create(ctx context.Context, mi migplug.MigrateInterface) {
@@ -110,14 +112,15 @@ func check(ctx context.Context) error {
 	}
 
 	return db.Table(ctx, migrate_table_name, func(table ksql.TableInterface) {
-		table.Create().AddColumn("id", "int", 11, 0).AutoIncrement().Comment("主键").Unsigned()
-		table.AddColumn("migrate_id", "bigint", 20, 0).Comment("迁移ID").Unsigned().Default("0", false)
-		table.AddColumn("name", "varchar", 255, 0).Comment("迁移文件").Default("", false)
-		table.AddColumn("status", "tinyint", 3, 0).Comment("状态 0 - 已迁移 1 - 未迁移").Default("1", false)
-		table.AddColumn("version", "varchar", 15, 0).Comment("版本").Default("v1", false)
-		table.AddColumn("create_time", "timestamp", 0, 0).Default(ksql.CURRENT_TIMESTAMP, true).Comment("创建时间")
-		table.AddColumn("update_time", "timestamp", 0, 0).Default(ksql.CURRENT_TIMESTAMP_ON_UPDATE_CURRENT_TIMESTAMP, true).Comment("创建时间")
+		table.Create()
+		table.AddInt("id").AutoIncrement().Comment("主键").Unsigned()
+		table.AddBigInt("migrate_id").Comment("迁移ID").Unsigned().Default("0")
+		table.AddString("name", 255).Comment("迁移文件").Default("")
+		table.AddTinyInt("status").Comment("状态 0 - 已迁移 1 - 未迁移").Default("1")
+		table.AddString("version", 15).Comment("版本").Default("v1")
+		table.AddTimestamp("create_time").Default(ksql.CURRENT_TIMESTAMP).Comment("创建时间")
+		table.AddTimestamp("update_time").Default(ksql.CURRENT_TIMESTAMP_ON_UPDATE_CURRENT_TIMESTAMP).Comment("创建时间")
 		table.AddPrimary("id").Engine("InnoDB").Charset("utf8mb4").Collate("utf8mb4_0900_ai_ci")
-		table.AddIndex("idx_migrate_id", ksql.Index_Type_Normal, "migrate_id")
+		table.AddUnique("idx_migrate_id", "migrate_id")
 	})
 }

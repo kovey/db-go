@@ -31,7 +31,9 @@ func Make(name, version, dir, dsn, driverName string) error {
 	}
 
 	t := &template.MigrateTemplate{Name: name, Package: "migrations", Id: uint64(time.Now().UnixNano()), Version: version}
-	if core.Has(context.Background(), t.Id) {
+	if ok, err := core.Has(context.Background(), t.Id); err != nil {
+		return err
+	} else if ok {
 		return Err_Version_Exists
 	}
 

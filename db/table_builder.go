@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/sql"
 )
 
@@ -49,6 +49,257 @@ func (ta *TableBuilder) Alter() ksql.TableInterface {
 		ta.alter.Table(ta.table)
 	}
 	return ta
+}
+
+func (ta *TableBuilder) AddDecimal(column string, length, scale int) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddDecimal(column, length, scale)
+	}
+
+	if ta.createMode {
+		return ta.create.AddDecimal(column, length, scale)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddDouble(column string, length, scale int) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddDouble(column, length, scale)
+	}
+
+	if ta.createMode {
+		return ta.create.AddDouble(column, length, scale)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddFloat(column string, length, scale int) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddFloat(column, length, scale)
+	}
+
+	if ta.createMode {
+		return ta.create.AddFloat(column, length, scale)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddBinary(column string, length int) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddBinary(column, length)
+	}
+
+	if ta.createMode {
+		return ta.create.AddBinary(column, length)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddGeoMetry(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddGeoMetry(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddGeoMetry(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddPolygon(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddPolygon(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddPolygon(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddPoint(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddPoint(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddPoint(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddLineString(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddLineString(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddLineString(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddBlob(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddBlob(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddBlob(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddText(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddText(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddText(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddSet(column string, sets []string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddSet(column, sets)
+	}
+
+	if ta.createMode {
+		return ta.create.AddSet(column, sets)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddEnum(column string, options []string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddEnum(column, options)
+	}
+
+	if ta.createMode {
+		return ta.create.AddEnum(column, options)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddDate(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddDate(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddDate(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddDateTime(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddDateTime(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddDateTime(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddTimestamp(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddTimestamp(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddTimestamp(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddSmallInt(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddSmallInt(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddSmallInt(column)
+	}
+
+	return nil
+}
+func (ta *TableBuilder) AddTinyInt(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddTinyInt(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddTinyInt(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddBigInt(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddBigInt(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddBigInt(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddInt(column string) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddInt(column)
+	}
+
+	if ta.createMode {
+		return ta.create.AddInt(column)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddString(column string, length int) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddString(column, length)
+	}
+
+	if ta.createMode {
+		return ta.create.AddString(column, length)
+	}
+
+	return nil
+}
+
+func (ta *TableBuilder) AddChar(column string, length int) ksql.ColumnInterface {
+	if ta.alterMode {
+		return ta.alter.AddChar(column, length)
+	}
+
+	if ta.createMode {
+		return ta.create.AddChar(column, length)
+	}
+
+	return nil
 }
 
 func (ta *TableBuilder) AddColumn(column, t string, length, scale int, sets ...string) ksql.ColumnInterface {
@@ -169,6 +420,20 @@ func (t *TableBuilder) Comment(comment string) ksql.TableInterface {
 
 	if t.alterMode {
 		t.alter.Comment(comment)
+		return t
+	}
+
+	return t
+}
+
+func (t *TableBuilder) AddUnique(name string, columns ...string) ksql.TableInterface {
+	if t.createMode {
+		t.create.AddUnique(name, columns...)
+		return t
+	}
+
+	if t.alterMode {
+		t.alter.AddUnique(name, columns...)
 		return t
 	}
 

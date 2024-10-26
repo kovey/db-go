@@ -55,7 +55,29 @@ type TableInterface interface {
 	Collate(collate string) TableInterface
 	Comment(comment string) TableInterface
 	AddPrimary(column string) TableInterface
+	AddUnique(name string, columns ...string) TableInterface
 	HasColumn(ctx context.Context, column string) (bool, error)
 	HasIndex(ctx context.Context, index string) (bool, error)
 	SetConn(conn ConnectionInterface) TableInterface
+	AddDecimal(column string, length, scale int) ColumnInterface
+	AddDouble(column string, length, scale int) ColumnInterface
+	AddFloat(column string, length, scale int) ColumnInterface
+	AddBinary(column string, length int) ColumnInterface
+	AddGeoMetry(column string) ColumnInterface
+	AddPolygon(column string) ColumnInterface
+	AddPoint(column string) ColumnInterface
+	AddLineString(column string) ColumnInterface
+	AddBlob(column string) ColumnInterface
+	AddText(column string) ColumnInterface
+	AddSet(column string, sets []string) ColumnInterface
+	AddEnum(column string, options []string) ColumnInterface
+	AddDate(column string) ColumnInterface
+	AddDateTime(column string) ColumnInterface
+	AddTimestamp(column string) ColumnInterface
+	AddSmallInt(column string) ColumnInterface
+	AddTinyInt(column string) ColumnInterface
+	AddBigInt(column string) ColumnInterface
+	AddInt(column string) ColumnInterface
+	AddString(column string, length int) ColumnInterface
+	AddChar(column string, length int) ColumnInterface
 }

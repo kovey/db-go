@@ -14,6 +14,7 @@ import (
 	"github.com/kovey/db-go/v3/migrate/mk"
 	"github.com/kovey/db-go/v3/migrate/orm"
 	"github.com/kovey/db-go/v3/migrate/version"
+	"github.com/kovey/debug-go/debug"
 )
 
 type serv struct {
@@ -110,10 +111,14 @@ func (s *serv) diff(a app.AppInterface) error {
 	buff := bufio.NewWriter(file)
 	for i, op := range ops {
 		if i > 0 {
-			buff.WriteString("\n")
+			if _, err := buff.WriteString("\n"); err != nil {
+				debug.Erro("write error: %s", err)
+			}
 		}
 
-		buff.WriteString(op.Prepare())
+		if _, err := buff.WriteString(op.Prepare()); err != nil {
+			debug.Erro("write error: %s", err)
+		}
 	}
 
 	return buff.Flush()

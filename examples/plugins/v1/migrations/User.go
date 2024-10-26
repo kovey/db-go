@@ -14,7 +14,7 @@ func (self *User) Up(ctx context.Context) error {
 	// TODO Code
 	if ok, err := db.HasColumn(ctx, "user", "foo"); err == nil && !ok {
 		return db.Table(ctx, "user", func(table ksql.TableInterface) {
-			table.AddColumn("foo", "varchar", 10, 0).Default("", false).Comment("test").Nullable()
+			table.AddColumn("foo", "varchar", 10, 0).Default("").Comment("test").Nullable()
 		})
 	}
 

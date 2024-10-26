@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/migrate/schema"
 	"github.com/kovey/db-go/v3/sql"
@@ -63,7 +63,7 @@ func DiffTable(ctx context.Context, fromTable, toTable schema.TableInfoInterface
 				c.AutoIncrement()
 			}
 			if column.HasDefault() {
-				c.Default(column.Default(), ksql.IsDefaultKeyword(column.Default()))
+				c.Default(column.Default())
 			}
 			if column.Nullable() {
 				c.Nullable()
@@ -127,7 +127,7 @@ func DiffTable(ctx context.Context, fromTable, toTable schema.TableInfoInterface
 				c.AutoIncrement()
 			}
 			if column.HasDefault() {
-				c.Default(column.Default(), ksql.IsDefaultKeyword(column.Default()))
+				c.Default(column.Default())
 			}
 			if column.Nullable() {
 				c.Nullable()
@@ -140,7 +140,7 @@ func DiffTable(ctx context.Context, fromTable, toTable schema.TableInfoInterface
 				c.AutoIncrement()
 			}
 			if column.HasDefault() {
-				c.Default(column.Default(), ksql.IsDefaultKeyword(column.Default()))
+				c.Default(column.Default())
 			}
 			if column.Nullable() {
 				c.Nullable()

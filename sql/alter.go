@@ -134,6 +134,13 @@ func (a *Alter) AddTimestamp(column string) ksql.ColumnInterface {
 	return a.AddColumn(column, table.Type_Timestamp, 0, 0)
 }
 
+func (a *Alter) AddSmallInt(column string) ksql.ColumnInterface {
+	return a.AddColumn(column, table.Type_SmallInt, 3, 0)
+}
+func (a *Alter) AddTinyInt(column string) ksql.ColumnInterface {
+	return a.AddColumn(column, table.Type_TinyInt, 1, 0)
+}
+
 func (a *Alter) AddBigInt(column string) ksql.ColumnInterface {
 	return a.AddColumn(column, table.Type_BigInt, 20, 0)
 }
@@ -266,6 +273,10 @@ func (a *Alter) _write(key, val string, canAdd *bool) {
 	a.builder.WriteString(key)
 	a.builder.WriteString(" = ")
 	Quote(val, &a.builder)
+}
+
+func (a *Alter) AddUnique(name string, columns ...string) ksql.AlterInterface {
+	return a.AddIndex(name, ksql.Index_Type_Unique, columns...)
 }
 
 func (a *Alter) AddPrimary(column string) ksql.AlterInterface {

@@ -64,10 +64,125 @@ func setup() {
 		panic(err)
 	}
 
-    // TODO
     db.Table(context.Background(), "user", func (table ksql.TableInterface) {
+		table.Create()
+		table.AddString("account", 63).Comment("账号").Default("")
+		table.AddDate("create_date").Comment("创建日期").Default("")
+		table.AddBigInt("create_time").Comment("创建时间").Unsigned().Default("0")
+		table.AddInt("id").AutoIncrement().Comment("主键").Unsigned()
+		table.AddString("nickname", 63).Comment("昵称").Default("")
+		table.AddString("password", 64).Comment("密码").Default("")
+		table.AddTinyInt("status").Comment("状态 0 - 正常 1 - 删除").Default("0")
+		table.AddBigInt("update_time").Comment("更新时间").Unsigned().Default("0")
+		table.AddPrimary("id").Engine("InnoDB").Charset("utf8mb4").Collate("utf8mb4_0900_ai_ci")
+		table.AddUnique("idx_account", "account")
     })
+
 	ssetup()
+}
+
+func TestCreateTable(t *testing.T) {
+    err := db.Table(context.Background(), "user", func (table ksql.TableInterface) {
+		table.Create()
+		table.AddString("account", 63).Comment("账号").Default("")
+		table.AddDate("create_date").Comment("创建日期").Default("")
+		table.AddBigInt("create_time").Comment("创建时间").Unsigned().Default("0")
+		table.AddInt("id").AutoIncrement().Comment("主键").Unsigned()
+		table.AddString("nickname", 63).Comment("昵称").Default("")
+		table.AddString("password", 64).Comment("密码").Default("")
+		table.AddTinyInt("status").Comment("状态 0 - 正常 1 - 删除").Default("0")
+		table.AddBigInt("update_time").Comment("更新时间").Unsigned().Default("0")
+		table.AddPrimary("id").Engine("InnoDB").Charset("utf8mb4").Collate("utf8mb4_0900_ai_ci")
+		table.AddUnique("idx_account", "account")
+    })
+
+    if err != nil {
+        t.Fatal(err)
+    }
+}
+
+func TestAlterTable(t *testing.T) {
+    err := db.Table(context.Background(), "user", func (table ksql.TableInterface) {
+		table.Alter()
+		table.AddString("foo", 63).Comment("foo").Default("")
+        table.DropColumn("boo").DropIndex("idx_xxxx")
+	    table.ChangeColumn("nickname", "nick", "varchar", 31, 0).Comment("nickname").Default("")
+		table.Engine("InnoDB").Charset("utf8mb4").Collate("utf8mb4_0900_ai_ci")
+		table.AddUnique("idx_nick", "nick")
+    })
+
+    if err != nil {
+        t.Fatal(err)
+    }
+}
+
+func TestInsert(t *testing.T) {
+    u := NewUser()
+    u.Account = "kovey"
+    u.Nickname = "kovey_nickname"
+    u.Password = "1232555"
+    u.Status = 0
+    u.CreateTime = time.Now().Unix()
+    u.CreateDate = time.Now()
+    u.UpdateTime = u.CreateTime
+
+    if err := u.Save(context.Background()); err != nil {
+	    t.Fatal(err)
+    }
+}
+
+func TestFetchRow(t *testing.T) {
+	ctx := context.Background()
+	u := NewUser()
+	if err := model.Query(u).Where("id", "=", 1).First(ctx, u); err != nil {
+        t.Fatal(err)
+	}
+
+	t.Log("user: ", u)
+}
+
+func TestUpdate(t *testing.T) {
+	ctx := context.Background()
+	u := NewUser()
+	if err := model.Query(u).Where("id", "=", 1).First(ctx, u); err != nil {
+        t.Fatal(err)
+	}
+
+	t.Log("user: ", u)
+    u.Account = "kovey"
+    u.Nickname = "kovey_nickname"
+    u.Password = "1232555"
+    u.Status = 1
+    u.UpdateTime = time.Now().Unix()
+
+    if err := u.Save(context.Background()); err != nil {
+	    t.Fatal(err)
+    }
+}
+
+func TestDelete(t *testing.T) {
+	ctx := context.Background()
+	u := NewUser()
+	if err := model.Query(u).Where("id", "=", 1).First(ctx, u); err != nil {
+        t.Fatal(err)
+	}
+
+	t.Log("user: ", u)
+    if err := u.Delete(context.Background()); err != nil {
+	    t.Fatal(err)
+    }
+}
+
+func TestFetchAll(t *testing.T) {
+	ctx := context.Background()
+    var users []*User
+	if err := model.Query(NewUser()).Where("id", "<", 100).Limit(10).All(ctx, &users); err != nil {
+        t.Fatal(err)
+	}
+
+    for _, u := range users {
+        t.Log(u)
+    }
 }
 
 func teardown() {
