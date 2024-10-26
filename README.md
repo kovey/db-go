@@ -105,7 +105,7 @@ func TestAlterTable(t *testing.T) {
     err := db.Table(context.Background(), "user", func (table ksql.TableInterface) {
 	    table.Alter()
 	    table.AddString("foo", 63).Comment("foo").Default("")
-        table.DropColumn("boo").DropIndex("idx_xxxx")
+            table.DropColumn("boo").DropIndex("idx_xxxx")
 	    table.ChangeColumn("nickname", "nick", "varchar", 31, 0).Comment("nickname").Default("")
 	    table.Engine("InnoDB").Charset("utf8mb4").Collate("utf8mb4_0900_ai_ci")
 	    table.AddUnique("idx_nick", "nick")
@@ -149,15 +149,15 @@ func TestUpdate(t *testing.T) {
 	}
 
 	t.Log("user: ", u)
-    u.Account = "kovey"
-    u.Nickname = "kovey_nickname"
-    u.Password = "1232555"
-    u.Status = 1
-    u.UpdateTime = time.Now().Unix()
+        u.Account = "kovey"
+        u.Nickname = "kovey_nickname"
+        u.Password = "1232555"
+        u.Status = 1
+        u.UpdateTime = time.Now().Unix()
 
-    if err := u.Save(context.Background()); err != nil {
-	    t.Fatal(err)
-    }
+        if err := u.Save(context.Background()); err != nil {
+	        t.Fatal(err)
+        }
 }
 
 func TestDelete(t *testing.T) {
@@ -168,21 +168,21 @@ func TestDelete(t *testing.T) {
 	}
 
 	t.Log("user: ", u)
-    if err := u.Delete(context.Background()); err != nil {
-	    t.Fatal(err)
-    }
+        if err := u.Delete(context.Background()); err != nil {
+	        t.Fatal(err)
+        }
 }
 
 func TestFetchAll(t *testing.T) {
 	ctx := context.Background()
-    var users []*User
+        var users []*User
 	if err := model.Query(NewUser()).Where("id", "<", 100).Limit(10).All(ctx, &users); err != nil {
         t.Fatal(err)
 	}
 
-    for _, u := range users {
-        t.Log(u)
-    }
+        for _, u := range users {
+            t.Log(u)
+        }
 }
 
 func teardown() {
