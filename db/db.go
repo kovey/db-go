@@ -186,7 +186,7 @@ func Transaction(ctx context.Context, call func(ctx context.Context, db *Connect
 	return tx.Commit()
 }
 
-func Find[T FindType](ctx context.Context, table string, model ksql.ModelInterface, id T) error {
+func Find[T FindType](ctx context.Context, model ksql.ModelInterface, id T) error {
 	query := NewQuery()
 	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id)
 	return QueryRow(ctx, query, model)
