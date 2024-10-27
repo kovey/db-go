@@ -57,6 +57,11 @@ func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 		return _errRaw(err, raw)
 	}
 
+	if rows.Err() != nil {
+		return _errRaw(rows.Err(), raw)
+	}
+	defer rows.Close()
+
 	var m T
 	for rows.Next() {
 		tmp := m.Clone()
@@ -119,7 +124,11 @@ func _hasRaw(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.Expres
 	if err != nil {
 		return false, _errRaw(err, raw)
 	}
+	if rows.Err() != nil {
+		return false, _errRaw(rows.Err(), raw)
+	}
 
+	defer rows.Close()
 	return rows.Next(), nil
 }
 

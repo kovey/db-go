@@ -271,7 +271,11 @@ func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, _err(err, b.query)
 	}
+	if rows.Err() != nil {
+		return false, _err(rows.Err(), b.query)
+	}
 
+	defer rows.Close()
 	if rows.Next() {
 		return true, nil
 	}
