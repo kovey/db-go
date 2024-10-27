@@ -279,6 +279,27 @@ func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
 	return false, _err(rows.Err(), b.query)
 }
 
+func offset(page, pageSize int64) int {
+	return int((page - 1) * pageSize)
+}
+
+func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql.PaginationInterface[T], error) {
+	var models []T
+	b.query.Limit(int(pageSize)).Offset(offset(page, pageSize))
+	if err := b.All(ctx, &models); err != nil {
+		return nil, err
+	}
+
+	total := &Builder[T]{query: b.query.Clone(), conn: b.conn}
+	count, err := total.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	pageInfo := NewPageInfo(models)
+	pageInfo.Set(count, uint64(pageSize))
+	return pageInfo, nil
+}
+
 func Build[T ksql.RowInterface](row T) ksql.BuilderInterface[T] {
 	return NewBuilder(row)
 }

@@ -3,7 +3,7 @@ package sql
 import (
 	"strings"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 type Query struct {
@@ -23,6 +23,15 @@ type Query struct {
 
 func NewQuery() *Query {
 	q := &Query{base: &base{hasPrepared: false}, where: NewWhere(), having: NewHaving()}
+	q.keyword("SELECT ")
+	return q
+}
+
+func (o *Query) Clone() ksql.QueryInterface {
+	q := &Query{
+		base: &base{hasPrepared: false, binds: o.binds}, where: o.where, having: o.having,
+		table: o.table, as: o.as, join: o.join, group: o.group,
+	}
 	q.keyword("SELECT ")
 	return q
 }

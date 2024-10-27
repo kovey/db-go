@@ -41,6 +41,7 @@ type BuilderInterface[T RowInterface] interface {
 	Count(ctx context.Context) (uint64, error)
 	SumInt(ctx context.Context, column string) (uint64, error)
 	SumFloat(ctx context.Context, column string) (float64, error)
+	Pagination(ctx context.Context, page, pageSize int64) (PaginationInterface[T], error)
 }
 
 type TableInterface interface {

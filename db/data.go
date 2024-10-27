@@ -1,5 +1,7 @@
 package db
 
+import ksql "github.com/kovey/db-go/v3"
+
 type Data struct {
 	data map[string]any
 	keys []string
@@ -85,4 +87,34 @@ func (m *Map[K, T]) GetBy(seq int) T {
 	}
 
 	return m.Get(m.keys[seq])
+}
+
+type PageInfo[T ksql.RowInterface] struct {
+	list       []T
+	totalCount uint64
+	totalPage  uint64
+}
+
+func NewPageInfo[T ksql.RowInterface](list []T) *PageInfo[T] {
+	return &PageInfo[T]{list: list}
+}
+
+func (p *PageInfo[T]) List() []T {
+	return p.list
+}
+
+func (p *PageInfo[T]) TotalPage() uint64 {
+	return p.totalPage
+}
+
+func (p *PageInfo[T]) TotalCount() uint64 {
+	return p.totalCount
+}
+
+func (p *PageInfo[T]) Set(total, pageSize uint64) {
+	p.totalCount = total
+	p.totalPage = p.totalCount / uint64(pageSize)
+	if p.totalCount%uint64(pageSize) != 0 {
+		p.totalPage++
+	}
 }

@@ -207,6 +207,7 @@ type QueryInterface interface {
 	RightJoin(table string) JoinInterface
 	RightJoinExpress(express ExpressInterface) JoinInterface
 	ForUpdate() QueryInterface
+	Clone() QueryInterface
 }
 
 type CreateTableInterface interface {
@@ -255,4 +256,11 @@ type SchemaInterface interface {
 	Schema(schema string) SchemaInterface
 	Charset(charset string) SchemaInterface
 	Collate(collate string) SchemaInterface
+}
+
+type PaginationInterface[T RowInterface] interface {
+	List() []T
+	TotalPage() uint64
+	TotalCount() uint64
+	Set(totalCount, pageSize uint64)
 }
