@@ -205,6 +205,19 @@ func FindBy(ctx context.Context, model ksql.ModelInterface, call func(query ksql
 	return QueryRow(ctx, query, model)
 }
 
+func Lock[T FindType](ctx context.Context, model ksql.ModelInterface, id T) error {
+	query := NewQuery()
+	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id).ForUpdate()
+	return QueryRow(ctx, query, model)
+}
+
+func LockBy(ctx context.Context, model ksql.ModelInterface, call func(query ksql.QueryInterface)) error {
+	query := NewQuery()
+	query.Table(model.Table()).Columns(model.Columns()...).ForUpdate()
+	call(query)
+	return QueryRow(ctx, query, model)
+}
+
 func Table(ctx context.Context, table string, call func(table ksql.TableInterface)) error {
 	ta := NewTable().Table(table)
 	call(ta)
