@@ -110,6 +110,7 @@ func QueryBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInter
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, op.Binds()...)
 	if err != nil {
@@ -149,6 +150,7 @@ func QueryRowBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, op.Binds()...)
 	if row.Err() != nil {

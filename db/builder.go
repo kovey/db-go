@@ -195,6 +195,7 @@ func (b *Builder[T]) SumFloat(ctx context.Context, column string) (float64, erro
 	if err != nil {
 		return 0, err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
 	if row.Err() != nil {
@@ -219,6 +220,7 @@ func (b *Builder[T]) SumInt(ctx context.Context, column string) (uint64, error) 
 	if err != nil {
 		return 0, err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
 	if row.Err() != nil {
@@ -243,6 +245,7 @@ func (b *Builder[T]) Count(ctx context.Context) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
 	if row.Err() != nil {
@@ -266,6 +269,7 @@ func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, b.query.Binds()...)
 	if err != nil {

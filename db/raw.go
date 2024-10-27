@@ -51,6 +51,7 @@ func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, raw.Binds()...)
 	if err != nil {
@@ -91,6 +92,7 @@ func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.Connectio
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, raw.Binds()...)
 	if row.Err() != nil {
@@ -119,6 +121,7 @@ func _hasRaw(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.Expres
 	if err != nil {
 		return false, err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, raw.Binds()...)
 	if err != nil {

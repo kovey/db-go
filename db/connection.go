@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 type Connection struct {
@@ -64,6 +64,7 @@ func (c *Connection) Exec(ctx context.Context, op ksql.SqlInterface) (int64, err
 	if err != nil {
 		return 0, err
 	}
+	defer stmt.Close()
 
 	result, err := stmt.ExecContext(ctx, op.Binds()...)
 	if err != nil {
@@ -85,6 +86,7 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, op.Binds()...)
 	if row.Err() != nil {
@@ -110,6 +112,7 @@ func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface,
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, raw.Binds()...)
 	if row.Err() != nil {
@@ -145,6 +148,7 @@ func (c *Connection) ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sq
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	result, err := stmt.ExecContext(ctx, raw.Binds()...)
 	return result, _errRaw(err, raw)
