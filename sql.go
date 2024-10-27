@@ -27,6 +27,7 @@ type ConnectionInterface interface {
 	PrepareRaw(ctx context.Context, raw ExpressInterface) (*sql.Stmt, error)
 	QueryRowRaw(ctx context.Context, raw ExpressInterface, model RowInterface) error
 	DriverName() string
+	InTransaction() bool
 }
 
 type ExpressInterface interface {

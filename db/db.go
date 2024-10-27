@@ -10,6 +10,7 @@ import (
 )
 
 var Err_Un_Support_Operate = errors.New("unsupport operate")
+var Err_Not_In_Transaction = errors.New("not in transaction")
 
 var database ksql.ConnectionInterface
 
@@ -174,13 +175,14 @@ func QueryRow[T ksql.RowInterface](ctx context.Context, op ksql.QueryInterface, 
 	return QueryRowBy(ctx, database, op, model)
 }
 
-func Transaction(ctx context.Context, call func(ctx context.Context, db *Connection) error) error {
+func Taransaction(ctx context.Context, call func(ctx context.Context, db *Connection) error) error {
 	tx, err := database.Database().BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	conn := &Connection{Tx: tx}
 	if err := call(ctx, conn); err != nil {
+		conn.Tx = nil
 		var commitErr = err
 		if err := tx.Rollback(); err != nil {
 			return &TxErr{CommitErr: commitErr, RollbackErr: err}
@@ -189,6 +191,7 @@ func Transaction(ctx context.Context, call func(ctx context.Context, db *Connect
 		return err
 	}
 
+	conn.Tx = nil
 	return tx.Commit()
 }
 
@@ -205,17 +208,25 @@ func FindBy(ctx context.Context, model ksql.ModelInterface, call func(query ksql
 	return QueryRow(ctx, query, model)
 }
 
-func Lock[T FindType](ctx context.Context, model ksql.ModelInterface, id T) error {
+func Lock[T FindType](ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, id T) error {
+	if conn == nil || !conn.InTransaction() {
+		return Err_Not_In_Transaction
+	}
+
 	query := NewQuery()
 	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id).ForUpdate()
-	return QueryRow(ctx, query, model)
+	return QueryRowBy(ctx, conn, query, model)
 }
 
-func LockBy(ctx context.Context, model ksql.ModelInterface, call func(query ksql.QueryInterface)) error {
+func LockBy(ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, call func(query ksql.QueryInterface)) error {
+	if conn == nil || !conn.InTransaction() {
+		return Err_Not_In_Transaction
+	}
+
 	query := NewQuery()
 	query.Table(model.Table()).Columns(model.Columns()...).ForUpdate()
 	call(query)
-	return QueryRow(ctx, query, model)
+	return QueryRowBy(ctx, conn, query, model)
 }
 
 func Table(ctx context.Context, table string, call func(table ksql.TableInterface)) error {

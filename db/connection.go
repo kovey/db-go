@@ -153,3 +153,7 @@ func (c *Connection) ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sq
 	result, err := stmt.ExecContext(ctx, raw.Binds()...)
 	return result, _errRaw(err, raw)
 }
+
+func (c *Connection) InTransaction() bool {
+	return c.Tx != nil
+}
