@@ -275,11 +275,11 @@ func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, _err(err, b.query)
 	}
+	defer rows.Close()
 	if rows.Err() != nil {
 		return false, _err(rows.Err(), b.query)
 	}
 
-	defer rows.Close()
 	if rows.Next() {
 		return true, nil
 	}
@@ -310,4 +310,8 @@ func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql
 
 func Build[T ksql.RowInterface](row T) ksql.BuilderInterface[T] {
 	return NewBuilder(row)
+}
+
+func Model[T ksql.ModelInterface](model T) ksql.BuilderInterface[T] {
+	return NewBuilder(model).Table(model.Table()).Columns(model.Columns()...)
 }

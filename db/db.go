@@ -116,10 +116,10 @@ func QueryBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInter
 	if err != nil {
 		return _err(err, op)
 	}
+	defer rows.Close()
 	if rows.Err() != nil {
 		return _err(rows.Err(), op)
 	}
-	defer rows.Close()
 
 	var m T
 	for rows.Next() {
