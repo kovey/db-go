@@ -28,7 +28,7 @@ const (
 	Type_MediumBlob         = "MEDIUMBLOB"
 	Type_MediumText         = "MEDIUMTEXT"
 	Type_LongBlob           = "LONGBLOB"
-	Type_LongText           = "LONGBTEXT"
+	Type_LongText           = "LONGTEXT"
 	Type_GeoMetry           = "GEOMETRY"
 	Type_Point              = "POINT"
 	Type_LineString         = "LINESTRING"
