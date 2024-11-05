@@ -10,6 +10,7 @@ type Migrator struct {
 
 func (m *Migrator) Register(c migplug.CoreInterface) {
 	c.Add(&migrations.User{})
+	c.Add(&migrations.UserInfo{})
 
 }
 

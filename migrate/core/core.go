@@ -10,6 +10,7 @@ import (
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/migplug"
 	"github.com/kovey/db-go/v3/model"
+	"github.com/kovey/debug-go/color"
 )
 
 type migrates struct {
@@ -108,8 +109,15 @@ func Show(driverName, dsn, path string) error {
 
 	ids := db.ToList(mig.Keys())
 	table := gui.NewTable()
+	table.Add(0, "Migrator")
+	table.Add(0, "Version")
+	table.Add(0, "Migrated")
+	table.Add(0, "Migrate Time")
 	if len(ids) == 0 {
-		table.Add("No migrations")
+		table.Add(1, "No migrations")
+		table.Add(1, "")
+		table.Add(1, "")
+		table.Add(1, "")
 		table.Show()
 		return nil
 	}
@@ -119,15 +127,27 @@ func Show(driverName, dsn, path string) error {
 		return err
 	}
 
+	i := 0
 	mig.Range(func(key uint64, mi migplug.MigrateInterface) {
+		i++
+		table.Add(i, mi.Name())
+		table.Add(i, mi.Version())
+		yes := false
+		var upTime = ""
 		for _, migration := range migrations {
 			if migration.MigrateId == key {
-				table.Add(fmt.Sprintf("%s: Yes", mi.Name()))
-				return
+				yes = true
+				upTime = migration.CreateTime
+				break
 			}
 		}
 
-		table.Add(fmt.Sprintf("%s: No", mi.Name()))
+		if yes {
+			table.AddColor(i, "Yes", color.Color_Green)
+		} else {
+			table.AddColor(i, "No", color.Color_Red)
+		}
+		table.Add(i, upTime)
 	})
 
 	table.Show()

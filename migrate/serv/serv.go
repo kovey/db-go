@@ -183,11 +183,12 @@ func (s *serv) orm(a app.AppInterface) error {
 
 func (s *serv) ver() {
 	ta := gui.NewTable()
-	ta.Add("ksql migrate tools")
-	ta.Add(fmt.Sprintf("version: %s", version.Version()))
-	ta.Add(fmt.Sprintf("Major: %d", version.MAJOR))
-	ta.Add(fmt.Sprintf("Minor: %d", version.MINOR))
-	ta.Add(fmt.Sprintf("Build: %d", version.BUILD))
+	ta.Add(0, "ksql")
+	ta.Add(0, "migrate tools")
+	ta.Add(1, "version")
+	ta.Add(1, version.Version())
+	ta.Add(2, "author")
+	ta.Add(2, "kovey")
 	ta.Show()
 }
 
