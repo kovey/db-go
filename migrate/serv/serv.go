@@ -36,6 +36,22 @@ func (s *serv) Flag(a app.AppInterface) error {
 	return nil
 }
 
+func (s *serv) Usage() {
+	fmt.Println(`
+ksql-migrate tools to manage sql migrate、create orm model.
+
+Usage:
+	ksql-tool <command> [arguments]
+The commands are:
+	migrate	 migrate sql from dev to prod
+	diff     diff table changed from dev to prod, create changed sql file
+	migplug  migrate sql from migration plugins
+	orm      create orm model from database
+	version  show ksql-tool version
+Use "ksql-tool help <command>" for more information about a command.
+`)
+}
+
 func (s *serv) Init(app.AppInterface) error {
 	return nil
 }
@@ -193,7 +209,7 @@ func (s *serv) ver() {
 }
 
 func (s *serv) Run(a app.AppInterface) error {
-	method, err := a.Get("m")
+	method, err := a.Arg(0, app.TYPE_STRING)
 	if err != nil {
 		return err
 	}
@@ -204,14 +220,62 @@ func (s *serv) Run(a app.AppInterface) error {
 		return s.diff(a)
 	case "migplug":
 		return s.migplug(a)
-	case "make":
-		return s._make(a)
-	case "orm":
-		return s.orm(a)
-	default:
+	case "version":
 		s.ver()
 		return nil
+	case "orm":
+		return s.orm(a)
+	case "help":
+		return s.help(a)
+	default:
+		s.Usage()
+		return nil
 	}
+}
+
+func (s *serv) help(a app.AppInterface) error {
+	method, err := a.Arg(1, app.TYPE_STRING)
+	if err != nil {
+		return err
+	}
+
+	switch method.String() {
+	case "migrate":
+		fmt.Println(`
+Usage:
+	ksql-tool migrate [-dir] [-driver] [-todb] [-to]
+		-dir     sql directory
+		-driver  database driver(mysql)
+		-todb    database name
+		-to      database dsn
+		`)
+	case "diff":
+		// "from", "to", "fromdb", "todb", "d", "dir"
+		fmt.Println(`
+Usage:
+	ksql-tool diff [-dir] [-driver] [-fromdb] [-from] [-todb] [-to]
+		-dir     created sql directory
+		-driver  database driver(mysql)
+		-todb    to database name
+		-to      to database dsn
+		-fromdb  from database name
+		-from    from database dsn
+		`)
+	case "migplug":
+		// "p", "mt", "to", "d"
+		fmt.Println(`
+Usage:
+	ksql-tool diff [-plugin] [-driver] [-m] [-to]
+		-plugin  plugin directory
+		-driver  database driver(mysql)
+		-m       plugin method(up|down|show)
+		-to      to database dsn
+		`)
+	default:
+		s.Usage()
+	}
+
+	return nil
 }
 
 func (s *serv) mkdir(dir string) error {
