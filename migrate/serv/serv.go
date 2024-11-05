@@ -241,36 +241,13 @@ func (s *serv) help(a app.AppInterface) error {
 
 	switch method.String() {
 	case "migrate":
-		fmt.Println(`
-Usage:
-	ksql-tool migrate [-dir] [-driver] [-todb] [-to]
-		-dir     sql directory
-		-driver  database driver(mysql)
-		-todb    database name
-		-to      database dsn
-		`)
+		migrateHelp()
 	case "diff":
-		// "from", "to", "fromdb", "todb", "d", "dir"
-		fmt.Println(`
-Usage:
-	ksql-tool diff [-dir] [-driver] [-fromdb] [-from] [-todb] [-to]
-		-dir     created sql directory
-		-driver  database driver(mysql)
-		-todb    to database name
-		-to      to database dsn
-		-fromdb  from database name
-		-from    from database dsn
-		`)
+		diffHelp()
 	case "migplug":
-		// "p", "mt", "to", "d"
-		fmt.Println(`
-Usage:
-	ksql-tool diff [-plugin] [-driver] [-m] [-to]
-		-plugin  plugin directory
-		-driver  database driver(mysql)
-		-m       plugin method(up|down|show)
-		-to      to database dsn
-		`)
+		migplugHelp()
+	case "orm":
+		ormHelp()
 	default:
 		s.Usage()
 	}
