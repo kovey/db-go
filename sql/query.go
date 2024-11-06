@@ -176,6 +176,12 @@ func (o *Query) Offset(offset int) ksql.QueryInterface {
 	return o
 }
 
+func (o *Query) Pagination(page, pageSize int) ksql.QueryInterface {
+	o.limit = pageSize
+	o.offset = (page - 1) * pageSize
+	return o
+}
+
 func (o *Query) Order(column string) ksql.QueryInterface {
 	if o.order.Len() > 0 {
 		o.order.WriteString(",")
@@ -309,6 +315,41 @@ func (o *Query) Prepare() string {
 	return o.base.Prepare()
 }
 
+func (o *Query) HavingBetween(column string, begin, end any) ksql.QueryInterface {
+	o.having.Between(column, begin, end)
+	return o
+}
+
+func (o *Query) HavingIsNull(column string) ksql.QueryInterface {
+	o.having.IsNull(column)
+	return o
+}
+
+func (o *Query) HavingIsNotNull(column string) ksql.QueryInterface {
+	o.having.IsNotNull(column)
+	return o
+}
+
+func (o *Query) HavingIn(column string, val []any) ksql.QueryInterface {
+	o.having.In(column, val)
+	return o
+}
+
+func (o *Query) HavingNotIn(column string, val []any) ksql.QueryInterface {
+	o.having.NotIn(column, val)
+	return o
+}
+
+func (o *Query) HavingInBy(column string, sub ksql.QueryInterface) ksql.QueryInterface {
+	o.having.InBy(column, sub)
+	return o
+}
+
+func (o *Query) HavingNotInBy(column string, sub ksql.QueryInterface) ksql.QueryInterface {
+	o.having.NotInBy(column, sub)
+	return o
+}
+
 func (o *Query) Having(column string, op string, val any) ksql.QueryInterface {
 	o.having.Having(column, op, val)
 	return o
@@ -328,5 +369,30 @@ func (o *Query) OrHaving(call func(h ksql.HavingInterface)) ksql.QueryInterface 
 
 func (o *Query) ForUpdate() ksql.QueryInterface {
 	o.forUpdate = true
+	return o
+}
+
+func (o *Query) Distinct(column string) ksql.QueryInterface {
+	if o.columns.Len() > 0 {
+		o.columns.WriteString(",")
+	}
+
+	o.columns.WriteString("DISTINCT ")
+	Column(column, &o.columns)
+	return o
+}
+
+func (o *Query) FuncDistinct(fun, column, as string) ksql.QueryInterface {
+	if o.columns.Len() > 0 {
+		o.columns.WriteString(",")
+	}
+
+	o.columns.WriteString(fun)
+	o.columns.WriteString("(")
+	o.columns.WriteString("DISTINCT ")
+	Column(column, &o.columns)
+	o.columns.WriteString(")")
+	o.columns.WriteString(" AS ")
+	Backtick(as, &o.columns)
 	return o
 }

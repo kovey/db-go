@@ -129,6 +129,8 @@ type ColumnInterface interface {
 	Unsigned() ColumnInterface
 	Default(value string) ColumnInterface
 	Comment(comment string) ColumnInterface
+	UseCurrent() ColumnInterface
+	UseCurrentOnUpdate() ColumnInterface
 }
 
 type AlterInterface interface {
@@ -196,6 +198,13 @@ type QueryInterface interface {
 	Having(column string, op string, val any) QueryInterface
 	HavingExpress(expresses ...ExpressInterface) QueryInterface
 	OrHaving(callback func(HavingInterface)) QueryInterface
+	HavingIsNull(column string) QueryInterface
+	HavingIsNotNull(column string) QueryInterface
+	HavingIn(column string, data []any) QueryInterface
+	HavingNotIn(column string, data []any) QueryInterface
+	HavingInBy(column string, query QueryInterface) QueryInterface
+	HavingNotInBy(column string, query QueryInterface) QueryInterface
+	HavingBetween(column string, begin, end any) QueryInterface
 	Limit(limit int) QueryInterface
 	Offset(offset int) QueryInterface
 	Order(column string) QueryInterface
@@ -209,6 +218,9 @@ type QueryInterface interface {
 	RightJoinExpress(express ExpressInterface) JoinInterface
 	ForUpdate() QueryInterface
 	Clone() QueryInterface
+	Pagination(page, pageSize int) QueryInterface
+	Distinct(column string) QueryInterface
+	FuncDistinct(fun, column, as string) QueryInterface
 }
 
 type CreateTableInterface interface {

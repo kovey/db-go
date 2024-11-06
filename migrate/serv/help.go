@@ -6,10 +6,10 @@ func migrateHelp() {
 	fmt.Println(`
 Usage:
 	ksql-tool migrate [-dir] [-driver] [-todb] [-to]
-		-dir     sql directory
-		-driver  database driver(mysql)
-		-todb    database name
-		-to      database dsn
+		--dir     sql directory
+		--driver  database driver(mysql)
+		--todb    database name
+		--to      database dsn
 		`)
 }
 
@@ -18,25 +18,72 @@ func diffHelp() {
 	fmt.Println(`
 Usage:
 	ksql-tool diff [-dir] [-driver] [-fromdb] [-from] [-todb] [-to]
-		-dir     created sql directory
-		-driver  database driver(mysql)
-		-todb    to database name
-		-to      to database dsn
-		-fromdb  from database name
-		-from    from database dsn
+		--dir     created sql directory
+		--driver  database driver(mysql)
+		--todb    to database name
+		--to      to database dsn
+		--fromdb  from database name
+		--from    from database dsn
 		`)
 }
 
 func migplugHelp() {
 	// "p", "mt", "to", "d"
+	// "n", "v", "to", "dir", "d"
 	fmt.Println(`
 Usage:
-	ksql-tool diff [-plugin] [-driver] [-m] [-to]
-		-plugin  plugin directory
-		-driver  database driver(mysql)
-		-m       plugin method(up|down|show|make)
-		-to      to database dsn
+	ksql-tool migplug [commands] [arguments]
+
+The commands are:
+	up	  upgrade migrator
+	down  downgrade migrator
+	show  show migrator status
+	make  create upgrade and downgrade file 
+	help  show help info
+	
 		`)
+}
+
+func makeHelp() {
+	fmt.Println(`
+Usage:
+	ksql-tool migplug make [-dir] [-driver] [-to] [-n] [-v]
+		--dir     make migrator to directory
+		--driver  database driver(mysql)
+		--to      to database dsn
+		-n       migrator name
+		-v       migrator version
+	`)
+}
+
+func upHelp() {
+	fmt.Println(`
+Usage:
+	ksql-tool migplug up [-plugin] [-driver] [-to]
+		--plugin  plugin directory
+		--driver  database driver(mysql)
+		--to      to database dsn
+	`)
+}
+
+func downHelp() {
+	fmt.Println(`
+Usage:
+	ksql-tool migplug down [-plugin] [-driver] [-to]
+		--plugin  plugin directory
+		--driver  database driver(mysql)
+		--to      to database dsn
+	`)
+}
+
+func showHelp() {
+	fmt.Println(`
+Usage:
+	ksql-tool migplug show [-plugin] [-driver] [-to]
+		--plugin  plugin directory
+		--driver  database driver(mysql)
+		--to      to database dsn
+	`)
 }
 
 func ormHelp() {
@@ -44,9 +91,9 @@ func ormHelp() {
 	fmt.Println(`
 Usage:
 	ksql-tool orm [-driver] [-to] [-todb] [-dir]
-		-driver  database driver(mysql)
-		-to      to database dsn
-		-todb    to database name
-		-dir     orm model directory
+		--driver  database driver(mysql)
+		--to      to database dsn
+		--todb    to database name
+		--dir     orm model directory
 		`)
 }

@@ -22,15 +22,13 @@ type serv struct {
 }
 
 func (s *serv) Flag(a app.AppInterface) error {
-	a.Flag("m", "version", app.TYPE_STRING, "method: migrate|diff|migplug|make|orm|version")
-	a.Flag("d", "mysql", app.TYPE_STRING, "driver: mysql")
-	a.Flag("from", "", app.TYPE_STRING, "from dsn")
-	a.Flag("to", "", app.TYPE_STRING, "to dsn")
-	a.Flag("fromdb", "", app.TYPE_STRING, "from db name")
-	a.Flag("todb", "", app.TYPE_STRING, "from db name")
-	a.Flag("dir", "", app.TYPE_STRING, "migrates dir when diff")
-	a.Flag("p", "", app.TYPE_STRING, "migplug plugin so file path")
-	a.Flag("mt", "show", app.TYPE_STRING, "migplug type up|down|show")
+	a.FlagLong("driver", "mysql", app.TYPE_STRING, "driver: mysql")
+	a.FlagLong("from", "", app.TYPE_STRING, "from dsn")
+	a.FlagLong("to", "", app.TYPE_STRING, "to dsn")
+	a.FlagLong("fromdb", "", app.TYPE_STRING, "from db name")
+	a.FlagLong("todb", "", app.TYPE_STRING, "from db name")
+	a.FlagLong("dir", "", app.TYPE_STRING, "migrates dir when diff")
+	a.FlagLong("plugin", "", app.TYPE_STRING, "migplug plugin so file path")
 	a.Flag("n", "", app.TYPE_STRING, "migrate name when make use to migplug")
 	a.Flag("v", "", app.TYPE_STRING, "migrate version when make use to migplug")
 	return nil
@@ -49,7 +47,7 @@ The commands are:
 	orm      create orm model from database
 	version  show ksql-tool version
 Use "ksql-tool help <command>" for more information about a command.
-`)
+	`)
 }
 
 func (s *serv) Init(app.AppInterface) error {
@@ -70,36 +68,99 @@ func (s *serv) checkFlag(a app.AppInterface, flag string) error {
 }
 
 func (s *serv) migplug(a app.AppInterface) error {
-	for _, flag := range []string{"p", "mt", "to", "d"} {
-		if err := s.checkFlag(a, flag); err != nil {
-			return err
-		}
+	method, err := a.Arg(1, app.TYPE_STRING)
+	if err != nil {
+		return err
 	}
 
-	p, _ := a.Get("p")
-	mt, _ := a.Get("mt")
-	to, _ := a.Get("to")
-	driver, _ := a.Get("d")
-	switch mt.String() {
+	switch method.String() {
 	case "up":
+		for _, flag := range []string{"to", "driver"} {
+			if err := s.checkFlag(a, flag); err != nil {
+				return err
+			}
+		}
+
+		to, _ := a.Get("to")
+		driver, _ := a.Get("driver")
+		p, err := a.Get("plugin")
+		if err != nil {
+			return err
+		}
 		return core.LoadPlugin(driver.String(), to.String(), p.String(), core.Type_Up)
 	case "down":
+		for _, flag := range []string{"to", "driver"} {
+			if err := s.checkFlag(a, flag); err != nil {
+				return err
+			}
+		}
+
+		for _, flag := range []string{"to", "driver"} {
+			if err := s.checkFlag(a, flag); err != nil {
+				return err
+			}
+		}
+
+		to, _ := a.Get("to")
+		driver, _ := a.Get("driver")
+		p, err := a.Get("plugin")
+		if err != nil {
+			return err
+		}
 		return core.LoadPlugin(driver.String(), to.String(), p.String(), core.Type_Down)
 	case "show":
+		for _, flag := range []string{"to", "driver"} {
+			if err := s.checkFlag(a, flag); err != nil {
+				return err
+			}
+		}
+
+		to, _ := a.Get("to")
+		driver, _ := a.Get("driver")
+		p, err := a.Get("plugin")
+		if err != nil {
+			return err
+		}
 		return core.Show(driver.String(), to.String(), p.String())
+	case "make":
+		return s._make(a)
+	case "help":
+		return s.helpMigplug(a)
 	default:
-		return fmt.Errorf("mt[%s] unsupport", mt)
+		return fmt.Errorf("mt[%s] unsupport", method)
 	}
 }
 
+func (s *serv) helpMigplug(a app.AppInterface) error {
+	method, err := a.Arg(2, app.TYPE_STRING)
+	if err != nil {
+		return err
+	}
+
+	switch method.String() {
+	case "up":
+		upHelp()
+	case "down":
+		downHelp()
+	case "show":
+		showHelp()
+	case "make":
+		makeHelp()
+	default:
+		return fmt.Errorf("mt[%s] unsupport", method)
+	}
+
+	return nil
+}
+
 func (s *serv) diff(a app.AppInterface) error {
-	for _, flag := range []string{"from", "to", "fromdb", "todb", "d", "dir"} {
+	for _, flag := range []string{"from", "to", "fromdb", "todb", "driver", "dir"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
 	}
 
-	driver, _ := a.Get("d")
+	driver, _ := a.Get("driver")
 	if driver.String() != "mysql" {
 		return fmt.Errorf("driver[%s] is not mysql", driver)
 	}
@@ -141,13 +202,13 @@ func (s *serv) diff(a app.AppInterface) error {
 }
 
 func (s *serv) migrate(a app.AppInterface) error {
-	for _, flag := range []string{"to", "todb", "d", "dir"} {
+	for _, flag := range []string{"to", "todb", "driver", "dir"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
 	}
 
-	driver, _ := a.Get("d")
+	driver, _ := a.Get("driver")
 	if driver.String() != "mysql" {
 		return fmt.Errorf("driver[%s] is not mysql", driver)
 	}
@@ -169,7 +230,7 @@ func (s *serv) migrate(a app.AppInterface) error {
 }
 
 func (s *serv) _make(a app.AppInterface) error {
-	for _, flag := range []string{"n", "v", "to", "dir", "d"} {
+	for _, flag := range []string{"n", "v", "dir"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
@@ -179,7 +240,7 @@ func (s *serv) _make(a app.AppInterface) error {
 	version, _ := a.Get("v")
 	to, _ := a.Get("to")
 	dir, _ := a.Get("dir")
-	d, _ := a.Get("d")
+	d, _ := a.Get("driver")
 	return mk.Make(name.String(), version.String(), dir.String(), to.String(), d.String())
 }
 
@@ -192,7 +253,7 @@ func (s *serv) orm(a app.AppInterface) error {
 
 	to, _ := a.Get("to")
 	dir, _ := a.Get("dir")
-	d, _ := a.Get("d")
+	d, _ := a.Get("driver")
 	db, _ := a.Get("todb")
 	return orm.Orm(d.String(), to.String(), dir.String(), db.String())
 }

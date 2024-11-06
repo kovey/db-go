@@ -115,6 +115,51 @@ func (b *Builder[T]) OrHaving(call func(ksql.HavingInterface)) ksql.BuilderInter
 	return b
 }
 
+func (b *Builder[T]) HavingIsNull(column string) ksql.BuilderInterface[T] {
+	b.query.HavingIsNull(column)
+	return b
+}
+
+func (b *Builder[T]) HavingIsNotNull(column string) ksql.BuilderInterface[T] {
+	b.query.HavingIsNull(column)
+	return b
+}
+
+func (b *Builder[T]) HavingIn(column string, data []any) ksql.BuilderInterface[T] {
+	b.query.HavingIn(column, data)
+	return b
+}
+
+func (b *Builder[T]) HavingNotIn(column string, data []any) ksql.BuilderInterface[T] {
+	b.query.HavingNotIn(column, data)
+	return b
+}
+
+func (b *Builder[T]) HavingInBy(column string, sub ksql.QueryInterface) ksql.BuilderInterface[T] {
+	b.query.HavingInBy(column, sub)
+	return b
+}
+
+func (b *Builder[T]) HavingNotInBy(column string, sub ksql.QueryInterface) ksql.BuilderInterface[T] {
+	b.query.HavingNotInBy(column, sub)
+	return b
+}
+
+func (b *Builder[T]) HavingBetween(column string, begin, end any) ksql.BuilderInterface[T] {
+	b.query.HavingBetween(column, begin, end)
+	return b
+}
+
+func (b *Builder[T]) Distinct(column string) ksql.BuilderInterface[T] {
+	b.query.Distinct(column)
+	return b
+}
+
+func (b *Builder[T]) FuncDistinct(fun, column, as string) ksql.BuilderInterface[T] {
+	b.query.FuncDistinct(fun, column, as)
+	return b
+}
+
 func (b *Builder[T]) Limit(limit int) ksql.BuilderInterface[T] {
 	b.query.Limit(limit)
 	return b

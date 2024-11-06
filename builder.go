@@ -22,6 +22,13 @@ type BuilderInterface[T RowInterface] interface {
 	Between(column string, begin, end any) BuilderInterface[T]
 	Having(column string, op string, val any) BuilderInterface[T]
 	HavingExpress(...ExpressInterface) BuilderInterface[T]
+	HavingIsNull(column string) BuilderInterface[T]
+	HavingIsNotNull(column string) BuilderInterface[T]
+	HavingIn(column string, data []any) BuilderInterface[T]
+	HavingNotIn(column string, data []any) BuilderInterface[T]
+	HavingInBy(column string, query QueryInterface) BuilderInterface[T]
+	HavingNotInBy(column string, query QueryInterface) BuilderInterface[T]
+	HavingBetween(column string, begin, end any) BuilderInterface[T]
 	OrHaving(func(HavingInterface)) BuilderInterface[T]
 	Limit(limit int) BuilderInterface[T]
 	Offset(offset int) BuilderInterface[T]
@@ -42,6 +49,8 @@ type BuilderInterface[T RowInterface] interface {
 	SumInt(ctx context.Context, column string) (uint64, error)
 	SumFloat(ctx context.Context, column string) (float64, error)
 	Pagination(ctx context.Context, page, pageSize int64) (PaginationInterface[T], error)
+	Distinct(column string) BuilderInterface[T]
+	FuncDistinct(fun, column, as string) BuilderInterface[T]
 }
 
 type TableInterface interface {

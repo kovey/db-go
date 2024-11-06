@@ -7,8 +7,9 @@ import (
 )
 
 func Run() {
-	cli := app.NewApp("ksql-migrate")
+	cli := app.NewApp("ksql-tool")
 	cli.SetDebugLevel(debug.Debug_Info)
+	cli.UsageWhenErr()
 	cli.SetServ(&serv{})
 	if err := cli.Run(); err != nil {
 		debug.Erro("run[%s] error: %s", cli.Name(), err.Error())

@@ -80,6 +80,16 @@ func (c *Column) Unsigned() ksql.ColumnInterface {
 	return c
 }
 
+func (c *Column) UseCurrent() ksql.ColumnInterface {
+	c.Default(ksql.CURRENT_TIMESTAMP)
+	return c
+}
+
+func (c *Column) UseCurrentOnUpdate() ksql.ColumnInterface {
+	c.Default(ksql.CURRENT_TIMESTAMP_ON_UPDATE_CURRENT_TIMESTAMP)
+	return c
+}
+
 func (c *Column) Default(value string) ksql.ColumnInterface {
 	c.def = &Default{Value: value, IsKeyword: ksql.IsDefaultKeyword(value)}
 	return c
