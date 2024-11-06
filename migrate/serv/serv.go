@@ -186,7 +186,10 @@ func (s *serv) diff(a app.AppInterface) error {
 
 	defer file.Close()
 	buff := bufio.NewWriter(file)
-	buff.WriteString("--")
+	buff.WriteString(fmt.Sprintf("-- from database: %s\n", fromdb))
+	buff.WriteString(fmt.Sprintf("-- to database:   %s\n", todb))
+	buff.WriteString(fmt.Sprintf("-- tool version:  %s\n", version.Version()))
+	buff.WriteString(fmt.Sprintf("-- create time:   %s", time.Now().Format(time.DateTime)))
 	for _, op := range ops {
 		if _, err := buff.WriteString("\n"); err != nil {
 			debug.Erro("write error: %s", err)
