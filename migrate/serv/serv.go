@@ -186,11 +186,10 @@ func (s *serv) diff(a app.AppInterface) error {
 
 	defer file.Close()
 	buff := bufio.NewWriter(file)
-	for i, op := range ops {
-		if i > 0 {
-			if _, err := buff.WriteString("\n"); err != nil {
-				debug.Erro("write error: %s", err)
-			}
+	buff.WriteString("--")
+	for _, op := range ops {
+		if _, err := buff.WriteString("\n"); err != nil {
+			debug.Erro("write error: %s", err)
 		}
 
 		if _, err := buff.WriteString(op.Prepare()); err != nil {

@@ -51,8 +51,8 @@ Usage:
 		--dir     make migrator to directory
 		--driver  database driver(mysql)
 		--to      to database dsn
-		-n       migrator name
-		-v       migrator version
+		-n        migrator name
+		-v        migrator version
 	`)
 }
 

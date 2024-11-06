@@ -10,6 +10,11 @@ const (
 	tpl_migrate = `
 package {{.Package}}
 
+// ksql-tool
+// migrator file: {{.Name}}
+// tool version:  {{.ToolVersion}}
+// created time:  {{.CreateTime}}
+
 import (
 	"context"
 	"github.com/kovey/db-go/v3/db"
@@ -43,10 +48,12 @@ func (self *{{.Name}}) Version() string {
 )
 
 type MigrateTemplate struct {
-	Name    string
-	Package string
-	Id      uint64
-	Version string
+	Name        string
+	Package     string
+	Id          uint64
+	Version     string
+	ToolVersion string
+	CreateTime  string
 }
 
 func (m *MigrateTemplate) Parse() ([]byte, error) {

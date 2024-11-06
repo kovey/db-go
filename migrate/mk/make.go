@@ -11,6 +11,7 @@ import (
 
 	"github.com/kovey/db-go/migrate/core"
 	"github.com/kovey/db-go/migrate/mk/template"
+	v "github.com/kovey/db-go/migrate/version"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/debug-go/debug"
 )
@@ -30,7 +31,7 @@ func Make(name, version, dir, dsn, driverName string) error {
 		return err
 	}
 
-	t := &template.MigrateTemplate{Name: name, Package: "migrations", Id: uint64(time.Now().UnixNano()), Version: version}
+	t := &template.MigrateTemplate{Name: name, Package: "migrations", Id: uint64(time.Now().UnixNano()), Version: version, CreateTime: time.Now().Format(time.DateTime), ToolVersion: v.Version()}
 	if ok, err := core.Has(context.Background(), t.Id); err != nil {
 		return err
 	} else if ok {
@@ -126,7 +127,7 @@ func getTemplate(path, version, fullPackage string) *template.MainTpl {
 		return nil
 	}
 
-	tmp := &template.MainTpl{}
+	tmp := &template.MainTpl{CreateTime: time.Now().Format(time.DateTime), Version: v.Version()}
 	tmp.Imports = append(tmp.Imports, fullPackage+"/"+version+"/migrations")
 	for _, file := range files {
 		if file.IsDir() {
