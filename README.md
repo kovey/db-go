@@ -53,7 +53,7 @@ func (self *User) Delete(ctx context.Context) error {
 func setup() {
 	conf := db.Config{
 		DriverName:     "mysql",
-		DataSourceName: "root:some34QA@123@tcp(127.0.0.1:3306)/test_dev?charset=utf8mb4&parseTime=true",
+		DataSourceName: "root:password@tcp(127.0.0.1:3306)/test_dev?charset=utf8mb4&parseTime=true",
 		MaxIdleTime:    time.Second * 60,
 		MaxLifeTime:    time.Second * 120,
 		MaxIdleConns:   10,
