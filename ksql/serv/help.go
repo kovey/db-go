@@ -32,13 +32,23 @@ Usage:
 	ksql migplug [commands] [arguments]
 
 The commands are:
-	up	  upgrade migrator
+	up    upgrade migrator
 	down  downgrade migrator
 	show  show migrator status
 	make  create upgrade and downgrade file 
+	build build migrator to ksql plugins
 	help  show help info
 	
 		`)
+}
+
+func buildHelp() {
+	fmt.Println(`
+Usage:
+	ksql migplug build [-dir] [-v]
+		--dir     migrators directory, if non, use .env.PLUGIN_MIGRATOR_PATH
+		-v        migrator version
+	`)
 }
 
 func makeHelp() {
@@ -57,10 +67,11 @@ Usage:
 func upHelp() {
 	fmt.Println(`
 Usage:
-	ksql migplug up [-plugin] [-driver] [-to]
-		--plugin  plugin directory, if non, use .env.PLUGIN_PATH
+	ksql migplug up [-dir] [-driver] [-to]
+		--dir     migrators directory, if non, use .env.PLUGIN_MIGRATOR_PATH
 		--driver  database driver, if non, use .env.DB_DRIVER
 		--to      database dsn, if non, use .env.TO_DB_*
+		-v        migrator version
 	`)
 }
 
@@ -68,9 +79,10 @@ func downHelp() {
 	fmt.Println(`
 Usage:
 	ksql migplug down [-plugin] [-driver] [-to]
-		--plugin  plugin directory, if non, use .env.PLUGIN_PATH
+		--dir     migrators directory, if non, use .env.PLUGIN_MIGRATOR_PATH
 		--driver  database driver, if non, use .env.DB_DRIVER
 		--to      database dsn, if non, use .env.TO_DB_*
+		-v        migrator version
 	`)
 }
 
@@ -78,9 +90,10 @@ func showHelp() {
 	fmt.Println(`
 Usage:
 	ksql migplug show [-plugin] [-driver] [-to]
-		--plugin  plugin directory, if non, use .env.PLUGIN_PATH
+		--dir     migrators directory, if non, use .env.PLUGIN_MIGRATOR_PATH
 		--driver  database driver, if non, use .env.DB_DRIVER
 		--to      database dsn, if non, use .env.TO_DB_*
+		-v        migrator version
 	`)
 }
 

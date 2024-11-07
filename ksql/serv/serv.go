@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -67,7 +68,6 @@ func (s *serv) Flag(a app.AppInterface) error {
 	a.FlagLong("fromdb", os.Getenv("DB_NAME"), app.TYPE_STRING, "from db name")
 	a.FlagLong("todb", os.Getenv("TO_DB_NAME"), app.TYPE_STRING, "from db name")
 	a.FlagLong("dir", "", app.TYPE_STRING, "migrates dir when diff")
-	a.FlagLong("plugin", os.Getenv("PLUGIN_PATH"), app.TYPE_STRING, "migplug plugin so file path")
 	a.Flag("n", "", app.TYPE_STRING, "migrate name when make use to migplug")
 	a.Flag("v", "", app.TYPE_STRING, "migrate version when make use to migplug")
 	return nil
@@ -123,11 +123,11 @@ func (s *serv) migplug(a app.AppInterface) error {
 		to, _ := a.Get("to")
 		driver, _ := a.Get("driver")
 		var plugin = ""
-		if p, err := a.Get("plugin"); err == nil {
+		if p, err := a.Get("dir"); err == nil {
 			plugin = p.String()
 		}
 		if plugin == "" {
-			plugin = os.Getenv("PLUGIN_PATH")
+			plugin = os.Getenv("PLUGIN_MIGRATOR_PATH")
 			if plugin == "" {
 				return fmt.Errorf("plugin is empty")
 			}
@@ -149,11 +149,11 @@ func (s *serv) migplug(a app.AppInterface) error {
 		to, _ := a.Get("to")
 		driver, _ := a.Get("driver")
 		var plugin = ""
-		if p, err := a.Get("plugin"); err == nil {
+		if p, err := a.Get("dir"); err == nil {
 			plugin = p.String()
 		}
 		if plugin == "" {
-			plugin = os.Getenv("PLUGIN_PATH")
+			plugin = os.Getenv("PLUGIN_MIGRATOR_PATH")
 			if plugin == "" {
 				return fmt.Errorf("plugin is empty")
 			}
@@ -173,7 +173,7 @@ func (s *serv) migplug(a app.AppInterface) error {
 			plugin = p.String()
 		}
 		if plugin == "" {
-			plugin = os.Getenv("PLUGIN_PATH")
+			plugin = os.Getenv("PLUGIN_MIGRATOR_PATH")
 			if plugin == "" {
 				return fmt.Errorf("plugin is empty")
 			}
@@ -181,6 +181,8 @@ func (s *serv) migplug(a app.AppInterface) error {
 		return core.Show(driver.String(), to.String(), plugin)
 	case "make":
 		return s._make(a)
+	case "build":
+		return s.build(a)
 	case "help":
 		return s.helpMigplug(a)
 	default:
@@ -203,6 +205,8 @@ func (s *serv) helpMigplug(a app.AppInterface) error {
 		showHelp()
 	case "make":
 		makeHelp()
+	case "build":
+		buildHelp()
 	default:
 		return fmt.Errorf("mt[%s] unsupport", method)
 	}
@@ -389,6 +393,29 @@ func (s *serv) Run(a app.AppInterface) error {
 		s.Usage()
 		return nil
 	}
+}
+
+func (s *serv) build(a app.AppInterface) error {
+	for _, flag := range []string{"v"} {
+		if err := s.checkFlag(a, flag); err != nil {
+			return err
+		}
+	}
+
+	version, _ := a.Get("v")
+	var dirVal = ""
+	if dir, err := a.Get("dir"); err == nil {
+		dirVal = dir.String()
+	}
+	if dirVal == "" {
+		dirVal = os.Getenv("PLUGIN_MIGRATOR_PATH")
+		if dirVal == "" {
+			return fmt.Errorf("dir is empty")
+		}
+	}
+
+	cmd := exec.Command("go", "-buildmode=plugin", "-o", fmt.Sprintf("%s/%s/%s", dirVal, version, "migrate.so"), fmt.Sprintf("%s/%s/%s", dirVal, version, "migrate.go"))
+	return cmd.Run()
 }
 
 func (s *serv) help(a app.AppInterface) error {
