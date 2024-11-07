@@ -4,3 +4,4 @@ ksql/ksql-tool
 ksql/models
 tests
 ksql/.env
+examples/diffs
