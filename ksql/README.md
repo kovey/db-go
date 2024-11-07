@@ -5,5 +5,7 @@
     go install github.com/kovey/db-go/ksql@latest
 ### Examples
     ksql -h
-#### diff table changed
+#### diff table changed with command line args
     ksql diff --dir=path/to/sql --driver=mysql --todb=test --to='root:password@tcp(127.0.0.1:3306)/test?charset=utf8mb4' --fromdb=test_prod --from='root:password@tcp(127.0.0.1:3306)/test_prod?charset=utf8mb4'
+#### diff table changed with .env 
+    ksql diff 
