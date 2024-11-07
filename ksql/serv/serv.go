@@ -414,7 +414,17 @@ func (s *serv) build(a app.AppInterface) error {
 		}
 	}
 
-	cmd := exec.Command("go", "-buildmode=plugin", "-o", fmt.Sprintf("%s/%s/%s", dirVal, version, "migrate.so"), fmt.Sprintf("%s/%s/%s", dirVal, version, "migrate.go"))
+	stat, err := os.Stat(dirVal)
+	if err != nil {
+		return err
+	}
+
+	if !stat.IsDir() {
+		return fmt.Errorf("%s is not dir", dirVal)
+	}
+
+	cmd := exec.Command("go", "build", "-C", fmt.Sprintf("%s/%s", dirVal, version), "-buildmode=plugin", "-o", "migrate.so", "migrate.go")
+	cmd.Stderr = os.Stdout
 	return cmd.Run()
 }
 
