@@ -1,6 +1,6 @@
 package mysql
 
-import "github.com/kovey/db-go/migrate/schema"
+import "github.com/kovey/db-go/ksql/schema"
 
 type ColumnMetaChanged struct {
 	o schema.ColumnInfoInterface

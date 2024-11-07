@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	"github.com/kovey/db-go/migrate/schema"
+	"github.com/kovey/db-go/ksql/schema"
 	ksql "github.com/kovey/db-go/v3"
 )
 

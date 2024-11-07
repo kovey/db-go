@@ -5,7 +5,7 @@ import "fmt"
 func migrateHelp() {
 	fmt.Println(`
 Usage:
-	ksql-tool migrate [-dir] [-driver] [-todb] [-to]
+	ksql migrate [-dir] [-driver] [-todb] [-to]
 		--dir     sql directory
 		--driver  database driver(mysql)
 		--todb    database name
@@ -17,7 +17,7 @@ func diffHelp() {
 	// "from", "to", "fromdb", "todb", "d", "dir"
 	fmt.Println(`
 Usage:
-	ksql-tool diff [-dir] [-driver] [-fromdb] [-from] [-todb] [-to]
+	ksql diff [-dir] [-driver] [-fromdb] [-from] [-todb] [-to]
 		--dir     created sql directory
 		--driver  database driver(mysql)
 		--todb    to database name
@@ -32,7 +32,7 @@ func migplugHelp() {
 	// "n", "v", "to", "dir", "d"
 	fmt.Println(`
 Usage:
-	ksql-tool migplug [commands] [arguments]
+	ksql migplug [commands] [arguments]
 
 The commands are:
 	up	  upgrade migrator
@@ -47,7 +47,7 @@ The commands are:
 func makeHelp() {
 	fmt.Println(`
 Usage:
-	ksql-tool migplug make [-dir] [-driver] [-to] [-n] [-v]
+	ksql migplug make [-dir] [-driver] [-to] [-n] [-v]
 		--dir     make migrator to directory
 		--driver  database driver(mysql)
 		--to      to database dsn
@@ -59,7 +59,7 @@ Usage:
 func upHelp() {
 	fmt.Println(`
 Usage:
-	ksql-tool migplug up [-plugin] [-driver] [-to]
+	ksql migplug up [-plugin] [-driver] [-to]
 		--plugin  plugin directory
 		--driver  database driver(mysql)
 		--to      to database dsn
@@ -69,7 +69,7 @@ Usage:
 func downHelp() {
 	fmt.Println(`
 Usage:
-	ksql-tool migplug down [-plugin] [-driver] [-to]
+	ksql migplug down [-plugin] [-driver] [-to]
 		--plugin  plugin directory
 		--driver  database driver(mysql)
 		--to      to database dsn
@@ -79,7 +79,7 @@ Usage:
 func showHelp() {
 	fmt.Println(`
 Usage:
-	ksql-tool migplug show [-plugin] [-driver] [-to]
+	ksql migplug show [-plugin] [-driver] [-to]
 		--plugin  plugin directory
 		--driver  database driver(mysql)
 		--to      to database dsn
@@ -90,7 +90,7 @@ func ormHelp() {
 	// "to", "dir", "d", "todb"
 	fmt.Println(`
 Usage:
-	ksql-tool orm [-driver] [-to] [-todb] [-dir]
+	ksql orm [-driver] [-to] [-todb] [-dir]
 		--driver  database driver(mysql)
 		--to      to database dsn
 		--todb    to database name

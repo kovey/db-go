@@ -9,11 +9,11 @@ import (
 
 	"github.com/kovey/cli-go/app"
 	"github.com/kovey/cli-go/gui"
-	"github.com/kovey/db-go/migrate/core"
-	"github.com/kovey/db-go/migrate/diff"
-	"github.com/kovey/db-go/migrate/mk"
-	"github.com/kovey/db-go/migrate/orm"
-	"github.com/kovey/db-go/migrate/version"
+	"github.com/kovey/db-go/ksql/core"
+	"github.com/kovey/db-go/ksql/diff"
+	"github.com/kovey/db-go/ksql/mk"
+	"github.com/kovey/db-go/ksql/orm"
+	"github.com/kovey/db-go/ksql/version"
 	"github.com/kovey/debug-go/debug"
 )
 
@@ -36,17 +36,17 @@ func (s *serv) Flag(a app.AppInterface) error {
 
 func (s *serv) Usage() {
 	fmt.Println(`
-ksql-migrate tools to manage sql migrate、create orm model.
+ksql tools to manage sql migrate、create orm model.
 
 Usage:
-	ksql-tool <command> [arguments]
+	ksql <command> [arguments]
 The commands are:
 	migrate	 migrate sql from dev to prod
 	diff     diff table changed from dev to prod, create changed sql file
 	migplug  migrate sql from migration plugins
 	orm      create orm model from database
-	version  show ksql-tool version
-Use "ksql-tool help <command>" for more information about a command.
+	version  show ksql version
+Use "ksql help <command>" for more information about a command.
 	`)
 }
 
@@ -274,7 +274,8 @@ func (s *serv) ver() {
 func (s *serv) Run(a app.AppInterface) error {
 	method, err := a.Arg(0, app.TYPE_STRING)
 	if err != nil {
-		return err
+		s.Usage()
+		return nil
 	}
 	switch method.String() {
 	case "migrate":

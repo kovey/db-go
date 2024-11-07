@@ -10,7 +10,7 @@ const (
 	tpl_migrate = `
 package {{.Package}}
 
-// ksql-tool
+// ksql
 // migrator file: {{.Name}}
 // tool version:  {{.ToolVersion}}
 // created time:  {{.CreateTime}}

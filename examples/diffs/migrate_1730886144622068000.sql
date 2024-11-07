@@ -1,0 +1,1 @@
+ALTER TABLE `user_ext` ADD COLUMN `update_time` BIGINT(19)  NOT NULL  DEFAULT '0' COMMENT '更新时间'

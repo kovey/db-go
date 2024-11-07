@@ -1,4 +1,4 @@
-module github.com/kovey/db-go/migrate
+module github.com/kovey/db-go/ksql
 
 go 1.22.3
 
