@@ -6,30 +6,27 @@ func migrateHelp() {
 	fmt.Println(`
 Usage:
 	ksql migrate [-dir] [-driver] [-todb] [-to]
-		--dir     sql directory
-		--driver  database driver(mysql)
-		--todb    database name
-		--to      database dsn
+		--dir     sql directory, if non, use .env.DIFF_SQL_PATH
+		--driver  database driver, if non, use .env.DB_DRIVER
+		--todb    database name, if non, use .env.TO_DB_NAME
+		--to      database dsn, if non, use .env.TO_DB_*
 		`)
 }
 
 func diffHelp() {
-	// "from", "to", "fromdb", "todb", "d", "dir"
 	fmt.Println(`
 Usage:
 	ksql diff [-dir] [-driver] [-fromdb] [-from] [-todb] [-to]
-		--dir     created sql directory
-		--driver  database driver(mysql)
-		--todb    to database name
-		--to      to database dsn
-		--fromdb  from database name
-		--from    from database dsn
+		--dir     created sql directory, if non, use .env.DIFF_SQL_PATH
+		--driver  database driver, if non, use .env.DB_DRIVER
+		--todb    database name, if non, use .env.TO_DB_NAME
+		--to      database dsn, if non, use .env.TO_DB_*
+		--fromdb  from database name, if non, use .env.DB_NAME
+		--from    from database dsn, if non, use .env.DB_*
 		`)
 }
 
 func migplugHelp() {
-	// "p", "mt", "to", "d"
-	// "n", "v", "to", "dir", "d"
 	fmt.Println(`
 Usage:
 	ksql migplug [commands] [arguments]
@@ -48,9 +45,10 @@ func makeHelp() {
 	fmt.Println(`
 Usage:
 	ksql migplug make [-dir] [-driver] [-to] [-n] [-v]
-		--dir     make migrator to directory
-		--driver  database driver(mysql)
-		--to      to database dsn
+		--dir     make migrator to directory, if non, use .env.PLUGIN_MIGRATOR_PATH
+		--driver  database driver, if non, use .env.DB_DRIVER
+		--to      database dsn, if non, use .env.TO_DB_*
+		--fromdb  from database name, if non, use .env.DB_NAME
 		-n        migrator name
 		-v        migrator version
 	`)
@@ -60,9 +58,9 @@ func upHelp() {
 	fmt.Println(`
 Usage:
 	ksql migplug up [-plugin] [-driver] [-to]
-		--plugin  plugin directory
-		--driver  database driver(mysql)
-		--to      to database dsn
+		--plugin  plugin directory, if non, use .env.PLUGIN_PATH
+		--driver  database driver, if non, use .env.DB_DRIVER
+		--to      database dsn, if non, use .env.TO_DB_*
 	`)
 }
 
@@ -70,9 +68,9 @@ func downHelp() {
 	fmt.Println(`
 Usage:
 	ksql migplug down [-plugin] [-driver] [-to]
-		--plugin  plugin directory
-		--driver  database driver(mysql)
-		--to      to database dsn
+		--plugin  plugin directory, if non, use .env.PLUGIN_PATH
+		--driver  database driver, if non, use .env.DB_DRIVER
+		--to      database dsn, if non, use .env.TO_DB_*
 	`)
 }
 
@@ -80,20 +78,19 @@ func showHelp() {
 	fmt.Println(`
 Usage:
 	ksql migplug show [-plugin] [-driver] [-to]
-		--plugin  plugin directory
-		--driver  database driver(mysql)
-		--to      to database dsn
+		--plugin  plugin directory, if non, use .env.PLUGIN_PATH
+		--driver  database driver, if non, use .env.DB_DRIVER
+		--to      database dsn, if non, use .env.TO_DB_*
 	`)
 }
 
 func ormHelp() {
-	// "to", "dir", "d", "todb"
 	fmt.Println(`
 Usage:
 	ksql orm [-driver] [-to] [-todb] [-dir]
-		--driver  database driver(mysql)
-		--to      to database dsn
-		--todb    to database name
-		--dir     orm model directory
+		--driver  database driver, if non, use .env.DB_DRIVER
+		--to      database dsn, if non, use .env.TO_DB_*
+		--todb    database name, if non, use .env.TO_DB_NAME
+		--dir     orm model directory, if non, use .env.MODELS_PATH
 		`)
 }

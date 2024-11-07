@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/kovey/cli-go/app"
 	"github.com/kovey/cli-go/gui"
 	"github.com/kovey/db-go/ksql/core"
@@ -21,14 +22,52 @@ type serv struct {
 	app.ServBase
 }
 
+func (s *serv) getFromDsn() string {
+	if os.Getenv("DB_DRIVER") != "mysql" {
+		return ""
+	}
+
+	conf := mysql.NewConfig()
+	conf.Loc = time.Local
+	conf.User = os.Getenv("DB_USER")
+	conf.Passwd = os.Getenv("DB_PASSWORD")
+	conf.Net = "tcp"
+	conf.Addr = fmt.Sprintf("%s:%s", os.Getenv("DB_HOST"), os.Getenv("DB_PORT"))
+	conf.DBName = os.Getenv("DB_NAME")
+	conf.Params = map[string]string{
+		"charset": os.Getenv("DB_CHARSET"),
+	}
+
+	return conf.FormatDSN()
+}
+
+func (s *serv) getToDsn() string {
+	if os.Getenv("DB_DRIVER") != "mysql" {
+		return ""
+	}
+
+	conf := mysql.NewConfig()
+	conf.Loc = time.Local
+	conf.User = os.Getenv("TO_DB_USER")
+	conf.Passwd = os.Getenv("TO_DB_PASSWORD")
+	conf.Net = "tcp"
+	conf.Addr = fmt.Sprintf("%s:%s", os.Getenv("TO_DB_HOST"), os.Getenv("TO_DB_PORT"))
+	conf.DBName = os.Getenv("TO_DB_NAME")
+	conf.Params = map[string]string{
+		"charset": os.Getenv("TO_DB_CHARSET"),
+	}
+
+	return conf.FormatDSN()
+}
+
 func (s *serv) Flag(a app.AppInterface) error {
-	a.FlagLong("driver", "mysql", app.TYPE_STRING, "driver: mysql")
-	a.FlagLong("from", "", app.TYPE_STRING, "from dsn")
-	a.FlagLong("to", "", app.TYPE_STRING, "to dsn")
-	a.FlagLong("fromdb", "", app.TYPE_STRING, "from db name")
-	a.FlagLong("todb", "", app.TYPE_STRING, "from db name")
+	a.FlagLong("driver", os.Getenv("DB_DRIVER"), app.TYPE_STRING, "driver: mysql")
+	a.FlagLong("from", s.getFromDsn(), app.TYPE_STRING, "from dsn")
+	a.FlagLong("to", s.getToDsn(), app.TYPE_STRING, "to dsn")
+	a.FlagLong("fromdb", os.Getenv("DB_NAME"), app.TYPE_STRING, "from db name")
+	a.FlagLong("todb", os.Getenv("TO_DB_NAME"), app.TYPE_STRING, "from db name")
 	a.FlagLong("dir", "", app.TYPE_STRING, "migrates dir when diff")
-	a.FlagLong("plugin", "", app.TYPE_STRING, "migplug plugin so file path")
+	a.FlagLong("plugin", os.Getenv("PLUGIN_PATH"), app.TYPE_STRING, "migplug plugin so file path")
 	a.Flag("n", "", app.TYPE_STRING, "migrate name when make use to migplug")
 	a.Flag("v", "", app.TYPE_STRING, "migrate version when make use to migplug")
 	return nil
@@ -83,11 +122,17 @@ func (s *serv) migplug(a app.AppInterface) error {
 
 		to, _ := a.Get("to")
 		driver, _ := a.Get("driver")
-		p, err := a.Get("plugin")
-		if err != nil {
-			return err
+		var plugin = ""
+		if p, err := a.Get("plugin"); err == nil {
+			plugin = p.String()
 		}
-		return core.LoadPlugin(driver.String(), to.String(), p.String(), core.Type_Up)
+		if plugin == "" {
+			plugin = os.Getenv("PLUGIN_PATH")
+			if plugin == "" {
+				return fmt.Errorf("plugin is empty")
+			}
+		}
+		return core.LoadPlugin(driver.String(), to.String(), plugin, core.Type_Up)
 	case "down":
 		for _, flag := range []string{"to", "driver"} {
 			if err := s.checkFlag(a, flag); err != nil {
@@ -103,11 +148,17 @@ func (s *serv) migplug(a app.AppInterface) error {
 
 		to, _ := a.Get("to")
 		driver, _ := a.Get("driver")
-		p, err := a.Get("plugin")
-		if err != nil {
-			return err
+		var plugin = ""
+		if p, err := a.Get("plugin"); err == nil {
+			plugin = p.String()
 		}
-		return core.LoadPlugin(driver.String(), to.String(), p.String(), core.Type_Down)
+		if plugin == "" {
+			plugin = os.Getenv("PLUGIN_PATH")
+			if plugin == "" {
+				return fmt.Errorf("plugin is empty")
+			}
+		}
+		return core.LoadPlugin(driver.String(), to.String(), plugin, core.Type_Down)
 	case "show":
 		for _, flag := range []string{"to", "driver"} {
 			if err := s.checkFlag(a, flag); err != nil {
@@ -117,11 +168,17 @@ func (s *serv) migplug(a app.AppInterface) error {
 
 		to, _ := a.Get("to")
 		driver, _ := a.Get("driver")
-		p, err := a.Get("plugin")
-		if err != nil {
-			return err
+		var plugin = ""
+		if p, err := a.Get("plugin"); err == nil {
+			plugin = p.String()
 		}
-		return core.Show(driver.String(), to.String(), p.String())
+		if plugin == "" {
+			plugin = os.Getenv("PLUGIN_PATH")
+			if plugin == "" {
+				return fmt.Errorf("plugin is empty")
+			}
+		}
+		return core.Show(driver.String(), to.String(), plugin)
 	case "make":
 		return s._make(a)
 	case "help":
@@ -154,7 +211,7 @@ func (s *serv) helpMigplug(a app.AppInterface) error {
 }
 
 func (s *serv) diff(a app.AppInterface) error {
-	for _, flag := range []string{"from", "to", "fromdb", "todb", "driver", "dir"} {
+	for _, flag := range []string{"from", "to", "fromdb", "todb", "driver"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
@@ -165,12 +222,21 @@ func (s *serv) diff(a app.AppInterface) error {
 		return fmt.Errorf("driver[%s] is not mysql", driver)
 	}
 
-	dir, _ := a.Get("dir")
+	var dirVal = ""
+	if dir, err := a.Get("dir"); err == nil {
+		dirVal = dir.String()
+	}
+	if dirVal == "" {
+		dirVal = os.Getenv("DIFF_SQL_PATH")
+	}
+	if dirVal == "" {
+		return fmt.Errorf("dir is empty")
+	}
 	from, _ := a.Get("from")
 	to, _ := a.Get("to")
 	fromdb, _ := a.Get("fromdb")
 	todb, _ := a.Get("todb")
-	if err := s.mkdir(dir.String()); err != nil {
+	if err := s.mkdir(dirVal); err != nil {
 		return err
 	}
 
@@ -179,7 +245,7 @@ func (s *serv) diff(a app.AppInterface) error {
 		return err
 	}
 
-	file, err := os.Create(dir.String() + fmt.Sprintf("/migrate_%d.sql", time.Now().UnixNano()))
+	file, err := os.Create(dirVal + fmt.Sprintf("/migrate_%d.sql", time.Now().UnixNano()))
 	if err != nil {
 		return err
 	}
@@ -204,7 +270,7 @@ func (s *serv) diff(a app.AppInterface) error {
 }
 
 func (s *serv) migrate(a app.AppInterface) error {
-	for _, flag := range []string{"to", "todb", "driver", "dir"} {
+	for _, flag := range []string{"to", "todb", "driver"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
@@ -215,24 +281,33 @@ func (s *serv) migrate(a app.AppInterface) error {
 		return fmt.Errorf("driver[%s] is not mysql", driver)
 	}
 
-	dir, _ := a.Get("dir")
-	stat, err := os.Stat(dir.String())
+	var dirVal = ""
+	if dir, err := a.Get("dir"); err == nil {
+		dirVal = dir.String()
+	}
+	if dirVal == "" {
+		dirVal = os.Getenv("DIFF_SQL_PATH")
+		if dirVal == "" {
+			return fmt.Errorf("dir is empty")
+		}
+	}
+	stat, err := os.Stat(dirVal)
 	if err != nil {
 		return err
 	}
 
 	if !stat.IsDir() {
-		return fmt.Errorf("[%s] not dir", dir.String())
+		return fmt.Errorf("[%s] not dir", dirVal)
 	}
 
 	to, _ := a.Get("to")
 	todb, _ := a.Get("todb")
 
-	return diff.Migrate(driver.String(), to.String(), todb.String(), dir.String())
+	return diff.Migrate(driver.String(), to.String(), todb.String(), dirVal)
 }
 
 func (s *serv) _make(a app.AppInterface) error {
-	for _, flag := range []string{"n", "v", "dir"} {
+	for _, flag := range []string{"n", "v"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
@@ -241,23 +316,42 @@ func (s *serv) _make(a app.AppInterface) error {
 	name, _ := a.Get("n")
 	version, _ := a.Get("v")
 	to, _ := a.Get("to")
-	dir, _ := a.Get("dir")
+	var dirVal = ""
+	if dir, err := a.Get("dir"); err == nil {
+		dirVal = dir.String()
+	}
+	if dirVal == "" {
+		dirVal = os.Getenv("PLUGIN_MIGRATOR_PATH")
+		if dirVal == "" {
+			return fmt.Errorf("dir is empty")
+		}
+	}
 	d, _ := a.Get("driver")
-	return mk.Make(name.String(), version.String(), dir.String(), to.String(), d.String())
+	return mk.Make(name.String(), version.String(), dirVal, to.String(), d.String())
 }
 
 func (s *serv) orm(a app.AppInterface) error {
-	for _, flag := range []string{"to", "dir", "d", "todb"} {
+	for _, flag := range []string{"to", "d", "todb"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
 	}
 
 	to, _ := a.Get("to")
-	dir, _ := a.Get("dir")
+	var dirVal = ""
+	if dir, err := a.Get("dir"); err == nil {
+		dirVal = dir.String()
+	}
+	if dirVal == "" {
+		dirVal = os.Getenv("MODELS_PATH")
+		if dirVal == "" {
+			return fmt.Errorf("dir is empty")
+		}
+	}
+
 	d, _ := a.Get("driver")
 	db, _ := a.Get("todb")
-	return orm.Orm(d.String(), to.String(), dir.String(), db.String())
+	return orm.Orm(d.String(), to.String(), dirVal, db.String())
 }
 
 func (s *serv) ver() {

@@ -1,6 +1,6 @@
 .DS_Store
-migrate/migrate
-migrate/ksql-tool
+ksql/ksql-tool
 *.so
-migrate/models
+ksql/models
 tests
+ksql/.env
