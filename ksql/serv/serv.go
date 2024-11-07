@@ -114,14 +114,15 @@ func (s *serv) migplug(a app.AppInterface) error {
 
 	switch method.String() {
 	case "up":
-		for _, flag := range []string{"to", "driver"} {
+		for _, flag := range []string{"from", "driver", "v"} {
 			if err := s.checkFlag(a, flag); err != nil {
 				return err
 			}
 		}
 
-		to, _ := a.Get("to")
+		from, _ := a.Get("from")
 		driver, _ := a.Get("driver")
+		version, _ := a.Get("v")
 		var plugin = ""
 		if p, err := a.Get("dir"); err == nil {
 			plugin = p.String()
@@ -132,22 +133,31 @@ func (s *serv) migplug(a app.AppInterface) error {
 				return fmt.Errorf("plugin is empty")
 			}
 		}
-		return core.LoadPlugin(driver.String(), to.String(), plugin, core.Type_Up)
+
+		stat, err := os.Stat(plugin)
+		if err != nil {
+			return err
+		}
+		if !stat.IsDir() {
+			return fmt.Errorf("%s is not dir", plugin)
+		}
+		return core.LoadPlugin(driver.String(), from.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version), core.Type_Up)
 	case "down":
-		for _, flag := range []string{"to", "driver"} {
+		for _, flag := range []string{"from", "driver", "v"} {
 			if err := s.checkFlag(a, flag); err != nil {
 				return err
 			}
 		}
 
-		for _, flag := range []string{"to", "driver"} {
+		for _, flag := range []string{"from", "driver"} {
 			if err := s.checkFlag(a, flag); err != nil {
 				return err
 			}
 		}
 
-		to, _ := a.Get("to")
+		from, _ := a.Get("from")
 		driver, _ := a.Get("driver")
+		version, _ := a.Get("v")
 		var plugin = ""
 		if p, err := a.Get("dir"); err == nil {
 			plugin = p.String()
@@ -158,9 +168,16 @@ func (s *serv) migplug(a app.AppInterface) error {
 				return fmt.Errorf("plugin is empty")
 			}
 		}
-		return core.LoadPlugin(driver.String(), to.String(), plugin, core.Type_Down)
+		stat, err := os.Stat(plugin)
+		if err != nil {
+			return err
+		}
+		if !stat.IsDir() {
+			return fmt.Errorf("%s is not dir", plugin)
+		}
+		return core.LoadPlugin(driver.String(), from.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version), core.Type_Down)
 	case "show":
-		for _, flag := range []string{"to", "driver"} {
+		for _, flag := range []string{"to", "driver", "v"} {
 			if err := s.checkFlag(a, flag); err != nil {
 				return err
 			}
@@ -168,6 +185,7 @@ func (s *serv) migplug(a app.AppInterface) error {
 
 		to, _ := a.Get("to")
 		driver, _ := a.Get("driver")
+		version, _ := a.Get("v")
 		var plugin = ""
 		if p, err := a.Get("plugin"); err == nil {
 			plugin = p.String()
@@ -178,7 +196,14 @@ func (s *serv) migplug(a app.AppInterface) error {
 				return fmt.Errorf("plugin is empty")
 			}
 		}
-		return core.Show(driver.String(), to.String(), plugin)
+		stat, err := os.Stat(plugin)
+		if err != nil {
+			return err
+		}
+		if !stat.IsDir() {
+			return fmt.Errorf("%s is not dir", plugin)
+		}
+		return core.Show(driver.String(), to.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version))
 	case "make":
 		return s._make(a)
 	case "build":
@@ -319,7 +344,7 @@ func (s *serv) _make(a app.AppInterface) error {
 
 	name, _ := a.Get("n")
 	version, _ := a.Get("v")
-	to, _ := a.Get("to")
+	to, _ := a.Get("from")
 	var dirVal = ""
 	if dir, err := a.Get("dir"); err == nil {
 		dirVal = dir.String()
@@ -335,13 +360,13 @@ func (s *serv) _make(a app.AppInterface) error {
 }
 
 func (s *serv) orm(a app.AppInterface) error {
-	for _, flag := range []string{"to", "todb"} {
+	for _, flag := range []string{"from", "fromdb"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
 	}
 
-	to, _ := a.Get("to")
+	from, _ := a.Get("from")
 	var dirVal = ""
 	if dir, err := a.Get("dir"); err == nil {
 		dirVal = dir.String()
@@ -354,8 +379,8 @@ func (s *serv) orm(a app.AppInterface) error {
 	}
 
 	d, _ := a.Get("driver")
-	db, _ := a.Get("todb")
-	return orm.Orm(d.String(), to.String(), dirVal, db.String())
+	db, _ := a.Get("fromdb")
+	return orm.Orm(d.String(), from.String(), dirVal, db.String())
 }
 
 func (s *serv) ver() {
