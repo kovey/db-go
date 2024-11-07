@@ -335,7 +335,7 @@ func (s *serv) _make(a app.AppInterface) error {
 }
 
 func (s *serv) orm(a app.AppInterface) error {
-	for _, flag := range []string{"to", "d", "todb"} {
+	for _, flag := range []string{"to", "todb"} {
 		if err := s.checkFlag(a, flag); err != nil {
 			return err
 		}
