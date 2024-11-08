@@ -70,6 +70,9 @@ func (s *serv) Flag(a app.AppInterface) error {
 	a.FlagLong("dir", "", app.TYPE_STRING, "migrates dir when diff")
 	a.Flag("n", "", app.TYPE_STRING, "migrate name when make use to migplug")
 	a.Flag("v", "", app.TYPE_STRING, "migrate version when make use to migplug")
+	a.FlagNonValue("c", "create config")
+	a.FlagNonValue("e", "edit config")
+	a.FlagNonValue("l", "cat config")
 	return nil
 }
 
