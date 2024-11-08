@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -437,10 +438,17 @@ func (s *serv) config(a app.AppInterface) error {
 	}
 
 	if flag, err := a.Get("e"); err == nil && flag.IsInput() {
-		cmd := exec.Command("vim", ".env")
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-		return cmd.Run()
+		commands := []string{"vim", "vi", "nvim", "emacs", "gedit"}
+		for _, command := range commands {
+			if _, err := exec.LookPath(command); err == nil {
+				cmd := exec.Command("vim", ".env")
+				cmd.Stdout = os.Stdout
+				cmd.Stdin = os.Stdin
+				return cmd.Run()
+			}
+		}
+
+		return fmt.Errorf("editor not install, please install one of [%s]", strings.Join(commands, ","))
 	}
 
 	if flag, err := a.Get("l"); err == nil && flag.IsInput() {
