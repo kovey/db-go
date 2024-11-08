@@ -188,7 +188,7 @@ func (s *serv) migplug(a app.AppInterface) error {
 			}
 		}
 
-		to, _ := a.Get("to")
+		from, _ := a.Get("from")
 		driver, _ := a.Get("driver")
 		version, _ := a.Get("v")
 		var plugin = ""
@@ -208,7 +208,7 @@ func (s *serv) migplug(a app.AppInterface) error {
 		if !stat.IsDir() {
 			return fmt.Errorf("%s is not dir", plugin)
 		}
-		return core.Show(driver.String(), to.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version))
+		return core.Show(driver.String(), from.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version))
 	case "make":
 		return s._make(a)
 	case "build":
