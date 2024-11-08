@@ -438,6 +438,8 @@ func (s *serv) config(a app.AppInterface) error {
 
 	if flag, err := a.Get("e"); err == nil && flag.IsInput() {
 		cmd := exec.Command("vim", ".env")
+		cmd.Stdout = os.Stdout
+		cmd.Stdin = os.Stdin
 		return cmd.Run()
 	}
 
