@@ -111,6 +111,24 @@ func (s *serv) checkFlag(a app.AppInterface, flag string) error {
 	return nil
 }
 
+func (s *serv) checkPlugin(plugin, version string) (string, error) {
+	filePath := fmt.Sprintf("%s/%s/migrate.so", plugin, version)
+	stat, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("%s is not build, please use `ksql migplug build -v %s` build %s migrators", version, version, version)
+		}
+
+		return "", err
+	}
+
+	if stat.IsDir() {
+		return "", fmt.Errorf("%s is not build, please use `ksql migplug build -v %s` build %s migrators", version, version, version)
+	}
+
+	return filePath, nil
+}
+
 func (s *serv) migplug(a app.AppInterface) error {
 	method, err := a.Arg(1, app.TYPE_STRING)
 	if err != nil {
@@ -139,14 +157,12 @@ func (s *serv) migplug(a app.AppInterface) error {
 			}
 		}
 
-		stat, err := os.Stat(plugin)
+		filePath, err := s.checkPlugin(plugin, version.String())
 		if err != nil {
 			return err
 		}
-		if !stat.IsDir() {
-			return fmt.Errorf("%s is not dir", plugin)
-		}
-		return core.LoadPlugin(driver.String(), from.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version), core.Type_Up)
+
+		return core.LoadPlugin(driver.String(), from.String(), filePath, core.Type_Up)
 	case "down":
 		for _, flag := range []string{"from", "driver", "v"} {
 			if err := s.checkFlag(a, flag); err != nil {
@@ -173,14 +189,11 @@ func (s *serv) migplug(a app.AppInterface) error {
 				return fmt.Errorf("plugin is empty")
 			}
 		}
-		stat, err := os.Stat(plugin)
+		filePath, err := s.checkPlugin(plugin, version.String())
 		if err != nil {
 			return err
 		}
-		if !stat.IsDir() {
-			return fmt.Errorf("%s is not dir", plugin)
-		}
-		return core.LoadPlugin(driver.String(), from.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version), core.Type_Down)
+		return core.LoadPlugin(driver.String(), from.String(), filePath, core.Type_Down)
 	case "show":
 		for _, flag := range []string{"to", "driver", "v"} {
 			if err := s.checkFlag(a, flag); err != nil {
@@ -201,14 +214,11 @@ func (s *serv) migplug(a app.AppInterface) error {
 				return fmt.Errorf("plugin is empty")
 			}
 		}
-		stat, err := os.Stat(plugin)
+		filePath, err := s.checkPlugin(plugin, version.String())
 		if err != nil {
 			return err
 		}
-		if !stat.IsDir() {
-			return fmt.Errorf("%s is not dir", plugin)
-		}
-		return core.Show(driver.String(), from.String(), fmt.Sprintf("%s/%s/migrate.so", plugin, version))
+		return core.Show(driver.String(), from.String(), filePath)
 	case "make":
 		return s._make(a)
 	case "build":
