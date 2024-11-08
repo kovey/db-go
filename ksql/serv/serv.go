@@ -226,7 +226,8 @@ func (s *serv) migplug(a app.AppInterface) error {
 	case "help":
 		return s.helpMigplug(a)
 	default:
-		return fmt.Errorf("mt[%s] unsupport", method)
+		migplugHelp()
+		return nil
 	}
 }
 
@@ -248,7 +249,8 @@ func (s *serv) helpMigplug(a app.AppInterface) error {
 	case "build":
 		buildHelp()
 	default:
-		return fmt.Errorf("mt[%s] unsupport", method)
+		migplugHelp()
+		return nil
 	}
 
 	return nil
@@ -499,7 +501,7 @@ func (s *serv) build(a app.AppInterface) error {
 	stat, err := os.Stat(path + "/migrate.go")
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("%s migrators not created, please use `ksql migplug make -v %s -n xxx` created migrator", version, version)
+			return fmt.Errorf("%s migrators not created, please use `ksql migplug make -v %s -n xxx` create migrator", version, version)
 		}
 		return err
 	}
