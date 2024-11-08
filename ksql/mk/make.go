@@ -95,7 +95,7 @@ func getFullPackage(dir string) string {
 
 		sub++
 		dir += "/.."
-		prefix += "/" + dirInfo[len(dirInfo)-sub]
+		prefix = dirInfo[len(dirInfo)-sub] + "/" + prefix
 	}
 
 	return ""
