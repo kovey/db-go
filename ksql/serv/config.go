@@ -3,8 +3,10 @@ package serv
 const (
 	config_tpl = `
 # ksql env config
-# tool name
-APP_NAME = ksql
+
+# debug
+DEBUG_LEVEL     = info
+DEBUG_SHOW_FILE = 1
 
 # database config
 DB_DRIVER   = mysql

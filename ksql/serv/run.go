@@ -8,7 +8,6 @@ import (
 
 func Run() {
 	cli := app.NewApp("ksql")
-	cli.SetDebugLevel(debug.Debug_Info)
 	cli.UsageWhenErr()
 	cli.SetServ(&serv{})
 	if err := cli.Run(); err != nil {
