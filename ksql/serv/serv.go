@@ -495,17 +495,22 @@ func (s *serv) build(a app.AppInterface) error {
 		}
 	}
 
-	stat, err := os.Stat(dirVal)
+	path := fmt.Sprintf("%s/%s", dirVal, version)
+	stat, err := os.Stat(path + "/migrate.go")
 	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s migrators not created, please use `ksql migplug make -v %s -n xxx` created migrator", version, version)
+		}
 		return err
 	}
 
-	if !stat.IsDir() {
-		return fmt.Errorf("%s is not dir", dirVal)
+	if stat.IsDir() {
+		return fmt.Errorf("%s is not file", path)
 	}
 
-	cmd := exec.Command("go", "build", "-C", fmt.Sprintf("%s/%s", dirVal, version), "-buildmode=plugin", "-o", "migrate.so", "migrate.go")
-	cmd.Stderr = os.Stdout
+	cmd := exec.Command("go", "build", "-C", path, "-buildmode=plugin", "-o", "migrate.so", "migrate.go")
+	debug.Info("%s migrator build begin, please wait...", version)
+	defer debug.Info("%s migrator build end.", version)
 	return cmd.Run()
 }
 
