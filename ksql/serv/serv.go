@@ -84,6 +84,7 @@ The commands are:
 	diff     diff table changed from dev to prod, create changed sql file
 	migplug  migrate sql from migration plugins
 	orm      create orm model from database
+	config   manage config file
 	version  show ksql version
 Use "ksql help <command>" for more information about a command.
 	`)
@@ -412,12 +413,44 @@ func (s *serv) Run(a app.AppInterface) error {
 		return nil
 	case "orm":
 		return s.orm(a)
+	case "config":
+		return s.config(a)
 	case "help":
 		return s.help(a)
 	default:
 		s.Usage()
 		return nil
 	}
+}
+
+func (s *serv) config(a app.AppInterface) error {
+	if flag, err := a.Get("c"); err == nil && flag.IsInput() {
+		_, err := os.Stat(".env")
+		if !os.IsNotExist(err) {
+			return nil
+		}
+
+		return os.WriteFile(".env", []byte(config_tpl), 0644)
+	}
+
+	if flag, err := a.Get("e"); err == nil && flag.IsInput() {
+		cmd := exec.Command("vim", ".env")
+		return cmd.Run()
+	}
+
+	if flag, err := a.Get("l"); err == nil && flag.IsInput() {
+		content, err := os.ReadFile(".env")
+		if err != nil {
+			fmt.Println("no configs")
+			return nil
+		}
+
+		fmt.Println(string(content))
+		return nil
+	}
+
+	configHelp()
+	return nil
 }
 
 func (s *serv) build(a app.AppInterface) error {
@@ -468,6 +501,8 @@ func (s *serv) help(a app.AppInterface) error {
 		migplugHelp()
 	case "orm":
 		ormHelp()
+	case "config":
+		configHelp()
 	default:
 		s.Usage()
 	}

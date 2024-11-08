@@ -107,3 +107,15 @@ Usage:
 		--dir     orm model directory, if non, use .env.MODELS_PATH
 		`)
 }
+
+func configHelp() {
+	fmt.Println(`
+Usage:
+	ksql config [options] 
+
+options:
+		-c  create .env config file
+		-e  edit .env config file
+		-l  view .env config file
+		`)
+}
