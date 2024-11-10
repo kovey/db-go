@@ -11,6 +11,7 @@ import (
 
 var Err_Un_Support_Operate = errors.New("unsupport operate")
 var Err_Not_In_Transaction = errors.New("not in transaction")
+var Err_Database_Not_Initialized = errors.New("data not initialized")
 
 var database ksql.ConnectionInterface
 
@@ -39,6 +40,15 @@ func Open(conn *sql.DB, driverName string) (ksql.ConnectionInterface, error) {
 	return &Connection{database: conn, driverName: driverName}, nil
 }
 
+func Get() (ksql.ConnectionInterface, error) {
+	if database == nil {
+		return nil, Err_Database_Not_Initialized
+	}
+
+	return database.Clone(), nil
+}
+
+// init global connection
 func Init(conf Config) error {
 	db, err := sql.Open(conf.DriverName, conf.DataSourceName)
 	if err != nil {
@@ -175,24 +185,33 @@ func QueryRow[T ksql.RowInterface](ctx context.Context, op ksql.QueryInterface, 
 	return QueryRowBy(ctx, database, op, model)
 }
 
-func Taransaction(ctx context.Context, call func(ctx context.Context, db *Connection) error) error {
-	tx, err := database.Database().BeginTx(ctx, nil)
+func TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, db ksql.ConnectionInterface) error) ksql.TxError {
+	tx, err := database.Database().BeginTx(ctx, options)
 	if err != nil {
-		return err
+		return &TxErr{beginErr: err}
 	}
-	conn := &Connection{Tx: tx}
-	if err := call(ctx, conn); err != nil {
-		conn.Tx = nil
-		var commitErr = err
+	conn := &Connection{tx: tx, database: database.Database()}
+
+	callErr := call(ctx, conn)
+	conn.tx = nil
+	if callErr != nil {
+		txErr := &TxErr{callErr: callErr}
 		if err := tx.Rollback(); err != nil {
-			return &TxErr{CommitErr: commitErr, RollbackErr: err}
+			txErr.rollbackErr = err
 		}
 
-		return err
+		return txErr
 	}
 
-	conn.Tx = nil
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return &TxErr{commitErr: err}
+	}
+
+	return nil
+}
+
+func Transaction(ctx context.Context, call func(ctx context.Context, db ksql.ConnectionInterface) error) ksql.TxError {
+	return TransactionBy(ctx, nil, call)
 }
 
 func Find[T FindType](ctx context.Context, model ksql.ModelInterface, id T) error {

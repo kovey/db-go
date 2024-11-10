@@ -15,6 +15,14 @@ const (
 	Index_Type_Spatial  IndexType = 5
 )
 
+type TxError interface {
+	error
+	Begin() error
+	Call() error
+	Rollback() error
+	Commit() error
+}
+
 type ConnectionInterface interface {
 	Exec(ctx context.Context, op SqlInterface) (int64, error)
 	QueryRow(ctx context.Context, op QueryInterface, model RowInterface) error
@@ -28,6 +36,12 @@ type ConnectionInterface interface {
 	QueryRowRaw(ctx context.Context, raw ExpressInterface, model RowInterface) error
 	DriverName() string
 	InTransaction() bool
+	Clone() ConnectionInterface
+	Begin(ctx context.Context, options *sql.TxOptions) error
+	Rollback() error
+	Commit() error
+	Transaction(ctx context.Context, call func(ctx context.Context, conn ConnectionInterface) error) TxError
+	TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, conn ConnectionInterface) error) TxError
 }
 
 type ExpressInterface interface {

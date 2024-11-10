@@ -17,10 +17,31 @@ func (s *SqlErr) Error() string {
 }
 
 type TxErr struct {
-	CommitErr   error
-	RollbackErr error
+	commitErr   error
+	rollbackErr error
+	beginErr    error
+	callErr     error
+}
+
+func (t *TxErr) Commit() error {
+	return t.commitErr
+}
+
+func (t *TxErr) Begin() error {
+	return t.beginErr
+}
+
+func (t *TxErr) Rollback() error {
+	return t.rollbackErr
+}
+
+func (t *TxErr) Call() error {
+	return t.callErr
 }
 
 func (t *TxErr) Error() string {
-	return fmt.Sprintf("commit error: %s, rollback error: %s", t.CommitErr, t.RollbackErr)
+	return fmt.Sprintf(
+		"begin error: %s, call err: %s, commit error: %s, rollback error: %s",
+		t.beginErr, t.callErr, t.commitErr, t.rollbackErr,
+	)
 }

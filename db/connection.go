@@ -8,7 +8,7 @@ import (
 )
 
 type Connection struct {
-	Tx         *sql.Tx
+	tx         *sql.Tx
 	database   *sql.DB
 	driverName string
 }
@@ -19,6 +19,68 @@ func (c *Connection) DriverName() string {
 
 func (c *Connection) Database() *sql.DB {
 	return c.database
+}
+
+func (c *Connection) Clone() ksql.ConnectionInterface {
+	return &Connection{database: c.database, driverName: c.driverName, tx: nil}
+}
+
+func (c *Connection) Begin(ctx context.Context, options *sql.TxOptions) error {
+	tx, err := c.database.BeginTx(ctx, options)
+	if err != nil {
+		return err
+	}
+
+	c.tx = tx
+	return nil
+}
+
+func (c *Connection) Rollback() error {
+	if c.tx == nil {
+		return Err_Not_In_Transaction
+	}
+
+	defer c.reset()
+	return c.tx.Rollback()
+}
+
+func (c *Connection) Commit() error {
+	if c.tx == nil {
+		return Err_Not_In_Transaction
+	}
+
+	defer c.reset()
+	return c.tx.Commit()
+}
+
+func (c *Connection) reset() {
+	c.tx = nil
+}
+
+func (c *Connection) Transaction(ctx context.Context, call func(ctx context.Context, conn ksql.ConnectionInterface) error) ksql.TxError {
+	return c.TransactionBy(ctx, nil, call)
+}
+
+func (c *Connection) TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, conn ksql.ConnectionInterface) error) ksql.TxError {
+	if err := c.Begin(ctx, options); err != nil {
+		return &TxErr{beginErr: err}
+	}
+
+	callErr := call(ctx, c)
+	if callErr != nil {
+		txErr := &TxErr{callErr: callErr}
+		if err := c.Rollback(); err != nil {
+			txErr.rollbackErr = err
+		}
+
+		return txErr
+	}
+
+	if err := c.Commit(); err != nil {
+		return &TxErr{commitErr: err}
+	}
+
+	return nil
 }
 
 func (c *Connection) Insert(ctx context.Context, op ksql.InsertInterface) (int64, error) {
@@ -34,8 +96,8 @@ func (c *Connection) Delete(ctx context.Context, op ksql.DeleteInterface) (int64
 }
 
 func (c *Connection) Prepare(ctx context.Context, op ksql.SqlInterface) (*sql.Stmt, error) {
-	if c.Tx != nil {
-		stmt, err := c.Tx.PrepareContext(ctx, op.Prepare())
+	if c.tx != nil {
+		stmt, err := c.tx.PrepareContext(ctx, op.Prepare())
 		return stmt, _err(err, op)
 	}
 
@@ -134,8 +196,8 @@ func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface,
 }
 
 func (c *Connection) PrepareRaw(ctx context.Context, raw ksql.ExpressInterface) (*sql.Stmt, error) {
-	if c.Tx != nil {
-		stmt, err := c.Tx.PrepareContext(ctx, raw.Statement())
+	if c.tx != nil {
+		stmt, err := c.tx.PrepareContext(ctx, raw.Statement())
 		return stmt, _errRaw(err, raw)
 	}
 
@@ -155,5 +217,5 @@ func (c *Connection) ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sq
 }
 
 func (c *Connection) InTransaction() bool {
-	return c.Tx != nil
+	return c.tx != nil
 }
