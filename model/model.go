@@ -147,7 +147,8 @@ func (m *Model) update(ctx context.Context, data *db.Data) (int64, error) {
 
 func (m *Model) _conn() ksql.ConnectionInterface {
 	if m.conn == nil {
-		return db.GDB()
+		database, _ := db.Get()
+		return database
 	}
 
 	return m.conn

@@ -3,14 +3,18 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/db/driver"
+	ks "github.com/kovey/db-go/v3/sql"
 )
 
 type Connection struct {
 	tx         *sql.Tx
 	database   *sql.DB
 	driverName string
+	transCount int
 }
 
 func (c *Connection) DriverName() string {
@@ -25,7 +29,68 @@ func (c *Connection) Clone() ksql.ConnectionInterface {
 	return &Connection{database: c.database, driverName: c.driverName, tx: nil}
 }
 
+func (c *Connection) BeginTo(ctx context.Context) error {
+	if c.tx == nil {
+		return Err_Not_In_Transaction
+	}
+
+	if !driver.SupportSavePoint(c.driverName) {
+		c.transCount++
+		return nil
+	}
+
+	c.transCount++
+	_, err := c.ExecRaw(ctx, ks.Raw("SAVEPOINT ?", fmt.Sprintf("trans_%d", c.transCount)))
+	if err != nil {
+		c.transCount--
+	}
+
+	return err
+}
+
+func (c *Connection) RollbackTo(ctx context.Context) error {
+	if c.tx == nil || c.transCount == 0 {
+		return Err_Not_In_Transaction
+	}
+
+	if !driver.SupportSavePoint(c.driverName) {
+		c.transCount--
+		return nil
+	}
+
+	_, err := c.ExecRaw(ctx, ks.Raw("ROLLBACK SAVEPOINT ?", fmt.Sprintf("trans_%d", c.transCount)))
+	if err == nil {
+		c.transCount--
+	}
+	return err
+}
+
+func (c *Connection) CommitTo(ctx context.Context) error {
+	if c.tx == nil || c.transCount == 0 {
+		return Err_Not_In_Transaction
+	}
+
+	if !driver.SupportSavePoint(c.driverName) {
+		c.transCount--
+		return nil
+	}
+
+	_, err := c.ExecRaw(ctx, ks.Raw("RELEASE SAVEPOINT ?", fmt.Sprintf("trans_%d", c.transCount)))
+	if err == nil {
+		c.transCount--
+	}
+	return err
+}
+
 func (c *Connection) Begin(ctx context.Context, options *sql.TxOptions) error {
+	if c.tx != nil {
+		if err := c.BeginTo(ctx); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
 	tx, err := c.database.BeginTx(ctx, options)
 	if err != nil {
 		return err
@@ -35,18 +100,26 @@ func (c *Connection) Begin(ctx context.Context, options *sql.TxOptions) error {
 	return nil
 }
 
-func (c *Connection) Rollback() error {
+func (c *Connection) Rollback(ctx context.Context) error {
 	if c.tx == nil {
 		return Err_Not_In_Transaction
+	}
+
+	if c.transCount > 0 {
+		return c.RollbackTo(ctx)
 	}
 
 	defer c.reset()
 	return c.tx.Rollback()
 }
 
-func (c *Connection) Commit() error {
+func (c *Connection) Commit(ctx context.Context) error {
 	if c.tx == nil {
 		return Err_Not_In_Transaction
+	}
+
+	if c.transCount > 0 {
+		return c.CommitTo(ctx)
 	}
 
 	defer c.reset()
@@ -69,14 +142,14 @@ func (c *Connection) TransactionBy(ctx context.Context, options *sql.TxOptions, 
 	callErr := call(ctx, c)
 	if callErr != nil {
 		txErr := &TxErr{callErr: callErr}
-		if err := c.Rollback(); err != nil {
+		if err := c.Rollback(ctx); err != nil {
 			txErr.rollbackErr = err
 		}
 
 		return txErr
 	}
 
-	if err := c.Commit(); err != nil {
+	if err := c.Commit(ctx); err != nil {
 		return &TxErr{commitErr: err}
 	}
 

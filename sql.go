@@ -38,8 +38,8 @@ type ConnectionInterface interface {
 	InTransaction() bool
 	Clone() ConnectionInterface
 	Begin(ctx context.Context, options *sql.TxOptions) error
-	Rollback() error
-	Commit() error
+	Rollback(ctx context.Context) error
+	Commit(ctx context.Context) error
 	Transaction(ctx context.Context, call func(ctx context.Context, conn ConnectionInterface) error) TxError
 	TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, conn ConnectionInterface) error) TxError
 }

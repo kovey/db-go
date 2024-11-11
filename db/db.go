@@ -28,10 +28,6 @@ func Database() *sql.DB {
 	return database.Database()
 }
 
-func GDB() ksql.ConnectionInterface {
-	return database
-}
-
 func Open(conn *sql.DB, driverName string) (ksql.ConnectionInterface, error) {
 	if err := conn.Ping(); err != nil {
 		return nil, err
@@ -186,24 +182,22 @@ func QueryRow[T ksql.RowInterface](ctx context.Context, op ksql.QueryInterface, 
 }
 
 func TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, db ksql.ConnectionInterface) error) ksql.TxError {
-	tx, err := database.Database().BeginTx(ctx, options)
-	if err != nil {
+	conn := database.Clone()
+	if err := conn.Begin(ctx, options); err != nil {
 		return &TxErr{beginErr: err}
 	}
-	conn := &Connection{tx: tx, database: database.Database()}
 
 	callErr := call(ctx, conn)
-	conn.tx = nil
 	if callErr != nil {
 		txErr := &TxErr{callErr: callErr}
-		if err := tx.Rollback(); err != nil {
+		if err := conn.Rollback(ctx); err != nil {
 			txErr.rollbackErr = err
 		}
 
 		return txErr
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := conn.Commit(ctx); err != nil {
 		return &TxErr{commitErr: err}
 	}
 
