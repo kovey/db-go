@@ -29,66 +29,74 @@ func (c *Connection) Clone() ksql.ConnectionInterface {
 	return &Connection{database: c.database, driverName: c.driverName, tx: nil}
 }
 
-func (c *Connection) BeginTo(ctx context.Context) error {
-	if c.tx == nil {
-		return Err_Not_In_Transaction
-	}
-
+func (c *Connection) BeginTo(ctx context.Context, point string) error {
 	if !driver.SupportSavePoint(c.driverName) {
-		c.transCount++
-		return nil
+		return Err_Un_Support_Save_Point
 	}
 
+	_, err := c.ExecRaw(ctx, ks.Raw("SAVEPOINT ?", point))
+	return err
+}
+
+func (c *Connection) beginTo(ctx context.Context) error {
 	c.transCount++
-	_, err := c.ExecRaw(ctx, ks.Raw("SAVEPOINT ?", fmt.Sprintf("trans_%d", c.transCount)))
-	if err != nil {
-		c.transCount--
+	if err := c.BeginTo(ctx, fmt.Sprintf("trans_%d", c.transCount)); err != nil {
+		if err == Err_Un_Support_Save_Point {
+			return nil
+		}
+
+		return err
 	}
 
+	c.transCount--
+	return nil
+}
+
+func (c *Connection) RollbackTo(ctx context.Context, point string) error {
+	if !driver.SupportSavePoint(c.driverName) {
+		return Err_Un_Support_Save_Point
+	}
+
+	_, err := c.ExecRaw(ctx, ks.Raw("ROLLBACK SAVEPOINT ?", point))
 	return err
 }
 
-func (c *Connection) RollbackTo(ctx context.Context) error {
-	if c.tx == nil || c.transCount == 0 {
-		return Err_Not_In_Transaction
+func (c *Connection) rollbackTo(ctx context.Context) error {
+	if err := c.RollbackTo(ctx, fmt.Sprintf("trans_%d", c.transCount)); err != nil {
+		if err == Err_Un_Support_Save_Point {
+			c.transCount--
+		}
+		return err
 	}
 
+	c.transCount--
+	return nil
+}
+
+func (c *Connection) CommitTo(ctx context.Context, point string) error {
 	if !driver.SupportSavePoint(c.driverName) {
-		c.transCount--
-		return nil
+		return Err_Un_Support_Save_Point
 	}
 
-	_, err := c.ExecRaw(ctx, ks.Raw("ROLLBACK SAVEPOINT ?", fmt.Sprintf("trans_%d", c.transCount)))
-	if err == nil {
-		c.transCount--
-	}
+	_, err := c.ExecRaw(ctx, ks.Raw("RELEASE SAVEPOINT ?", point))
 	return err
 }
 
-func (c *Connection) CommitTo(ctx context.Context) error {
-	if c.tx == nil || c.transCount == 0 {
-		return Err_Not_In_Transaction
+func (c *Connection) commitTo(ctx context.Context) error {
+	if err := c.CommitTo(ctx, fmt.Sprintf("trans_%d", c.transCount)); err != nil {
+		if err == Err_Un_Support_Save_Point {
+			c.transCount--
+		}
+		return err
 	}
 
-	if !driver.SupportSavePoint(c.driverName) {
-		c.transCount--
-		return nil
-	}
-
-	_, err := c.ExecRaw(ctx, ks.Raw("RELEASE SAVEPOINT ?", fmt.Sprintf("trans_%d", c.transCount)))
-	if err == nil {
-		c.transCount--
-	}
-	return err
+	c.transCount--
+	return nil
 }
 
 func (c *Connection) Begin(ctx context.Context, options *sql.TxOptions) error {
 	if c.tx != nil {
-		if err := c.BeginTo(ctx); err != nil {
-			return err
-		}
-
-		return nil
+		return c.beginTo(ctx)
 	}
 
 	tx, err := c.database.BeginTx(ctx, options)
@@ -106,7 +114,7 @@ func (c *Connection) Rollback(ctx context.Context) error {
 	}
 
 	if c.transCount > 0 {
-		return c.RollbackTo(ctx)
+		return c.rollbackTo(ctx)
 	}
 
 	defer c.reset()
@@ -119,7 +127,7 @@ func (c *Connection) Commit(ctx context.Context) error {
 	}
 
 	if c.transCount > 0 {
-		return c.CommitTo(ctx)
+		return c.commitTo(ctx)
 	}
 
 	defer c.reset()

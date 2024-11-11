@@ -12,6 +12,7 @@ import (
 var Err_Un_Support_Operate = errors.New("unsupport operate")
 var Err_Not_In_Transaction = errors.New("not in transaction")
 var Err_Database_Not_Initialized = errors.New("data not initialized")
+var Err_Un_Support_Save_Point = errors.New("unsupport save point")
 
 var database ksql.ConnectionInterface
 

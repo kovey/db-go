@@ -42,6 +42,9 @@ type ConnectionInterface interface {
 	Commit(ctx context.Context) error
 	Transaction(ctx context.Context, call func(ctx context.Context, conn ConnectionInterface) error) TxError
 	TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, conn ConnectionInterface) error) TxError
+	BeginTo(ctx context.Context, point string) error
+	RollbackTo(ctx context.Context, point string) error
+	CommitTo(ctx context.Context, point string) error
 }
 
 type ExpressInterface interface {
