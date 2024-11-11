@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/kovey/db-go/v3/sql"
 	"github.com/kovey/debug-go/debug"
@@ -41,6 +42,11 @@ func Migrate(driverName, dsn, dbname, path string) error {
 		for {
 			line, err := buf.ReadString('\n')
 			if err == io.EOF {
+				line = strings.Trim(line, " \r\t\n")
+				if strings.HasPrefix(line, "--") {
+					continue
+				}
+
 				if _, err := conn.ExecRaw(ctx, sql.Raw(line)); err != nil {
 					return err
 				}
@@ -50,6 +56,11 @@ func Migrate(driverName, dsn, dbname, path string) error {
 
 			if err != nil {
 				break
+			}
+
+			line = strings.Trim(line, " \r\t\n")
+			if strings.HasPrefix(line, "--") {
+				continue
 			}
 
 			if _, err := conn.ExecRaw(ctx, sql.Raw(line)); err != nil {
