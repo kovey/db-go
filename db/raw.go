@@ -161,3 +161,11 @@ func HasIndexBy(ctx context.Context, conn ksql.ConnectionInterface, table, index
 func HasIndex(ctx context.Context, table, index string) (bool, error) {
 	return HasIndexBy(ctx, database, table, index)
 }
+
+func ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sql.Result, error) {
+	return database.ExecRaw(ctx, raw)
+}
+
+func ExecRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (sql.Result, error) {
+	return conn.ExecRaw(ctx, raw)
+}
