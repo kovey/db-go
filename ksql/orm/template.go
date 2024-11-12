@@ -57,6 +57,10 @@ func (self *{{.Name}}) Columns() []string {
 func (self *{{.Name}}) Delete(ctx context.Context) error {
 	return self.Model.Delete(ctx, self)
 }
+
+func (self *{{.Name}}) Query() ksql.BuilderInterface[*{{.Name}}] {
+	return model.Query(self)
+}
 `
 )
 
