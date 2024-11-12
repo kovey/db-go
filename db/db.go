@@ -141,7 +141,7 @@ func QueryBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInter
 			continue
 		}
 
-		model.SetConn(conn)
+		model.WithConn(conn)
 		model.FromFetch()
 		*models = append(*models, model)
 	}
@@ -174,11 +174,14 @@ func QueryRowBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 	}
 
 	model.FromFetch()
-	model.SetConn(conn)
+	model.WithConn(conn)
 	return nil
 }
 
 func QueryRow[T ksql.RowInterface](ctx context.Context, op ksql.QueryInterface, model T) error {
+	if conn := model.Conn(); conn != nil {
+		return QueryRowBy(ctx, conn, op, model)
+	}
 	return QueryRowBy(ctx, database, op, model)
 }
 

@@ -76,7 +76,7 @@ func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 		}
 
 		model.FromFetch()
-		model.SetConn(conn)
+		model.WithConn(conn)
 		*models = append(*models, model)
 	}
 
@@ -108,7 +108,7 @@ func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.Connectio
 	}
 
 	model.FromFetch()
-	model.SetConn(conn)
+	model.WithConn(conn)
 	return nil
 }
 

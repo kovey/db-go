@@ -55,7 +55,7 @@ type ExpressInterface interface {
 type RowInterface interface {
 	Values() []any
 	Clone() RowInterface
-	SetConn(ConnectionInterface)
+	WithConn(ConnectionInterface)
 	FromFetch()
 	Conn() ConnectionInterface
 }

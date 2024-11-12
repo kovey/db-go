@@ -353,6 +353,11 @@ func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql
 	return pageInfo, nil
 }
 
+func (b *Builder[T]) WithConn(conn ksql.ConnectionInterface) ksql.BuilderInterface[T] {
+	b.conn = conn
+	return b
+}
+
 func Build[T ksql.RowInterface](row T) ksql.BuilderInterface[T] {
 	return NewBuilder(row)
 }

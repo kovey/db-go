@@ -51,6 +51,7 @@ type BuilderInterface[T RowInterface] interface {
 	Pagination(ctx context.Context, page, pageSize int64) (PaginationInterface[T], error)
 	Distinct(column string) BuilderInterface[T]
 	FuncDistinct(fun, column, as string) BuilderInterface[T]
+	WithConn(conn ConnectionInterface) BuilderInterface[T]
 }
 
 type TableInterface interface {

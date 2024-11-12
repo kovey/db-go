@@ -51,7 +51,7 @@ func (m *Model) Table() string {
 	return m.table
 }
 
-func (m *Model) SetConn(conn ksql.ConnectionInterface) {
+func (m *Model) WithConn(conn ksql.ConnectionInterface) {
 	m.conn = conn
 }
 

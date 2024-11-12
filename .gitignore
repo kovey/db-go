@@ -5,3 +5,4 @@ ksql/models
 tests
 ksql/.env
 examples/diffs
+examples/.env
