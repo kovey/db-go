@@ -27,7 +27,8 @@ func Orm(driverName, dsn, dir, dbname string) error {
 
 	info := strings.Split(dir, "/")
 	packageName := info[len(info)-1]
-	tables, err := getTables(context.Background(), db.GDB(), dbname)
+	conn, _ := db.Get()
+	tables, err := getTables(context.Background(), conn, dbname)
 	if err != nil {
 		return err
 	}
