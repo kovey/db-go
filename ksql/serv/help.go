@@ -5,7 +5,7 @@ import "fmt"
 func migrateHelp() {
 	fmt.Println(`
 Usage:
-	ksql migrate [-dir] [-driver] [--todb] [--to]
+	ksql migrate [--dir] [--driver] [--todb] [--to]
 		--dir     sql directory, if non, use .env.DIFF_SQL_PATH
 		--driver  database driver, if non, use .env.DB_DRIVER
 		--todb    database name, if non, use .env.TO_DB_NAME
