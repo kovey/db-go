@@ -72,7 +72,7 @@ type TableInterface interface {
 	AddUnique(name string, columns ...string) TableInterface
 	HasColumn(ctx context.Context, column string) (bool, error)
 	HasIndex(ctx context.Context, index string) (bool, error)
-	SetConn(conn ConnectionInterface) TableInterface
+	WithConn(conn ConnectionInterface) TableInterface
 	AddDecimal(column string, length, scale int) ColumnInterface
 	AddDouble(column string, length, scale int) ColumnInterface
 	AddFloat(column string, length, scale int) ColumnInterface

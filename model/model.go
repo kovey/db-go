@@ -224,5 +224,5 @@ func (m *Model) Delete(ctx context.Context, model ksql.ModelInterface) error {
 }
 
 func Query[T ksql.ModelInterface](model T) ksql.BuilderInterface[T] {
-	return db.NewBuilder(model).Table(model.Table()).Columns(model.Columns()...)
+	return db.Model(model)
 }

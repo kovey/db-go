@@ -19,7 +19,7 @@ func NewTableBuilder() *TableBuilder {
 	return &TableBuilder{}
 }
 
-func (ta *TableBuilder) SetConn(conn ksql.ConnectionInterface) ksql.TableInterface {
+func (ta *TableBuilder) WithConn(conn ksql.ConnectionInterface) ksql.TableInterface {
 	ta.conn = conn
 	return ta
 }
