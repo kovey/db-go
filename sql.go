@@ -56,7 +56,7 @@ type RowInterface interface {
 	Values() []any
 	Clone() RowInterface
 	WithConn(ConnectionInterface)
-	FromFetch()
+	Scan(s ScanInterface, r RowInterface) error
 	Conn() ConnectionInterface
 }
 
@@ -293,4 +293,8 @@ type PaginationInterface[T RowInterface] interface {
 	TotalPage() uint64
 	TotalCount() uint64
 	Set(totalCount, pageSize uint64)
+}
+
+type ScanInterface interface {
+	Scan(...any) error
 }

@@ -25,10 +25,11 @@ type Model struct {
 	isAutoInc     bool
 	fromFecth     bool
 	isInitialized bool
+	data          *db.Data
 }
 
 func NewModel(table, primaryId string, t PrimaryType) *Model {
-	return &Model{table: table, primaryId: primaryId, primaryType: t, isAutoInc: true, isInitialized: false}
+	return &Model{table: table, primaryId: primaryId, primaryType: t, isAutoInc: true, isInitialized: false, data: db.NewData()}
 }
 
 func (m *Model) OnUpdateBefore(conn ksql.ConnectionInterface) error { return nil }
@@ -42,9 +43,24 @@ func (m *Model) Empty() bool {
 	return !m.isInitialized
 }
 
-func (m *Model) FromFetch() {
+func (m *Model) Scan(s ksql.ScanInterface, r ksql.RowInterface) error {
+	if err := s.Scan(r.Values()...); err != nil {
+		return err
+	}
+
 	m.isInitialized = true
 	m.fromFecth = true
+	values := r.Values()
+	tmp, ok := r.(ksql.ModelInterface)
+	if !ok {
+		return nil
+	}
+
+	for i, column := range tmp.Columns() {
+		m.data.Set(column, values[i])
+	}
+
+	return nil
 }
 
 func (m *Model) Table() string {
@@ -101,13 +117,30 @@ func (m *Model) setPrimary(model ksql.ModelInterface, id int64) {
 	}
 }
 
+func (m *Model) hasChanged(model ksql.ModelInterface) bool {
+	columns := model.Columns()
+	values := model.Values()
+	for i, column := range columns {
+		if m.data.Changed(column, values[i]) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (m *Model) toData(model ksql.ModelInterface) *db.Data {
 	data := db.NewData()
 	columns := model.Columns()
 	values := model.Values()
 	for i, column := range columns {
+		if !m.data.Changed(column, values[i]) {
+			continue
+		}
+
 		data.Set(column, values[i])
 	}
+
 	return data
 }
 
@@ -155,6 +188,10 @@ func (m *Model) _conn() ksql.ConnectionInterface {
 }
 
 func (m *Model) Save(ctx context.Context, model ksql.ModelInterface) error {
+	if !m.hasChanged(model) {
+		return nil
+	}
+
 	if !m.fromFecth {
 		if err := m.OnCreateBefore(m._conn()); err != nil {
 			return err
@@ -188,14 +225,24 @@ func (m *Model) Save(ctx context.Context, model ksql.ModelInterface) error {
 	return m.OnUpdateAfter(m._conn())
 }
 
+func (m *Model) primaryValue(model ksql.ModelInterface) any {
+	columns := model.Columns()
+	for i, val := range model.Values() {
+		if columns[i] == m.primaryId {
+			return val
+		}
+	}
+
+	return nil
+}
+
 func (m *Model) Delete(ctx context.Context, model ksql.ModelInterface) error {
 	if err := m.OnDeleteBefore(m._conn()); err != nil {
 		return err
 	}
 
 	w := db.NewWhere()
-	data := m.toData(model)
-	w.Where(m.primaryId, "=", data.Get(m.primaryId))
+	w.Where(m.primaryId, "=", m.primaryValue(model))
 	if m.conn == nil {
 		id, err := db.Delete(ctx, m.table, w)
 		if err != nil {

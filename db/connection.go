@@ -236,7 +236,7 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 		return _err(err, op)
 	}
 
-	if err := row.Scan(model.Values()...); err != nil {
+	if err := model.Scan(row, model); err != nil {
 		if err == sql.ErrNoRows {
 			model.WithConn(c)
 			return nil
@@ -245,7 +245,6 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 		return _err(err, op)
 	}
 
-	model.FromFetch()
 	model.WithConn(c)
 	return nil
 }
@@ -262,7 +261,7 @@ func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface,
 		return _errRaw(err, raw)
 	}
 
-	if err := row.Scan(model.Values()...); err != nil {
+	if err := model.Scan(row, model); err != nil {
 		if err == sql.ErrNoRows {
 			model.WithConn(c)
 			return nil
@@ -271,7 +270,6 @@ func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface,
 		return _errRaw(err, raw)
 	}
 
-	model.FromFetch()
 	model.WithConn(c)
 	return nil
 }

@@ -66,7 +66,7 @@ func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 	var m T
 	for rows.Next() {
 		tmp := m.Clone()
-		if err := rows.Scan(tmp.Values()...); err != nil {
+		if err := tmp.Scan(rows, tmp); err != nil {
 			return err
 		}
 
@@ -75,7 +75,6 @@ func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 			continue
 		}
 
-		model.FromFetch()
 		model.WithConn(conn)
 		*models = append(*models, model)
 	}
@@ -99,15 +98,15 @@ func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.Connectio
 		return _errRaw(err, raw)
 	}
 
-	if err := row.Scan(model.Values()...); err != nil {
+	if err := model.Scan(row, model); err != nil {
 		if err == sql.ErrNoRows {
+			model.WithConn(conn)
 			return nil
 		}
 
 		return _errRaw(err, raw)
 	}
 
-	model.FromFetch()
 	model.WithConn(conn)
 	return nil
 }

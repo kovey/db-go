@@ -1,6 +1,11 @@
 package db
 
-import ksql "github.com/kovey/db-go/v3"
+import (
+	"database/sql"
+	"time"
+
+	ksql "github.com/kovey/db-go/v3"
+)
 
 type Data struct {
 	data map[string]any
@@ -16,7 +21,41 @@ func (d *Data) Set(key string, val any) *Data {
 		d.keys = append(d.keys, key)
 	}
 
-	d.data[key] = val
+	switch tmp := val.(type) {
+	case *string:
+		d.data[key] = *tmp
+	case *int:
+		d.data[key] = *tmp
+	case *int8:
+		d.data[key] = *tmp
+	case *int16:
+		d.data[key] = *tmp
+	case *int32:
+		d.data[key] = *tmp
+	case *int64:
+		d.data[key] = *tmp
+	case *uint:
+		d.data[key] = *tmp
+	case *uint8:
+		d.data[key] = *tmp
+	case *uint16:
+		d.data[key] = *tmp
+	case *uint32:
+		d.data[key] = *tmp
+	case *uint64:
+		d.data[key] = *tmp
+	case *bool:
+		d.data[key] = *tmp
+	case *float32:
+		d.data[key] = *tmp
+	case *float64:
+		d.data[key] = *tmp
+	case *time.Time:
+		d.data[key] = *tmp
+	default:
+		d.data[key] = val
+	}
+
 	return d
 }
 
@@ -32,6 +71,244 @@ func (d *Data) Range(call func(key string, val any)) {
 	for _, key := range d.keys {
 		call(key, d.data[key])
 	}
+}
+
+func (d *Data) Changed(key string, val any) bool {
+	old, ok := d.data[key]
+	if !ok {
+		return true
+	}
+
+	switch tmp := old.(type) {
+	case string:
+		v, ok := val.(string)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case int:
+		v, ok := val.(int)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case int8:
+		v, ok := val.(int8)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case int16:
+		v, ok := val.(int16)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case int32:
+		v, ok := val.(int32)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case int64:
+		v, ok := val.(int64)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case uint:
+		v, ok := val.(uint)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case uint8:
+		v, ok := val.(uint8)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case uint16:
+		v, ok := val.(uint16)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case uint32:
+		v, ok := val.(uint32)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case uint64:
+		v, ok := val.(uint64)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case bool:
+		v, ok := val.(bool)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case float32:
+		v, ok := val.(float32)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case float64:
+		v, ok := val.(float64)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case time.Time:
+		v, ok := val.(time.Time)
+		if !ok {
+			return true
+		}
+		return !v.Equal(tmp)
+	case *string:
+		v, ok := val.(*string)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *int:
+		v, ok := val.(*int)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *int8:
+		v, ok := val.(*int8)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *int16:
+		v, ok := val.(*int16)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *int32:
+		v, ok := val.(*int32)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *int64:
+		v, ok := val.(*int64)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *uint:
+		v, ok := val.(*uint)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *uint8:
+		v, ok := val.(*uint8)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *uint16:
+		v, ok := val.(*uint16)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *uint32:
+		v, ok := val.(*uint32)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *uint64:
+		v, ok := val.(*uint64)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *bool:
+		v, ok := val.(bool)
+		if !ok {
+			return true
+		}
+		return v != *tmp
+	case *float32:
+		v, ok := val.(*float32)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *float64:
+		v, ok := val.(*float64)
+		if !ok {
+			return true
+		}
+		return v != tmp
+	case *time.Time:
+		v, ok := val.(*time.Time)
+		if !ok {
+			return true
+		}
+		return !v.Equal(*tmp)
+	case sql.NullBool:
+		v, ok := val.(sql.NullBool)
+		if !ok {
+			return true
+		}
+		return v.Bool != tmp.Bool
+	case sql.NullByte:
+		v, ok := val.(sql.NullByte)
+		if !ok {
+			return true
+		}
+		return v.Byte != tmp.Byte
+	case sql.NullFloat64:
+		v, ok := val.(sql.NullFloat64)
+		if !ok {
+			return true
+		}
+		return v.Float64 != tmp.Float64
+	case sql.NullInt16:
+		v, ok := val.(sql.NullInt16)
+		if !ok {
+			return true
+		}
+		return v.Int16 != tmp.Int16
+	case sql.NullInt32:
+		v, ok := val.(sql.NullInt32)
+		if !ok {
+			return true
+		}
+		return v.Int32 != tmp.Int32
+	case sql.NullInt64:
+		v, ok := val.(sql.NullInt64)
+		if !ok {
+			return true
+		}
+		return v.Int64 != tmp.Int64
+	case sql.NullTime:
+		v, ok := val.(sql.NullTime)
+		if !ok {
+			return true
+		}
+		return v.Time.Equal(tmp.Time)
+	default:
+		return old != val
+	}
+}
+
+func (d *Data) Empty() bool {
+	return len(d.keys) == 0
 }
 
 type Map[K comparable, T any] struct {

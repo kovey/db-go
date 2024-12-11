@@ -132,7 +132,7 @@ func QueryBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInter
 	var m T
 	for rows.Next() {
 		tmp := m.Clone()
-		if err := rows.Scan(tmp.Values()...); err != nil {
+		if err := tmp.Scan(rows, tmp); err != nil {
 			return _err(err, op)
 		}
 
@@ -142,7 +142,6 @@ func QueryBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInter
 		}
 
 		model.WithConn(conn)
-		model.FromFetch()
 		*models = append(*models, model)
 	}
 
@@ -165,7 +164,7 @@ func QueryRowBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 		return _err(err, op)
 	}
 
-	if err := row.Scan(model.Values()...); err != nil {
+	if err := model.Scan(row, model); err != nil {
 		if err == sql.ErrNoRows {
 			return nil
 		}
@@ -173,7 +172,6 @@ func QueryRowBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 		return _err(err, op)
 	}
 
-	model.FromFetch()
 	model.WithConn(conn)
 	return nil
 }
