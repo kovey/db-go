@@ -203,13 +203,17 @@ func _errRaw(err error, op ksql.ExpressInterface) error {
 }
 
 func (c *Connection) Exec(ctx context.Context, op ksql.SqlInterface) (int64, error) {
-	stmt, err := c.Prepare(ctx, op)
+	cc := NewContext(ctx)
+	cc.SqlLogStart(op)
+	defer cc.SqlLogEnd()
+
+	stmt, err := c.Prepare(cc, op)
 	if err != nil {
 		return 0, err
 	}
 	defer stmt.Close()
 
-	result, err := stmt.ExecContext(ctx, op.Binds()...)
+	result, err := stmt.ExecContext(cc, op.Binds()...)
 	if err != nil {
 		return 0, _err(err, op)
 	}
@@ -225,13 +229,17 @@ func (c *Connection) Exec(ctx context.Context, op ksql.SqlInterface) (int64, err
 }
 
 func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model ksql.RowInterface) error {
-	stmt, err := c.Prepare(ctx, op)
+	cc := NewContext(ctx)
+	cc.SqlLogStart(op)
+	defer cc.SqlLogEnd()
+
+	stmt, err := c.Prepare(cc, op)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRowContext(ctx, op.Binds()...)
+	row := stmt.QueryRowContext(cc, op.Binds()...)
 	if row.Err() != nil {
 		return _err(err, op)
 	}
@@ -250,13 +258,17 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 }
 
 func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface, model ksql.RowInterface) error {
-	stmt, err := c.PrepareRaw(ctx, raw)
+	cc := NewContext(ctx)
+	cc.RawSqlLogStart(raw)
+	defer cc.SqlLogEnd()
+
+	stmt, err := c.PrepareRaw(cc, raw)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRowContext(ctx, raw.Binds()...)
+	row := stmt.QueryRowContext(cc, raw.Binds()...)
 	if row.Err() != nil {
 		return _errRaw(err, raw)
 	}
@@ -285,13 +297,17 @@ func (c *Connection) PrepareRaw(ctx context.Context, raw ksql.ExpressInterface) 
 }
 
 func (c *Connection) ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sql.Result, error) {
-	stmt, err := c.PrepareRaw(ctx, raw)
+	cc := NewContext(ctx)
+	cc.RawSqlLogStart(raw)
+	defer cc.SqlLogEnd()
+
+	stmt, err := c.PrepareRaw(cc, raw)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	result, err := stmt.ExecContext(ctx, raw.Binds()...)
+	result, err := stmt.ExecContext(cc, raw.Binds()...)
 	return result, _errRaw(err, raw)
 }
 

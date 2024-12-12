@@ -7,6 +7,7 @@ import (
 	"time"
 
 	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/logger"
 )
 
 var Err_Un_Support_Operate = errors.New("unsupport operate")
@@ -15,6 +16,7 @@ var Err_Database_Not_Initialized = errors.New("data not initialized")
 var Err_Un_Support_Save_Point = errors.New("unsupport save point")
 
 var database ksql.ConnectionInterface
+var logOpen bool = false
 
 type Config struct {
 	DriverName     string
@@ -23,6 +25,8 @@ type Config struct {
 	MaxLifeTime    time.Duration
 	MaxIdleConns   int
 	MaxOpenConns   int
+	LogOpened      bool
+	LogMax         int
 }
 
 func Database() *sql.DB {
@@ -62,7 +66,22 @@ func Init(conf Config) error {
 	}
 
 	database = conn
+	logOpen = conf.LogOpened
+	if logOpen {
+		logger.Open(conf.LogMax)
+	}
 	return nil
+}
+
+func Close() error {
+	if logOpen {
+		logger.Close()
+	}
+	if database == nil {
+		return nil
+	}
+
+	return database.Database().Close()
 }
 
 func InsertBy(ctx context.Context, conn ksql.ConnectionInterface, table string, data *Data) (int64, error) {
@@ -114,13 +133,17 @@ func Exec(ctx context.Context, op ksql.SqlInterface) (int64, error) {
 }
 
 func QueryBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, op ksql.QueryInterface, models *[]T) error {
-	stmt, err := conn.Prepare(ctx, op)
+	cc := NewContext(ctx)
+	cc.SqlLogStart(op)
+	defer cc.SqlLogEnd()
+
+	stmt, err := conn.Prepare(cc, op)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx, op.Binds()...)
+	rows, err := stmt.QueryContext(cc, op.Binds()...)
 	if err != nil {
 		return _err(err, op)
 	}
@@ -153,6 +176,10 @@ func Query[T ksql.RowInterface](ctx context.Context, op ksql.QueryInterface, mod
 }
 
 func QueryRowBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, op ksql.QueryInterface, model T) error {
+	cc := NewContext(ctx)
+	cc.SqlLogStart(op)
+	defer cc.SqlLogEnd()
+
 	stmt, err := conn.Prepare(ctx, op)
 	if err != nil {
 		return err

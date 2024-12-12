@@ -47,13 +47,17 @@ func DeleteRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
 }
 
 func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface, models *[]T) error {
-	stmt, err := conn.PrepareRaw(ctx, raw)
+	cc := NewContext(ctx)
+	cc.RawSqlLogStart(raw)
+	defer cc.SqlLogEnd()
+
+	stmt, err := conn.PrepareRaw(cc, raw)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx, raw.Binds()...)
+	rows, err := stmt.QueryContext(cc, raw.Binds()...)
 	if err != nil {
 		return _errRaw(err, raw)
 	}
@@ -87,13 +91,17 @@ func QueryRaw[T ksql.RowInterface](ctx context.Context, raw ksql.ExpressInterfac
 }
 
 func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface, model T) error {
-	stmt, err := database.PrepareRaw(ctx, raw)
+	cc := NewContext(ctx)
+	cc.RawSqlLogStart(raw)
+	defer cc.SqlLogEnd()
+
+	stmt, err := database.PrepareRaw(cc, raw)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRowContext(ctx, raw.Binds()...)
+	row := stmt.QueryRowContext(cc, raw.Binds()...)
 	if row.Err() != nil {
 		return _errRaw(err, raw)
 	}
@@ -116,13 +124,17 @@ func QueryRowRaw[T ksql.RowInterface](ctx context.Context, raw ksql.ExpressInter
 }
 
 func _hasRaw(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (bool, error) {
-	stmt, err := conn.PrepareRaw(ctx, raw)
+	cc := NewContext(ctx)
+	cc.RawSqlLogStart(raw)
+	defer cc.SqlLogEnd()
+
+	stmt, err := conn.PrepareRaw(cc, raw)
 	if err != nil {
 		return false, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx, raw.Binds()...)
+	rows, err := stmt.QueryContext(cc, raw.Binds()...)
 	if err != nil {
 		return false, _errRaw(err, raw)
 	}

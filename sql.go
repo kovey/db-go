@@ -298,3 +298,19 @@ type PaginationInterface[T RowInterface] interface {
 type ScanInterface interface {
 	Scan(...any) error
 }
+
+type EngineInterface interface {
+	Format(SqlInterface) string
+	FormatRaw(ExpressInterface) string
+}
+
+type TraceInterface interface {
+	TraceId() string
+}
+
+type ContextInterface interface {
+	context.Context
+	SqlLogStart(sql SqlInterface)
+	RawSqlLogStart(sql ExpressInterface)
+	SqlLogEnd()
+}
