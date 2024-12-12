@@ -27,7 +27,7 @@ func Migrate(ctx context.Context, t MigrateType) {
 
 	sort.Sort(mig)
 	debug.Info("migrate begin...")
-	beginTime := time.Now().UnixMilli()
+	beginTime := time.Now().UnixMicro()
 	mig.Range(func(key uint64, mi migplug.MigrateInterface) {
 		m := newMigrateTable()
 		err := model.Query(m).Where("migrate_id", "=", mi.Id()).First(ctx, m)
@@ -68,7 +68,7 @@ func Migrate(ctx context.Context, t MigrateType) {
 			debug.Info("migrate downgrade[%s] success.", mi.Name())
 		}
 	})
-	debug.Info("migrate end. time used: %.3fms", float64(time.Now().UnixMilli()-beginTime)*0.001)
+	debug.Info("migrate end. time used: %.3fms", float64(time.Now().UnixMicro()-beginTime)*0.001)
 }
 
 func Has(ctx context.Context, id uint64) (bool, error) {

@@ -31,7 +31,7 @@ func NewLogInfo() *LogInfo {
 
 func (l *LogInfo) Start(traceId string) {
 	now := time.Now()
-	l.start = now.UnixMilli()
+	l.start = now.UnixMicro()
 	l.BeginTime = now.Format(DateTimeMill)
 	l.TraceId = traceId
 }
@@ -46,7 +46,7 @@ func (l *LogInfo) ExecRawSql(s ksql.ExpressInterface) {
 
 func (l *LogInfo) End() {
 	now := time.Now()
-	l.end = now.UnixMilli()
+	l.end = now.UnixMicro()
 	l.EndTime = now.Format(DateTimeMill)
 	l.Delay = fmt.Sprintf("%.3fms", float64(l.end-l.start)*0.001)
 }
