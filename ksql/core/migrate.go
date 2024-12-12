@@ -68,7 +68,7 @@ func Migrate(ctx context.Context, t MigrateType) {
 			debug.Info("migrate downgrade[%s] success.", mi.Name())
 		}
 	})
-	debug.Info("migrate end. time used: %0.2fms", float64(time.Now().UnixMilli()-beginTime)*0.001)
+	debug.Info("migrate end. time used: %.3fms", float64(time.Now().UnixMilli()-beginTime)*0.001)
 }
 
 func Has(ctx context.Context, id uint64) (bool, error) {

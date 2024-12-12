@@ -19,6 +19,8 @@ func main() {
 		MaxLifeTime:    time.Second * 120,
 		MaxIdleConns:   10,
 		MaxOpenConns:   50,
+		LogOpened:      true,
+		LogMax:         1024,
 	}
 
 	if err := db.Init(conf); err != nil {
@@ -32,4 +34,5 @@ func main() {
 	}
 
 	fmt.Println("user: ", u)
+	db.Close()
 }

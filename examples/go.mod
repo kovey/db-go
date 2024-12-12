@@ -8,3 +8,5 @@ require (
 )
 
 require filippo.io/edwards25519 v1.1.0 // indirect
+
+replace github.com/kovey/db-go/v3 v3.1.0 => ../

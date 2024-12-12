@@ -9,15 +9,19 @@ import (
 	"github.com/kovey/db-go/v3/sql"
 )
 
+const (
+	DateTimeMill = "2006-01-02 15:04:05.000"
+)
+
 var Engine ksql.EngineInterface = sql.DefaultEngine()
 
 type LogInfo struct {
 	start     int64  // ms
 	end       int64  // ms
+	Delay     string `json:"delay"`
 	TraceId   string `json:"trace_id"`
 	BeginTime string `json:"begin_time"`
 	EndTime   string `json:"end_time"`
-	Delay     string `json:"delay"`
 	Sql       string `json:"sql"`
 }
 
@@ -28,7 +32,7 @@ func NewLogInfo() *LogInfo {
 func (l *LogInfo) Start(traceId string) {
 	now := time.Now()
 	l.start = now.UnixMilli()
-	l.BeginTime = now.Format(time.StampMilli)
+	l.BeginTime = now.Format(DateTimeMill)
 	l.TraceId = traceId
 }
 
@@ -43,7 +47,7 @@ func (l *LogInfo) ExecRawSql(s ksql.ExpressInterface) {
 func (l *LogInfo) End() {
 	now := time.Now()
 	l.end = now.UnixMilli()
-	l.EndTime = now.Format(time.StampMilli)
+	l.EndTime = now.Format(DateTimeMill)
 	l.Delay = fmt.Sprintf("%.3fms", float64(l.end-l.start)*0.001)
 }
 

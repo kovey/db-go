@@ -36,6 +36,9 @@ func loop() {
 			if _, err := Writer.Write(logBytes); err != nil {
 				fmt.Printf("record log error: %s\n", err)
 			}
+			if _, err := Writer.Write([]byte("\n")); err != nil {
+				fmt.Printf("record log error: %s\n", err)
+			}
 		}
 	}
 }
