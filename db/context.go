@@ -26,6 +26,11 @@ func NewContext(ctx context.Context) ksql.ContextInterface {
 	return c
 }
 
+func (c *Context) WithTraceId(traceId string) *Context {
+	c.traceId = traceId
+	return c
+}
+
 func (c *Context) SqlLogStart(sql ksql.SqlInterface) {
 	if !logOpen {
 		return
