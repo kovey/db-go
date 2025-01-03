@@ -293,3 +293,17 @@ func DropTableBy(ctx context.Context, conn ksql.ConnectionInterface, table strin
 func DropTable(ctx context.Context, table string) error {
 	return DropTableBy(ctx, database, table)
 }
+
+func ShowDDLBy(ctx context.Context, conn ksql.ConnectionInterface, table string) (string, error) {
+	var tableName *string
+	var ddl *string
+	if err := conn.ScanRaw(ctx, Raw("SHOW CREATE TABLE ?", table), &tableName, &ddl); err != nil {
+		return "", err
+	}
+
+	return *ddl, nil
+}
+
+func ShowDDL(ctx context.Context, table string) (string, error) {
+	return ShowDDLBy(ctx, database, table)
+}

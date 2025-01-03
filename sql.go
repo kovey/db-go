@@ -45,6 +45,7 @@ type ConnectionInterface interface {
 	BeginTo(ctx context.Context, point string) error
 	RollbackTo(ctx context.Context, point string) error
 	CommitTo(ctx context.Context, point string) error
+	ScanRaw(ctx context.Context, raw ExpressInterface, data ...any) error
 }
 
 type ExpressInterface interface {

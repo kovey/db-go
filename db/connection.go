@@ -314,3 +314,30 @@ func (c *Connection) ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sq
 func (c *Connection) InTransaction() bool {
 	return c.tx != nil
 }
+
+func (c *Connection) ScanRaw(ctx context.Context, raw ksql.ExpressInterface, data ...any) error {
+	cc := NewContext(ctx)
+	cc.RawSqlLogStart(raw)
+	defer cc.SqlLogEnd()
+
+	stmt, err := c.PrepareRaw(cc, raw)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(cc, raw.Binds()...)
+	if row.Err() != nil {
+		return _errRaw(err, raw)
+	}
+
+	if err := row.Scan(data...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+
+		return _errRaw(err, raw)
+	}
+
+	return nil
+}

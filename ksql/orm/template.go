@@ -18,6 +18,8 @@ package {{.Package}}
 // table:         {{.Table}}
 // orm version:   {{.Version}}
 // created time:  {{.CreateTime}}
+// create table sql
+{{.Sql}}
 
 import(
 	"context"
@@ -96,6 +98,7 @@ type modelTpl struct {
 	HasSql      bool
 	Consts      []constInfo
 	DbName      string
+	Sql         string
 }
 
 func (m *modelTpl) Parse() ([]byte, error) {
