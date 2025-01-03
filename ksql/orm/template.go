@@ -18,8 +18,10 @@ package {{.Package}}
 // table:         {{.Table}}
 // orm version:   {{.Version}}
 // created time:  {{.CreateTime}}
-// create table sql
-{{.Sql}}
+// ddl:
+/**
+{{.Sql | safe}}
+*/
 
 import(
 	"context"

@@ -35,6 +35,7 @@ func Orm(driverName, dsn, dir, dbname string) error {
 
 	debug.Info("create orm from db[%s] begin...", dbname)
 	defer debug.Info("create orm from db[%s] end.", dbname)
+	ctx := context.Background()
 	for _, table := range tables {
 		if table.Name() == "ksql_migrate_info" {
 			continue
@@ -42,7 +43,8 @@ func Orm(driverName, dsn, dir, dbname string) error {
 
 		debug.Info("create table[%s] begin...", table.Name())
 		defer debug.Info("create table[%s] end.", table.Name())
-		tpl := &modelTpl{Package: packageName, Table: table.Name(), Comment: table.Comment(), CreateTime: time.Now().Format(time.DateTime), Version: version.Version()}
+		ddlSql, err := db.ShowDDLBy(ctx, conn, table.Name())
+		tpl := &modelTpl{Package: packageName, Table: table.Name(), Comment: table.Comment(), CreateTime: time.Now().Format(time.DateTime), Version: version.Version(), Sql: ddlSql}
 		tpl.ModelTag = tag("-")
 		name := formatName(table.Name())
 		tpl.Name = name
