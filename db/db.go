@@ -297,7 +297,7 @@ func DropTable(ctx context.Context, table string) error {
 func ShowDDLBy(ctx context.Context, conn ksql.ConnectionInterface, table string) (string, error) {
 	var tableName *string
 	var ddl *string
-	if err := conn.ScanRaw(ctx, Raw("SHOW CREATE TABLE ?", table), &tableName, &ddl); err != nil {
+	if err := conn.ScanRaw(ctx, Raw("SHOW CREATE TABLE "+table), &tableName, &ddl); err != nil {
 		return "", err
 	}
 
