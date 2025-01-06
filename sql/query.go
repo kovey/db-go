@@ -157,8 +157,20 @@ func (o *Query) WhereExpress(expresses ...ksql.ExpressInterface) ksql.QueryInter
 }
 
 func (o *Query) OrWhere(call func(w ksql.WhereInterface)) ksql.QueryInterface {
+	if call == nil {
+		return o
+	}
 	o.where.OrWhere(call)
 	return o
+}
+
+func (q *Query) AndWhere(call func(w ksql.WhereInterface)) ksql.QueryInterface {
+	if call == nil {
+		return q
+	}
+
+	q.where.AndWhere(call)
+	return q
 }
 
 func (o *Query) Between(column string, begin, end any) ksql.QueryInterface {
@@ -362,7 +374,18 @@ func (o *Query) HavingExpress(expresses ...ksql.ExpressInterface) ksql.QueryInte
 	return o
 }
 
+func (q *Query) AndHaving(call func(h ksql.HavingInterface)) ksql.QueryInterface {
+	if call == nil {
+		return q
+	}
+	q.having.AndHaving(call)
+	return q
+}
+
 func (o *Query) OrHaving(call func(h ksql.HavingInterface)) ksql.QueryInterface {
+	if call == nil {
+		return o
+	}
 	o.having.OrHaving(call)
 	return o
 }

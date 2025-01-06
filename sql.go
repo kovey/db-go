@@ -94,6 +94,7 @@ type WhereInterface interface {
 	InBy(column string, sub QueryInterface) WhereInterface
 	NotInBy(column string, sub QueryInterface) WhereInterface
 	Between(column string, begin, end any) WhereInterface
+	AndWhere(call func(o WhereInterface)) WhereInterface
 	Empty() bool
 }
 
@@ -109,6 +110,7 @@ type HavingInterface interface {
 	InBy(column string, sub QueryInterface) HavingInterface
 	NotInBy(column string, sub QueryInterface) HavingInterface
 	Between(column string, begin, end any) HavingInterface
+	AndHaving(call func(o HavingInterface)) HavingInterface
 	Empty() bool
 }
 
@@ -151,20 +153,8 @@ type ColumnInterface interface {
 	UseCurrentOnUpdate() ColumnInterface
 }
 
-type AlterInterface interface {
-	SqlInterface
+type AddColumnInterface interface {
 	AddColumn(column, t string, length, scale int, sets ...string) ColumnInterface
-	DropColumn(column string) AlterInterface
-	AddIndex(name string, t IndexType, column ...string) AlterInterface
-	DropIndex(name string) AlterInterface
-	Table(table string) AlterInterface
-	ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ColumnInterface
-	Comment(comment string) AlterInterface
-	AddPrimary(column string) AlterInterface
-	AddUnique(name string, columns ...string) AlterInterface
-	Charset(charset string) AlterInterface
-	Collate(collate string) AlterInterface
-	Engine(engine string) AlterInterface
 	AddDecimal(column string, length, scale int) ColumnInterface
 	AddDouble(column string, length, scale int) ColumnInterface
 	AddFloat(column string, length, scale int) ColumnInterface
@@ -186,6 +176,22 @@ type AlterInterface interface {
 	AddInt(column string) ColumnInterface
 	AddString(column string, length int) ColumnInterface
 	AddChar(column string, length int) ColumnInterface
+}
+
+type AlterInterface interface {
+	SqlInterface
+	AddColumnInterface
+	DropColumn(column string) AlterInterface
+	AddIndex(name string, t IndexType, column ...string) AlterInterface
+	DropIndex(name string) AlterInterface
+	Table(table string) AlterInterface
+	ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ColumnInterface
+	Comment(comment string) AlterInterface
+	AddPrimary(column string) AlterInterface
+	AddUnique(name string, columns ...string) AlterInterface
+	Charset(charset string) AlterInterface
+	Collate(collate string) AlterInterface
+	Engine(engine string) AlterInterface
 }
 
 type DeleteInterface interface {
@@ -212,6 +218,7 @@ type QueryInterface interface {
 	WhereNotIn(column string, data []any) QueryInterface
 	WhereInBy(column string, query QueryInterface) QueryInterface
 	WhereNotInBy(column string, query QueryInterface) QueryInterface
+	AndWhere(call func(w WhereInterface)) QueryInterface
 	Between(column string, begin, end any) QueryInterface
 	Having(column string, op string, val any) QueryInterface
 	HavingExpress(expresses ...ExpressInterface) QueryInterface
@@ -223,6 +230,7 @@ type QueryInterface interface {
 	HavingInBy(column string, query QueryInterface) QueryInterface
 	HavingNotInBy(column string, query QueryInterface) QueryInterface
 	HavingBetween(column string, begin, end any) QueryInterface
+	AndHaving(call func(h HavingInterface)) QueryInterface
 	Limit(limit int) QueryInterface
 	Offset(offset int) QueryInterface
 	Order(column string) QueryInterface
@@ -243,7 +251,7 @@ type QueryInterface interface {
 
 type CreateTableInterface interface {
 	SqlInterface
-	AddColumn(column, t string, length, scale int, sets ...string) ColumnInterface
+	AddColumnInterface
 	AddIndex(name string, t IndexType, column ...string) CreateTableInterface
 	Table(table string) CreateTableInterface
 	Engine(engine string) CreateTableInterface
@@ -252,27 +260,6 @@ type CreateTableInterface interface {
 	Comment(comment string) CreateTableInterface
 	AddPrimary(column string) CreateTableInterface
 	AddUnique(name string, columns ...string) CreateTableInterface
-	AddDecimal(column string, length, scale int) ColumnInterface
-	AddDouble(column string, length, scale int) ColumnInterface
-	AddFloat(column string, length, scale int) ColumnInterface
-	AddBinary(column string, length int) ColumnInterface
-	AddGeoMetry(column string) ColumnInterface
-	AddPolygon(column string) ColumnInterface
-	AddPoint(column string) ColumnInterface
-	AddLineString(column string) ColumnInterface
-	AddBlob(column string) ColumnInterface
-	AddText(column string) ColumnInterface
-	AddSet(column string, sets []string) ColumnInterface
-	AddEnum(column string, options []string) ColumnInterface
-	AddDate(column string) ColumnInterface
-	AddDateTime(column string) ColumnInterface
-	AddTimestamp(column string) ColumnInterface
-	AddSmallInt(column string) ColumnInterface
-	AddTinyInt(column string) ColumnInterface
-	AddBigInt(column string) ColumnInterface
-	AddInt(column string) ColumnInterface
-	AddString(column string, length int) ColumnInterface
-	AddChar(column string, length int) ColumnInterface
 }
 
 type DropTableInterface interface {

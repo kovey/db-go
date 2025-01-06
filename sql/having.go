@@ -1,8 +1,6 @@
 package sql
 
-import (
-	"github.com/kovey/db-go/v3"
-)
+import ksql "github.com/kovey/db-go/v3"
 
 type Having struct {
 	*base
@@ -91,15 +89,25 @@ func (w *Having) Express(raw ksql.ExpressInterface) ksql.HavingInterface {
 	return w
 }
 
-func (w *Having) OrHaving(call func(o ksql.HavingInterface)) ksql.HavingInterface {
-	w.builder.WriteString(" OR (")
+func (h *Having) _by(op string, call func(o ksql.HavingInterface)) ksql.HavingInterface {
+	h.builder.WriteString(" ")
+	h.builder.WriteString(op)
+	h.builder.WriteString(" (")
 	n := NewHaving()
 	call(n)
-	w.builder.WriteString(n.Prepare())
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, n.binds...)
+	h.builder.WriteString(n.Prepare())
+	h.builder.WriteString(")")
+	h.binds = append(h.binds, n.binds...)
 
-	return w
+	return h
+}
+
+func (w *Having) OrHaving(call func(o ksql.HavingInterface)) ksql.HavingInterface {
+	return w._by("OR", call)
+}
+
+func (w *Having) AndHaving(call func(o ksql.HavingInterface)) ksql.HavingInterface {
+	return w._by("AND", call)
 }
 
 func (w *Having) _inBy(column string, sub ksql.QueryInterface, op string) ksql.HavingInterface {

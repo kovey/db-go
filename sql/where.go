@@ -1,7 +1,7 @@
 package sql
 
 import (
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 type Where struct {
@@ -92,14 +92,23 @@ func (w *Where) Express(raw ksql.ExpressInterface) ksql.WhereInterface {
 }
 
 func (w *Where) OrWhere(call func(o ksql.WhereInterface)) ksql.WhereInterface {
-	w.builder.WriteString(" OR (")
+	return w._by("OR", call)
+}
+
+func (w *Where) _by(op string, call func(o ksql.WhereInterface)) ksql.WhereInterface {
+	w.builder.WriteString(" ")
+	w.builder.WriteString(op)
+	w.builder.WriteString(" (")
 	n := NewWhere()
 	call(n)
 	w.builder.WriteString(n.Prepare())
 	w.builder.WriteString(")")
 	w.binds = append(w.binds, n.binds...)
-
 	return w
+}
+
+func (w *Where) AndWhere(call func(o ksql.WhereInterface)) ksql.WhereInterface {
+	return w._by("AND", call)
 }
 
 func (w *Where) _inBy(column string, sub ksql.QueryInterface, op string) ksql.WhereInterface {

@@ -95,6 +95,11 @@ func (b *Builder[T]) WhereNotInBy(column string, sub ksql.QueryInterface) ksql.B
 	return b
 }
 
+func (b *Builder[T]) AndWhere(call func(w ksql.WhereInterface)) ksql.BuilderInterface[T] {
+	b.query.AndWhere(call)
+	return b
+}
+
 func (b *Builder[T]) Between(column string, begin, end any) ksql.BuilderInterface[T] {
 	b.query.Between(column, begin, end)
 	return b
@@ -147,6 +152,11 @@ func (b *Builder[T]) HavingNotInBy(column string, sub ksql.QueryInterface) ksql.
 
 func (b *Builder[T]) HavingBetween(column string, begin, end any) ksql.BuilderInterface[T] {
 	b.query.HavingBetween(column, begin, end)
+	return b
+}
+
+func (b *Builder[T]) AndHaving(call func(w ksql.HavingInterface)) ksql.BuilderInterface[T] {
+	b.query.AndHaving(call)
 	return b
 }
 
