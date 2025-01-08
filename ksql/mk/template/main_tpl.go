@@ -27,7 +27,7 @@ type Migrator struct {
 }
 
 func (m *Migrator) Register(c migplug.CoreInterface) {
-	{{range $index, $migrate := .Migrates}}c.Add(&migrations.{{$migrate}}{}){{"\n"}}{{end}}
+	{{range $index, $migrate := .Migrates}}{{if gt $index 0}}{{"\n"}}{{end}}c.Add(&migrations.{{$migrate}}{}){{end}}
 }
 
 func Migrate() migplug.PluginInterface {
