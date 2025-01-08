@@ -26,10 +26,11 @@ type Model struct {
 	fromFecth     bool
 	isInitialized bool
 	data          *db.Data
+	shardingType  ksql.Sharding
 }
 
 func NewModel(table, primaryId string, t PrimaryType) *Model {
-	return &Model{table: table, primaryId: primaryId, primaryType: t, isAutoInc: true, isInitialized: false, data: db.NewData()}
+	return &Model{table: table, primaryId: primaryId, primaryType: t, isAutoInc: true, isInitialized: false, data: db.NewData(), shardingType: ksql.Sharding_None}
 }
 
 func (m *Model) OnUpdateBefore(conn ksql.ConnectionInterface) error { return nil }
@@ -63,8 +64,12 @@ func (m *Model) Scan(s ksql.ScanInterface, r ksql.RowInterface) error {
 	return nil
 }
 
+func (m *Model) Sharding(sharding ksql.Sharding) {
+	m.shardingType = sharding
+}
+
 func (m *Model) Table() string {
-	return m.table
+	return ksql.FormatSharding(m.table, m.shardingType)
 }
 
 func (m *Model) WithConn(conn ksql.ConnectionInterface) {

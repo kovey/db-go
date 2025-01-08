@@ -3,6 +3,7 @@ package ksql
 import "context"
 
 type BuilderInterface[T RowInterface] interface {
+	Sharding(sharding Sharding) BuilderInterface[T]
 	Table(table string) BuilderInterface[T]
 	TableBy(query QueryInterface, as string) BuilderInterface[T]
 	As(as string) BuilderInterface[T]

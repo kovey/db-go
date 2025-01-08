@@ -5,26 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/sql"
-)
-
-type TableType byte
-
-const (
-	Table_Type_Day   TableType = 1
-	Table_Type_Month TableType = 2
-)
-
-const (
-	Day_Format   = "20060102"
-	Month_Format = "200601"
 )
 
 type Template struct {
 	Table         string
 	Keep          int
-	Type          TableType
+	Type          ksql.Sharding
 	TemplateTable string
 }
 
@@ -44,9 +33,9 @@ func (t *TableManager) Append(temp *Template) {
 func (t *TableManager) Create(ctx context.Context) {
 	for _, temp := range t.templates {
 		switch temp.Type {
-		case Table_Type_Day:
+		case ksql.Sharding_Day:
 			t.createDay(ctx, temp)
-		case Table_Type_Month:
+		case ksql.Sharding_Month:
 			t.createMonth(ctx, temp)
 		}
 	}
@@ -54,7 +43,7 @@ func (t *TableManager) Create(ctx context.Context) {
 
 func (t *TableManager) createMonth(ctx context.Context, temp *Template) {
 	for i := -3; i <= 3; i++ {
-		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, i, 0).Format(Month_Format))
+		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, i, 0).Format(ksql.Month_Format))
 		if has, err := db.HasTable(ctx, tableName); err != nil || has {
 			continue
 		}
@@ -67,7 +56,7 @@ func (t *TableManager) createMonth(ctx context.Context, temp *Template) {
 
 func (t *TableManager) createDay(ctx context.Context, temp *Template) {
 	for i := -3; i <= 3; i++ {
-		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, 0, i).Format(Day_Format))
+		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, 0, i).Format(ksql.Day_Format))
 		if has, err := db.HasTable(ctx, tableName); err != nil || has {
 			continue
 		}
@@ -80,7 +69,7 @@ func (t *TableManager) createDay(ctx context.Context, temp *Template) {
 
 func (t *TableManager) delDay(ctx context.Context, temp *Template) {
 	for i := 0; i < 3; i++ {
-		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, 0, -(temp.Keep+i)).Format(Day_Format))
+		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, 0, -(temp.Keep+i)).Format(ksql.Day_Format))
 		if has, err := db.HasTable(ctx, tableName); err != nil || !has {
 			continue
 		}
@@ -93,7 +82,7 @@ func (t *TableManager) delDay(ctx context.Context, temp *Template) {
 
 func (t *TableManager) delMonth(ctx context.Context, temp *Template) {
 	for i := 0; i < 3; i++ {
-		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, -(temp.Keep+i), 0).Format(Month_Format))
+		tableName := fmt.Sprintf("%s_%s", temp.Table, t.now.AddDate(0, -(temp.Keep+i), 0).Format(ksql.Month_Format))
 		if has, err := db.HasTable(ctx, tableName); err != nil || !has {
 			continue
 		}
@@ -107,9 +96,9 @@ func (t *TableManager) delMonth(ctx context.Context, temp *Template) {
 func (t *TableManager) Delete(ctx context.Context, temp *Template) {
 	for _, temp := range t.templates {
 		switch temp.Type {
-		case Table_Type_Day:
+		case ksql.Sharding_Day:
 			t.delDay(ctx, temp)
-		case Table_Type_Month:
+		case ksql.Sharding_Month:
 			t.delMonth(ctx, temp)
 		}
 	}

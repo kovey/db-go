@@ -34,5 +34,14 @@ func main() {
 	}
 
 	fmt.Println("user: ", u)
+	var users []*models.User
+	if err := model.Query(models.NewUser()).Where("id", ">", 0).All(ctx, &users); err != nil {
+		panic(err)
+	}
+
+	for _, u := range users {
+		fmt.Printf("uu: %+v\n", u)
+	}
+
 	db.Close()
 }

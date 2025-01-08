@@ -3,6 +3,8 @@ package ksql
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"time"
 )
 
 type IndexType byte
@@ -14,6 +16,34 @@ const (
 	Index_Type_FullText IndexType = 4
 	Index_Type_Spatial  IndexType = 5
 )
+
+type Sharding byte
+
+const (
+	Sharding_None  Sharding = 0
+	Sharding_Day   Sharding = 1
+	Sharding_Month Sharding = 2
+)
+
+func FormatSharding(table string, sharding Sharding) string {
+	switch sharding {
+	case Sharding_Day:
+		return fmt.Sprintf("%s_%s", table, time.Now().Format(Day_Format))
+	case Sharding_Month:
+		return fmt.Sprintf("%s_%s", table, time.Now().Format(Month_Format))
+	default:
+		return table
+	}
+}
+
+const (
+	Day_Format   = "20060102"
+	Month_Format = "200601"
+)
+
+type ShardingInterface interface {
+	Sharding(Sharding)
+}
 
 type TxError interface {
 	error
@@ -59,6 +89,7 @@ type RowInterface interface {
 	WithConn(ConnectionInterface)
 	Scan(s ScanInterface, r RowInterface) error
 	Conn() ConnectionInterface
+	Sharding(Sharding)
 }
 
 type ModelInterface interface {
@@ -202,6 +233,8 @@ type DeleteInterface interface {
 
 type QueryInterface interface {
 	SqlInterface
+	Sharding(sharding Sharding)
+	GetSharding() Sharding
 	Table(table string) QueryInterface
 	TableBy(query QueryInterface, as string) QueryInterface
 	As(as string) QueryInterface

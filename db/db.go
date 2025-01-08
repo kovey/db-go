@@ -159,6 +159,7 @@ func QueryBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInter
 			return _err(err, op)
 		}
 
+		tmp.Sharding(op.GetSharding())
 		model, ok := tmp.(T)
 		if !ok {
 			continue
@@ -200,6 +201,7 @@ func QueryRowBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 	}
 
 	model.WithConn(conn)
+	model.Sharding(op.GetSharding())
 	return nil
 }
 

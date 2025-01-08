@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/express"
 )
 
@@ -60,4 +60,12 @@ func Column(column string, builder *strings.Builder) {
 	}
 
 	Backtick(column, builder)
+}
+
+func _formatSharding(name string, sharding ksql.Sharding) string {
+	if strings.HasPrefix(name, "(") {
+		return name
+	}
+
+	return ksql.FormatSharding(name, sharding)
 }

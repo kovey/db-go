@@ -9,3 +9,4 @@ func (Row) Clone() ksql.RowInterface                             { return nil }
 func (Row) WithConn(ksql.ConnectionInterface)                    {}
 func (Row) Scan(s ksql.ScanInterface, r ksql.RowInterface) error { return s.Scan(r.Values()...) }
 func (Row) Conn() ksql.ConnectionInterface                       { return nil }
+func (Row) Sharding(ksql.Sharding)                               {}

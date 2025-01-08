@@ -1,8 +1,12 @@
 package mysql
 
-import ksql "github.com/kovey/db-go/v3"
+import (
+	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/db"
+)
 
 type base struct {
+	*db.Row
 	conn          ksql.ConnectionInterface
 	empty         bool
 	isInitialized bool
@@ -10,10 +14,6 @@ type base struct {
 
 func (b *base) WithConn(conn ksql.ConnectionInterface) {
 	b.conn = conn
-}
-
-func (b *base) FromFetch() {
-	b.empty = false
 }
 
 func (b *base) Conn() ksql.ConnectionInterface {

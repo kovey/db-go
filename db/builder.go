@@ -15,6 +15,11 @@ func NewBuilder[T ksql.RowInterface](model T) *Builder[T] {
 	return &Builder[T]{query: NewQuery(), conn: model.Conn()}
 }
 
+func (b *Builder[T]) Sharding(sharding ksql.Sharding) ksql.BuilderInterface[T] {
+	b.query.Sharding(sharding)
+	return b
+}
+
 func (b *Builder[T]) Table(table string) ksql.BuilderInterface[T] {
 	b.query.Table(table)
 	return b

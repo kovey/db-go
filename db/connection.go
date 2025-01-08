@@ -253,6 +253,7 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 		return _err(err, op)
 	}
 
+	model.Sharding(op.GetSharding())
 	model.WithConn(c)
 	return nil
 }

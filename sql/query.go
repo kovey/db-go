@@ -19,10 +19,11 @@ type Query struct {
 	group     strings.Builder
 	having    ksql.HavingInterface
 	forUpdate bool
+	sharding  ksql.Sharding
 }
 
 func NewQuery() *Query {
-	q := &Query{base: &base{hasPrepared: false}, where: NewWhere(), having: NewHaving()}
+	q := &Query{base: &base{hasPrepared: false}, where: NewWhere(), having: NewHaving(), sharding: ksql.Sharding_None}
 	q.keyword("SELECT ")
 	return q
 }
@@ -49,8 +50,16 @@ func (o *Query) TableBy(operater ksql.QueryInterface, as string) ksql.QueryInter
 	return o
 }
 
+func (o *Query) Sharding(sharding ksql.Sharding) {
+	o.sharding = sharding
+}
+
+func (o *Query) GetSharding() ksql.Sharding {
+	return o.sharding
+}
+
 func (o *Query) Table(table string) ksql.QueryInterface {
-	o.table = table
+	o.table = strings.Trim(table, "\r\n ")
 	return o
 }
 
@@ -282,7 +291,7 @@ func (o *Query) Prepare() string {
 	}
 
 	o.builder.WriteString(" FROM ")
-	Column(o.table, &o.builder)
+	Column(_formatSharding(o.table, o.sharding), &o.builder)
 	if o.as != "" {
 		o.builder.WriteString(" AS ")
 		Backtick(o.as, &o.builder)
