@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kovey/db-go/ksql/dir"
 	"github.com/kovey/db-go/ksql/mysql"
 	"github.com/kovey/db-go/ksql/schema"
 	"github.com/kovey/db-go/ksql/version"
@@ -14,8 +15,8 @@ import (
 	"github.com/kovey/debug-go/debug"
 )
 
-func Orm(driverName, dsn, dir, dbname string) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
+func Orm(driverName, dsn, directory, dbname string) error {
+	if err := os.MkdirAll(directory, 0755); err != nil {
 		if !os.IsExist(err) {
 			return err
 		}
@@ -25,7 +26,7 @@ func Orm(driverName, dsn, dir, dbname string) error {
 		return err
 	}
 
-	info := strings.Split(dir, "/")
+	info := strings.Split(directory, dir.Sep())
 	packageName := info[len(info)-1]
 	conn, _ := db.Get()
 	tables, err := getTables(context.Background(), conn, dbname)
@@ -79,7 +80,7 @@ func Orm(driverName, dsn, dir, dbname string) error {
 			return err
 		}
 
-		if err := os.WriteFile(dir+"/"+table.Name()+".go", res, 0644); err != nil {
+		if err := os.WriteFile(directory+dir.Sep()+table.Name()+".go", res, 0644); err != nil {
 			return err
 		}
 

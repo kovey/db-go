@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/kovey/db-go/ksql/dir"
 	"github.com/kovey/db-go/v3/sql"
 	"github.com/kovey/debug-go/debug"
 )
@@ -30,14 +31,14 @@ func Migrate(driverName, dsn, dbname, path string) error {
 			continue
 		}
 
-		f, err := os.Open(path + "/" + file.Name())
+		f, err := os.Open(path + dir.Sep() + file.Name())
 		if err != nil {
 			return err
 		}
 
 		defer f.Close()
-		debug.Info("migrate file[%s/%s] begin...", path, file.Name())
-		defer debug.Info("migrate file[%s/%s] end.", path, file.Name())
+		debug.Info("migrate file[%s%s%s] begin...", path, dir.Sep(), file.Name())
+		defer debug.Info("migrate file[%s%s%s] end.", path, dir.Sep(), file.Name())
 		buf := bufio.NewReader(f)
 		for {
 			line, err := buf.ReadString('\n')

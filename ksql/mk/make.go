@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/kovey/db-go/ksql/core"
+	"github.com/kovey/db-go/ksql/dir"
 	"github.com/kovey/db-go/ksql/mk/template"
 	v "github.com/kovey/db-go/ksql/version"
 	"github.com/kovey/db-go/v3/db"
@@ -19,8 +20,8 @@ import (
 var Err_Version_Exists = errors.New("Version Exists")
 var Err_Parse_Error = errors.New("Parse Error")
 
-func Make(name, version, dir, dsn, driverName string) error {
-	path := dir + "/" + version + "/migrations"
+func Make(name, version, directory, dsn, driverName string) error {
+	path := directory + dir.Sep() + version + dir.Sep() + "migrations"
 	if err := os.MkdirAll(path, 0755); err != nil {
 		if !os.IsExist(err) {
 			return err
@@ -38,7 +39,7 @@ func Make(name, version, dir, dsn, driverName string) error {
 		return Err_Version_Exists
 	}
 
-	mainT := getTemplate(path, version, getFullPackage(dir))
+	mainT := getTemplate(path, version, getFullPackage(directory))
 	if mainT == nil {
 		return Err_Parse_Error
 	}
@@ -57,22 +58,22 @@ func Make(name, version, dir, dsn, driverName string) error {
 		return err
 	}
 
-	if err := os.WriteFile(path+"/"+name+".go", res, 0644); err != nil {
+	if err := os.WriteFile(path+dir.Sep()+name+".go", res, 0644); err != nil {
 		return err
 	}
 
-	return os.WriteFile(dir+"/"+version+"/migrate.go", mainRes, 0644)
+	return os.WriteFile(directory+dir.Sep()+version+dir.Sep()+"migrate.go", mainRes, 0644)
 }
 
-func getFullPackage(dir string) string {
-	dirInfo := strings.Split(dir, "/")
-	dir += "/.."
+func getFullPackage(directory string) string {
+	dirInfo := strings.Split(directory, dir.Sep())
+	directory += dir.Sep() + ".."
 	sub := 1
 	prefix := dirInfo[len(dirInfo)-sub]
 	for {
-		files, err := os.ReadDir(dir)
+		files, err := os.ReadDir(directory)
 		if err != nil {
-			debug.Erro("read dir[%s] error: %s", dir, err)
+			debug.Erro("read dir[%s] error: %s", directory, err)
 			break
 		}
 
@@ -85,17 +86,17 @@ func getFullPackage(dir string) string {
 				continue
 			}
 
-			pack := readFirst(dir + "/" + file.Name())
+			pack := readFirst(directory + dir.Sep() + file.Name())
 			if prefix == "" {
 				return pack
 			}
 
-			return pack + "/" + prefix
+			return pack + dir.Sep() + prefix
 		}
 
 		sub++
-		dir += "/.."
-		prefix = dirInfo[len(dirInfo)-sub] + "/" + prefix
+		directory += dir.Sep() + ".."
+		prefix = dirInfo[len(dirInfo)-sub] + dir.Sep() + prefix
 	}
 
 	return ""
@@ -128,7 +129,7 @@ func getTemplate(path, version, fullPackage string) *template.MainTpl {
 	}
 
 	tmp := &template.MainTpl{CreateTime: time.Now().Format(time.DateTime), Version: v.Version()}
-	tmp.Imports = append(tmp.Imports, fullPackage+"/"+version+"/migrations")
+	tmp.Imports = append(tmp.Imports, fullPackage+dir.Sep()+version+dir.Sep()+"migrations")
 	for _, file := range files {
 		if file.IsDir() {
 			continue

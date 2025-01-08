@@ -14,6 +14,7 @@ import (
 	"github.com/kovey/cli-go/gui"
 	"github.com/kovey/db-go/ksql/core"
 	"github.com/kovey/db-go/ksql/diff"
+	"github.com/kovey/db-go/ksql/dir"
 	"github.com/kovey/db-go/ksql/mk"
 	"github.com/kovey/db-go/ksql/orm"
 	"github.com/kovey/db-go/ksql/version"
@@ -112,7 +113,7 @@ func (s *serv) checkFlag(a app.AppInterface, flag string) error {
 }
 
 func (s *serv) checkPlugin(plugin, version string) (string, error) {
-	filePath := fmt.Sprintf("%s/%s/migrate.so", plugin, version)
+	filePath := fmt.Sprintf("%s%s%s%smigrate.so", plugin, dir.Sep(), version, dir.Sep())
 	stat, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -291,7 +292,7 @@ func (s *serv) diff(a app.AppInterface) error {
 		return err
 	}
 
-	file, err := os.Create(dirVal + fmt.Sprintf("/migrate_%d.sql", time.Now().UnixNano()))
+	file, err := os.Create(dirVal + fmt.Sprintf("%smigrate_%d.sql", dir.Sep(), time.Now().UnixNano()))
 	if err != nil {
 		return err
 	}
@@ -497,8 +498,8 @@ func (s *serv) build(a app.AppInterface) error {
 		}
 	}
 
-	path := fmt.Sprintf("%s/%s", dirVal, version)
-	stat, err := os.Stat(path + "/migrate.go")
+	path := fmt.Sprintf("%s%s%s", dirVal, dir.Sep(), version)
+	stat, err := os.Stat(path + dir.Sep() + "migrate.go")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return fmt.Errorf("%s migrators not created, please use `ksql migplug make -v %s -n xxx` create migrator", version, version)
