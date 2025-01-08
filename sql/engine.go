@@ -52,7 +52,7 @@ func (e *Engine) value(val any) string {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return fmt.Sprintf("%d", tmp)
 	case float32, float64:
-		return fmt.Sprintf("%d", tmp)
+		return fmt.Sprintf("%f", tmp)
 	case *int:
 		return fmt.Sprintf("%d", *tmp)
 	case *int8:
