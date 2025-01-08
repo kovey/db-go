@@ -93,7 +93,7 @@ func (c *Column) Values() []any {
 }
 
 func (c *Column) Clone() ksql.RowInterface {
-	return &Column{base: &base{isInitialized: true}}
+	return &Column{base: &base{empty: true}}
 }
 
 func (c *Column) Columns() []string {
