@@ -12,7 +12,7 @@ import (
 
 func DiffSchema(ctx context.Context, from, to ksql.ConnectionInterface, fromDbname, toDbname string) ksql.SqlInterface {
 	var schema = &Schema{base: &base{conn: from, empty: true}}
-	if err := db.Build(schema).Table("information_schema.SCHEMATA").Columns(schema.Columns()...).Where("SCHEMA_NAME", "=", fromDbname).First(ctx, schema); err != nil {
+	if err := db.Build(schema).Table("information_schema.SCHEMATA").Columns(schema.Columns()...).Where("SCHEMA_NAME", "=", fromDbname).First(ctx); err != nil {
 		return nil
 	}
 
@@ -21,7 +21,7 @@ func DiffSchema(ctx context.Context, from, to ksql.ConnectionInterface, fromDbna
 	}
 
 	var toSchema = &Schema{base: &base{conn: to, empty: true}}
-	if err := db.Build(toSchema).Table("information_schema.SCHEMATA").Columns(toSchema.Columns()...).Where("SCHEMA_NAME", "=", toDbname).First(ctx, toSchema); err != nil {
+	if err := db.Build(toSchema).Table("information_schema.SCHEMATA").Columns(toSchema.Columns()...).Where("SCHEMA_NAME", "=", toDbname).First(ctx); err != nil {
 		return nil
 	}
 

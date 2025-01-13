@@ -360,6 +360,11 @@ func Build[T ksql.RowInterface](row T) ksql.BuilderInterface[T] {
 	return NewBuilder(row)
 }
 
+func Rows[T ksql.RowInterface](rows *[]T) ksql.BuilderInterface[T] {
+	builder := &Builder[T]{query: NewQuery(), models: rows}
+	return builder
+}
+
 func Model[T ksql.ModelInterface](model T) ksql.BuilderInterface[T] {
 	return NewBuilder(model).Table(model.Table()).Columns(model.Columns()...)
 }

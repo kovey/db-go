@@ -275,6 +275,10 @@ func (m *Model) Delete(ctx context.Context, model ksql.ModelInterface) error {
 	return m.OnDeleteAfter(m._conn())
 }
 
-func Query[T ksql.ModelInterface](model T) ksql.BuilderInterface[T] {
+func Rows[T ksql.ModelInterface](models *[]T) ksql.BuilderInterface[T] {
+	return db.Models(models)
+}
+
+func Row[T ksql.ModelInterface](model T) ksql.BuilderInterface[T] {
 	return db.Model(model)
 }
