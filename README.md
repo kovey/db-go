@@ -134,7 +134,7 @@ func TestInsert(t *testing.T) {
 func TestFetchRow(t *testing.T) {
 	ctx := context.Background()
 	u := NewUser()
-	if err := db.Model(u).Where("id", "=", 1).First(ctx, u); err != nil {
+	if err := db.Model(u).Where("id", "=", 1).First(ctx); err != nil {
         t.Fatal(err)
 	}
 
@@ -144,7 +144,7 @@ func TestFetchRow(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
 	u := NewUser()
-	if err := db.Model(u).Where("id", "=", 1).First(ctx, u); err != nil {
+	if err := db.Model(u).Where("id", "=", 1).First(ctx); err != nil {
         t.Fatal(err)
 	}
 
@@ -163,7 +163,7 @@ func TestUpdate(t *testing.T) {
 func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	u := NewUser()
-	if err := db.Model(u).Where("id", "=", 1).First(ctx, u); err != nil {
+	if err := db.Model(u).Where("id", "=", 1).First(ctx); err != nil {
         t.Fatal(err)
 	}
 
@@ -176,7 +176,7 @@ func TestDelete(t *testing.T) {
 func TestFetchAll(t *testing.T) {
 	ctx := context.Background()
         var users []*User
-	if err := db.Model(NewUser()).Where("id", "<", 100).Limit(10).All(ctx, &users); err != nil {
+	if err := db.Models(&users).Where("id", "<", 100).Limit(10).All(ctx); err != nil {
         t.Fatal(err)
 	}
 

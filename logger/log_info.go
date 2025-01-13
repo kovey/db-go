@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -52,8 +53,11 @@ func (l *LogInfo) End() {
 }
 
 func (l *LogInfo) Encode() []byte {
-	if logBytes, err := json.Marshal(l); err == nil {
-		return logBytes
+	buffer := bytes.NewBuffer(nil)
+	enc := json.NewEncoder(buffer)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(l); err == nil {
+		return buffer.Bytes()
 	}
 
 	return nil

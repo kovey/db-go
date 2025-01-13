@@ -45,8 +45,10 @@ type BuilderInterface[T RowInterface] interface {
 	RightJoin(table string) JoinInterface
 	RightJoinExpress(ExpressInterface) JoinInterface
 	ForUpdate() BuilderInterface[T]
-	All(context.Context, *[]T) error
-	First(context.Context, T) error
+	All(context.Context) error
+	First(context.Context) error
+	Max(ctx context.Context, column string) error
+	Min(ctx context.Context, column string) error
 	Exist(ctx context.Context) (bool, error)
 	Count(ctx context.Context) (uint64, error)
 	SumInt(ctx context.Context, column string) (uint64, error)

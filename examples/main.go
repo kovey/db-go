@@ -8,7 +8,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/examples/models"
-	"github.com/kovey/db-go/v3/model"
 )
 
 func main() {
@@ -29,13 +28,13 @@ func main() {
 
 	ctx := context.Background()
 	u := models.NewUser()
-	if err := model.Query(u).Where("id", "=", 2).First(ctx, u); err != nil {
+	if err := db.Model(u).Where("id", "=", 2).First(ctx); err != nil {
 		panic(err)
 	}
 
 	fmt.Println("user: ", u)
 	var users []*models.User
-	if err := model.Query(models.NewUser()).Where("id", ">", 0).All(ctx, &users); err != nil {
+	if err := db.Models(&users).Where("id", ">", 0).All(ctx); err != nil {
 		panic(err)
 	}
 
@@ -43,5 +42,14 @@ func main() {
 		fmt.Printf("uu: %+v\n", u)
 	}
 
+	pageInfo, err := db.Models(&[]*models.User{}).Where("id", ">", 0).Pagination(ctx, 1, 10)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("total page:", pageInfo.TotalPage(), "count:", pageInfo.TotalCount())
+	for _, u := range pageInfo.List() {
+		fmt.Printf("uu: %+v\n", u)
+	}
 	db.Close()
 }

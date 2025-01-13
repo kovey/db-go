@@ -20,6 +20,7 @@ type Query struct {
 	having    ksql.HavingInterface
 	forUpdate bool
 	sharding  ksql.Sharding
+	initBinds []any
 }
 
 func NewQuery() *Query {
@@ -30,17 +31,18 @@ func NewQuery() *Query {
 
 func (o *Query) Clone() ksql.QueryInterface {
 	q := &Query{
-		base: &base{hasPrepared: false, binds: o.binds}, where: o.where, having: o.having,
-		table: o.table, as: o.as, join: o.join, group: o.group,
+		base: &base{hasPrepared: false}, where: o.where, having: o.having,
+		table: o.table, as: o.as, join: o.join, group: o.group, initBinds: o.initBinds,
 	}
 	q.keyword("SELECT ")
 	return q
 }
 
 func (o *Query) TableBy(operater ksql.QueryInterface, as string) ksql.QueryInterface {
+	operater.Prepare()
 	var tmp = make([]any, len(operater.Binds()))
 	copy(tmp, operater.Binds())
-	o.binds = append(tmp, o.binds...)
+	o.initBinds = append(tmp, o.initBinds...)
 	o.as = as
 	var builder strings.Builder
 	builder.WriteString("(")
@@ -283,6 +285,7 @@ func (o *Query) Prepare() string {
 		return o.base.Prepare()
 	}
 
+	o._data(o.initBinds...)
 	o.hasPrepared = true
 	if o.columns.Len() == 0 {
 		o.builder.WriteString("*")

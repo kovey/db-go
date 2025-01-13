@@ -7,12 +7,14 @@ import (
 )
 
 type Builder[T ksql.RowInterface] struct {
-	query ksql.QueryInterface
-	conn  ksql.ConnectionInterface
+	query  ksql.QueryInterface
+	conn   ksql.ConnectionInterface
+	model  T
+	models *[]T
 }
 
 func NewBuilder[T ksql.RowInterface](model T) *Builder[T] {
-	return &Builder[T]{query: NewQuery(), conn: model.Conn()}
+	return &Builder[T]{query: NewQuery(), conn: model.Conn(), model: model}
 }
 
 func (b *Builder[T]) Sharding(sharding ksql.Sharding) ksql.BuilderInterface[T] {
@@ -229,16 +231,16 @@ func (b *Builder[T]) ForUpdate() ksql.BuilderInterface[T] {
 	return b
 }
 
-func (b *Builder[T]) All(ctx context.Context, models *[]T) error {
-	return QueryBy(ctx, b._conn(), b.query, models)
+func (b *Builder[T]) All(ctx context.Context) error {
+	return QueryBy(ctx, b._conn(), b.query, b.models)
 }
 
-func (b *Builder[T]) First(ctx context.Context, model T) error {
+func (b *Builder[T]) First(ctx context.Context) error {
 	if b.conn == nil {
-		return QueryRow(ctx, b.query, model)
+		return QueryRow(ctx, b.query, b.model)
 	}
 
-	return b.conn.QueryRow(ctx, b.query, model)
+	return b.conn.QueryRow(ctx, b.query, b.model)
 }
 
 func (b *Builder[T]) _conn() ksql.ConnectionInterface {
@@ -249,85 +251,57 @@ func (b *Builder[T]) _conn() ksql.ConnectionInterface {
 	return database
 }
 
-func (b *Builder[T]) SumFloat(ctx context.Context, column string) (float64, error) {
-	b.Func("SUM", column, column)
-	stmt, err := b._conn().Prepare(ctx, b.query)
+func _scanNum[T uint64 | float64](ctx context.Context, conn ksql.ConnectionInterface, query ksql.SqlInterface) (T, error) {
+	cc := NewContext(ctx)
+	cc.SqlLogStart(query)
+	defer cc.SqlLogEnd()
+
+	stmt, err := conn.Prepare(ctx, query)
 	if err != nil {
-		return 0, err
+		return 0, _err(err, query)
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
+	row := stmt.QueryRowContext(ctx, query.Binds()...)
 	if row.Err() != nil {
-		return 0, err
+		return 0, _err(row.Err(), query)
 	}
 
-	var sum *float64
-	if err := row.Scan(&sum); err != nil {
-		return 0, err
+	var num *T
+	if err := row.Scan(&num); err != nil {
+		return 0, _err(err, query)
 	}
 
-	if sum == nil {
+	if num == nil {
 		return 0, nil
 	}
 
-	return *sum, nil
+	return *num, nil
+}
+
+func (b *Builder[T]) SumFloat(ctx context.Context, column string) (float64, error) {
+	b.Func("SUM", column, column)
+	return _scanNum[float64](ctx, b._conn(), b.query)
 }
 
 func (b *Builder[T]) SumInt(ctx context.Context, column string) (uint64, error) {
 	b.Func("SUM", column, column)
-	stmt, err := b._conn().Prepare(ctx, b.query)
-	if err != nil {
-		return 0, err
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
-	if row.Err() != nil {
-		return 0, err
-	}
-
-	var sum *uint64
-	if err := row.Scan(&sum); err != nil {
-		return 0, err
-	}
-
-	if sum == nil {
-		return 0, nil
-	}
-
-	return *sum, nil
+	return _scanNum[uint64](ctx, b._conn(), b.query)
 }
 
 func (b *Builder[T]) Count(ctx context.Context) (uint64, error) {
 	b.ColumnsExpress(Raw("COUNT(1) as count"))
-	stmt, err := b._conn().Prepare(ctx, b.query)
-	if err != nil {
-		return 0, err
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowContext(ctx, b.query.Binds()...)
-	if row.Err() != nil {
-		return 0, err
-	}
-
-	var count *uint64
-	if err := row.Scan(&count); err != nil {
-		return 0, err
-	}
-
-	if count == nil {
-		return 0, nil
-	}
-
-	return *count, nil
+	return _scanNum[uint64](ctx, b._conn(), b.query)
 }
 
 func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
+	cc := NewContext(ctx)
+	cc.SqlLogStart(b.query)
+	defer cc.SqlLogEnd()
+
 	stmt, err := b._conn().Prepare(ctx, b.query)
 	if err != nil {
-		return false, err
+		return false, _err(err, b.query)
 	}
 	defer stmt.Close()
 
@@ -352,9 +326,8 @@ func offset(page, pageSize int64) int {
 }
 
 func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql.PaginationInterface[T], error) {
-	var models []T
 	b.query.Limit(int(pageSize)).Offset(offset(page, pageSize))
-	if err := b.All(ctx, &models); err != nil {
+	if err := b.All(ctx); err != nil {
 		return nil, err
 	}
 
@@ -363,7 +336,7 @@ func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql
 	if err != nil {
 		return nil, err
 	}
-	pageInfo := NewPageInfo(models)
+	pageInfo := NewPageInfo(*b.models)
 	pageInfo.Set(count, uint64(pageSize))
 	return pageInfo, nil
 }
@@ -373,10 +346,28 @@ func (b *Builder[T]) WithConn(conn ksql.ConnectionInterface) ksql.BuilderInterfa
 	return b
 }
 
+func (b *Builder[T]) Max(ctx context.Context, column string) error {
+	b.query.Func("MAX", column, column)
+	return b.First(ctx)
+}
+
+func (b *Builder[T]) Min(ctx context.Context, column string) error {
+	b.query.Func("MIN", column, column)
+	return b.First(ctx)
+}
+
 func Build[T ksql.RowInterface](row T) ksql.BuilderInterface[T] {
 	return NewBuilder(row)
 }
 
 func Model[T ksql.ModelInterface](model T) ksql.BuilderInterface[T] {
 	return NewBuilder(model).Table(model.Table()).Columns(model.Columns()...)
+}
+
+func Models[T ksql.ModelInterface](models *[]T) ksql.BuilderInterface[T] {
+	var m T
+	tmp := m.Clone().(T)
+	builder := &Builder[T]{query: NewQuery(), models: models}
+	builder.Table(tmp.Table()).Columns(tmp.Columns()...)
+	return builder
 }
