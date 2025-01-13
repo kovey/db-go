@@ -311,6 +311,9 @@ func (s *serv) diff(a app.AppInterface) error {
 		if _, err := buff.WriteString(op.Prepare()); err != nil {
 			debug.Erro("write error: %s", err)
 		}
+		if _, err := buff.WriteString(";"); err != nil {
+			debug.Erro("write error: %s", err)
+		}
 	}
 
 	return buff.Flush()

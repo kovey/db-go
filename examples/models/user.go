@@ -8,9 +8,9 @@ package models
 // from database: test_dev
 // table:         user
 // orm version:   1.0.1
-// created time:  2025-01-03 11:11:29
-// ddl:
+// created time:  2025-01-13 14:04:37
 /**
+Table DDL:
 CREATE TABLE `user` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '用户id',
   `username` varchar(45) NOT NULL DEFAULT '' COMMENT '用户名',
@@ -30,36 +30,35 @@ CREATE TABLE `user` (
 import (
 	"context"
 
-	"time"
-
-	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/model"
+	"time"
 )
 
 const (
 	Table_User             = "user"         // 用户表
+	Table_User_Id          = "id"           // 用户id
+	Table_User_Username    = "username"     // 用户名
+	Table_User_Password    = "password"     // 密码
 	Table_User_Age         = "age"          // 年龄
 	Table_User_CreatedTime = "created_time" // 创建时间
-	Table_User_Email       = "email"        // 邮箱
-	Table_User_Id          = "id"           // 用户id
-	Table_User_Password    = "password"     // 密码
-	Table_User_RegIp       = "reg_ip"       // 注册ip
 	Table_User_UpdatedTime = "updated_time" // 更新时间
-	Table_User_Username    = "username"     // 用户名
+	Table_User_Email       = "email"        // 邮箱
 	Table_User_UtmSource   = "utm_source"   // 来源
+	Table_User_RegIp       = "reg_ip"       // 注册ip
 )
 
 type User struct {
 	*model.Model `db:"-" json:"-"` // model
+	Id           int               `db:"id" json:"id"`                     // 用户id
+	Username     string            `db:"username" json:"username"`         // 用户名
+	Password     string            `db:"password" json:"password"`         // 密码
 	Age          int               `db:"age" json:"age"`                   // 年龄
 	CreatedTime  time.Time         `db:"created_time" json:"created_time"` // 创建时间
-	Email        string            `db:"email" json:"email"`               // 邮箱
-	Id           int               `db:"id" json:"id"`                     // 用户id
-	Password     string            `db:"password" json:"password"`         // 密码
-	RegIp        string            `db:"reg_ip" json:"reg_ip"`             // 注册ip
 	UpdatedTime  time.Time         `db:"updated_time" json:"updated_time"` // 更新时间
-	Username     string            `db:"username" json:"username"`         // 用户名
+	Email        string            `db:"email" json:"email"`               // 邮箱
 	UtmSource    string            `db:"utm_source" json:"utm_source"`     // 来源
+	RegIp        string            `db:"reg_ip" json:"reg_ip"`             // 注册ip
 }
 
 func NewUser() *User {
@@ -75,11 +74,11 @@ func (self *User) Clone() ksql.RowInterface {
 }
 
 func (self *User) Values() []any {
-	return []any{&self.Age, &self.CreatedTime, &self.Email, &self.Id, &self.Password, &self.RegIp, &self.UpdatedTime, &self.Username, &self.UtmSource}
+	return []any{&self.Id, &self.Username, &self.Password, &self.Age, &self.CreatedTime, &self.UpdatedTime, &self.Email, &self.UtmSource, &self.RegIp}
 }
 
 func (self *User) Columns() []string {
-	return []string{"age", "created_time", "email", "id", "password", "reg_ip", "updated_time", "username", "utm_source"}
+	return []string{Table_User_Id, Table_User_Username, Table_User_Password, Table_User_Age, Table_User_CreatedTime, Table_User_UpdatedTime, Table_User_Email, Table_User_UtmSource, Table_User_RegIp}
 }
 
 func (self *User) Delete(ctx context.Context) error {

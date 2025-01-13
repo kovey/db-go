@@ -8,44 +8,47 @@ package models
 // from database: test_dev
 // table:         user_ext
 // orm version:   1.0.1
-// created time:  2025-01-03 11:11:29
-// ddl:
+// created time:  2025-01-13 14:04:37
 /**
+Table DDL:
 CREATE TABLE `user_ext` (
   `id` int NOT NULL COMMENT '用户ID',
   `prev_login_date` date NOT NULL DEFAULT '1970-01-01' COMMENT '上次登录日期',
   `prev_login_time` timestamp NULL DEFAULT NULL COMMENT '上次登录时间',
   `prev_login_ip` varchar(45) NOT NULL DEFAULT '' COMMENT '上次登录IP',
   `update_time` bigint NOT NULL DEFAULT '0' COMMENT '更新时间',
-  PRIMARY KEY (`id`)
+  `create_time` varchar(45) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_pref` (`prev_login_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户扩展信息'
 */
 
 import (
 	"context"
 
-	"time"
-
-	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/model"
+	"time"
 )
 
 const (
 	Table_UserExt               = "user_ext"        // 用户扩展信息
 	Table_UserExt_Id            = "id"              // 用户ID
 	Table_UserExt_PrevLoginDate = "prev_login_date" // 上次登录日期
-	Table_UserExt_PrevLoginIp   = "prev_login_ip"   // 上次登录IP
 	Table_UserExt_PrevLoginTime = "prev_login_time" // 上次登录时间
+	Table_UserExt_PrevLoginIp   = "prev_login_ip"   // 上次登录IP
 	Table_UserExt_UpdateTime    = "update_time"     // 更新时间
+	Table_UserExt_CreateTime    = "create_time"     //
 )
 
 type UserExt struct {
 	*model.Model  `db:"-" json:"-"` // model
 	Id            int               `db:"id" json:"id"`                           // 用户ID
 	PrevLoginDate time.Time         `db:"prev_login_date" json:"prev_login_date"` // 上次登录日期
-	PrevLoginIp   string            `db:"prev_login_ip" json:"prev_login_ip"`     // 上次登录IP
 	PrevLoginTime *time.Time        `db:"prev_login_time" json:"prev_login_time"` // 上次登录时间
+	PrevLoginIp   string            `db:"prev_login_ip" json:"prev_login_ip"`     // 上次登录IP
 	UpdateTime    int64             `db:"update_time" json:"update_time"`         // 更新时间
+	CreateTime    string            `db:"create_time" json:"create_time"`         //
 }
 
 func NewUserExt() *UserExt {
@@ -61,11 +64,11 @@ func (self *UserExt) Clone() ksql.RowInterface {
 }
 
 func (self *UserExt) Values() []any {
-	return []any{&self.Id, &self.PrevLoginDate, &self.PrevLoginIp, &self.PrevLoginTime, &self.UpdateTime}
+	return []any{&self.Id, &self.PrevLoginDate, &self.PrevLoginTime, &self.PrevLoginIp, &self.UpdateTime, &self.CreateTime}
 }
 
 func (self *UserExt) Columns() []string {
-	return []string{"id", "prev_login_date", "prev_login_ip", "prev_login_time", "update_time"}
+	return []string{Table_UserExt_Id, Table_UserExt_PrevLoginDate, Table_UserExt_PrevLoginTime, Table_UserExt_PrevLoginIp, Table_UserExt_UpdateTime, Table_UserExt_CreateTime}
 }
 
 func (self *UserExt) Delete(ctx context.Context) error {

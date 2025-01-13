@@ -2,6 +2,7 @@ package orm
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -69,7 +70,7 @@ func Orm(driverName, dsn, directory, dbname string) error {
 				}
 			}
 
-			columns = append(columns, "\""+column.Name()+"\"")
+			columns = append(columns, fmt.Sprintf("Table_%s_%s", tpl.Name, f.Name))
 			values = append(values, "&self."+formatName(column.Name()))
 		}
 

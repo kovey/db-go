@@ -18,8 +18,8 @@ package {{.Package}}
 // table:         {{.Table}}
 // orm version:   {{.Version}}
 // created time:  {{.CreateTime}}
-// ddl:
 /**
+Table DDL:
 {{.Sql | safe}}
 */
 
@@ -63,7 +63,7 @@ func (self *{{.Name}}) Delete(ctx context.Context) error {
 }
 
 func (self *{{.Name}}) Query() ksql.BuilderInterface[*{{.Name}}] {
-	return model.Query(self)
+	return model.Row(self)
 }
 `
 )
