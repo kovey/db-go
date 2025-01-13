@@ -24,9 +24,10 @@ CREATE TABLE `user_ext` (
 import (
 	"context"
 
-	"github.com/kovey/db-go/v3"
-	"github.com/kovey/db-go/v3/model"
 	"time"
+
+	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/model"
 )
 
 const (
@@ -72,5 +73,5 @@ func (self *UserExt) Delete(ctx context.Context) error {
 }
 
 func (self *UserExt) Query() ksql.BuilderInterface[*UserExt] {
-	return model.Query(self)
+	return model.Row(self)
 }

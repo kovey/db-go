@@ -155,9 +155,9 @@ func DiffTable(ctx context.Context, fromTable, toTable schema.TableInfoInterface
 }
 
 func Tables(ctx context.Context, conn ksql.ConnectionInterface, dbname string) ([]schema.TableInfoInterface, error) {
-	var fromTable = NewTable(conn)
+	var fromTable *Table
 	var tables []*Table
-	if err := db.Build(fromTable).Table("information_schema.TABLES").Columns(fromTable.Columns()...).Where("TABLE_SCHEMA", "=", dbname).All(ctx, &tables); err != nil {
+	if err := db.Rows(&tables).WithConn(conn).Table("information_schema.TABLES").Columns(fromTable.Columns()...).Where("TABLE_SCHEMA", "=", dbname).All(ctx); err != nil {
 		return nil, err
 	}
 
@@ -176,8 +176,8 @@ func Tables(ctx context.Context, conn ksql.ConnectionInterface, dbname string) (
 
 func _tableInfo(ctx context.Context, conn ksql.ConnectionInterface, dbname, table string, tableModel *Table) error {
 	var columns []*Column
-	column := &Column{base: &base{conn: conn, empty: true}}
-	if err := db.Build(column).Table("information_schema.COLUMNS").Columns(column.Columns()...).Where("TABLE_SCHEMA", "=", dbname).Where("TABLE_NAME", "=", table).All(ctx, &columns); err != nil {
+	var column *Column
+	if err := db.Rows(&columns).WithConn(conn).Table("information_schema.COLUMNS").Columns(column.Columns()...).Where("TABLE_SCHEMA", "=", dbname).Where("TABLE_NAME", "=", table).All(ctx); err != nil {
 		return err
 	}
 

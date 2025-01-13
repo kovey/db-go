@@ -8,7 +8,6 @@ import (
 	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/migplug"
-	"github.com/kovey/db-go/v3/model"
 	"github.com/kovey/debug-go/debug"
 )
 
@@ -30,7 +29,7 @@ func Migrate(ctx context.Context, t MigrateType) {
 	beginTime := time.Now().UnixMicro()
 	mig.Range(func(key uint64, mi migplug.MigrateInterface) {
 		m := newMigrateTable()
-		err := model.Query(m).Where("migrate_id", "=", mi.Id()).First(ctx, m)
+		err := db.Model(m).Where("migrate_id", "=", mi.Id()).First(ctx)
 		if err != nil {
 			debug.Erro("fecth migrate error: %s", err)
 			return
@@ -76,12 +75,12 @@ func Has(ctx context.Context, id uint64) (bool, error) {
 		return false, err
 	}
 
-	return model.Query(newMigrateTable()).Where("migrate_id", "=", id).Exist(ctx)
+	return db.Model(newMigrateTable()).Where("migrate_id", "=", id).Exist(ctx)
 }
 
 func Create(ctx context.Context, mi migplug.MigrateInterface) {
 	m := newMigrateTable()
-	err := model.Query(m).Where("migrate_id", "=", mi.Id()).First(ctx, m)
+	err := db.Model(m).Where("migrate_id", "=", mi.Id()).First(ctx)
 	if err != nil {
 		debug.Erro("create migrator error: %s", err)
 		return

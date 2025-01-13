@@ -9,7 +9,6 @@ import (
 	"github.com/kovey/cli-go/gui"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/migplug"
-	"github.com/kovey/db-go/v3/model"
 	"github.com/kovey/debug-go/color"
 )
 
@@ -123,7 +122,7 @@ func Show(driverName, dsn, path string) error {
 	}
 
 	var migrations []*migrateTable
-	if err := model.Query(newMigrateTable()).WhereIn("migrate_id", ids).All(ctx, &migrations); err != nil {
+	if err := db.Models(&migrations).WhereIn("migrate_id", ids).All(ctx); err != nil {
 		return err
 	}
 

@@ -51,5 +51,14 @@ func main() {
 	for _, u := range pageInfo.List() {
 		fmt.Printf("uu: %+v\n", u)
 	}
+
+	var uus []*models.User
+	if err := db.Rows(&uus).Where("id", ">", 0).Columns(u.Columns()...).Table(u.Table()).All(ctx); err != nil {
+		panic(err)
+	}
+	for _, u := range uus {
+		fmt.Printf("uu: %+v\n", u)
+	}
+
 	db.Close()
 }

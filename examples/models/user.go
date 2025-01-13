@@ -30,9 +30,10 @@ CREATE TABLE `user` (
 import (
 	"context"
 
-	"github.com/kovey/db-go/v3"
-	"github.com/kovey/db-go/v3/model"
 	"time"
+
+	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/model"
 )
 
 const (
@@ -86,5 +87,5 @@ func (self *User) Delete(ctx context.Context) error {
 }
 
 func (self *User) Query() ksql.BuilderInterface[*User] {
-	return model.Query(self)
+	return model.Row(self)
 }
