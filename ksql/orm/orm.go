@@ -62,7 +62,7 @@ func Orm(driverName, dsn, directory, dbname string) error {
 				tpl.Imports = append(tpl.Imports, "time")
 			}
 			if column.Key() == "PRI" {
-				tpl.PrimaryId = column.Name()
+				tpl.PrimaryId = fmt.Sprintf("Table_%s_%s", tpl.Name, f.Name)
 				if f.Type == "string" {
 					tpl.PrimaryType = "Type_Str"
 				} else {
