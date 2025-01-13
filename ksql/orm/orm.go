@@ -16,6 +16,53 @@ import (
 	"github.com/kovey/debug-go/debug"
 )
 
+func create(ctx context.Context, conn ksql.ConnectionInterface, table schema.TableInfoInterface, packageName, dbname, directory string) error {
+	debug.Info("create table[%s] begin...", table.Name())
+	defer debug.Info("create table[%s] end.", table.Name())
+	ddlSql, err := db.ShowDDLBy(ctx, conn, table.Name())
+	tpl := &modelTpl{Package: packageName, Table: table.Name(), Comment: table.Comment(), CreateTime: time.Now().Format(time.DateTime), Version: version.Version(), Sql: ddlSql}
+	tpl.ModelTag = tag("-")
+	name := formatName(table.Name())
+	tpl.Name = name
+	tpl.DbName = dbname
+	var columns []string
+	var values []string
+	for _, column := range table.Fields() {
+		f := field{Name: formatName(column.Name()), Comment: column.Comment(), Type: getType(column.Type()), Tag: tag(column.Name())}
+		f.CanNull = column.Nullable()
+		tpl.Fields = append(tpl.Fields, f)
+		tpl.Consts = append(tpl.Consts, constInfo{Table: tpl.Name, Name: column.Name(), Column: f.Name, Comment: f.Comment})
+		if f.Type == "time.Time" {
+			tpl.Imports = append(tpl.Imports, "time")
+		}
+		if column.Key() == "PRI" {
+			tpl.PrimaryId = fmt.Sprintf("Table_%s_%s", tpl.Name, f.Name)
+			if f.Type == "string" {
+				tpl.PrimaryType = "Type_Str"
+			} else {
+				tpl.PrimaryType = "Type_Int"
+			}
+		}
+
+		columns = append(columns, fmt.Sprintf("Table_%s_%s", tpl.Name, f.Name))
+		values = append(values, "&self."+formatName(column.Name()))
+	}
+
+	tpl.Columns = strings.Join(columns, ",")
+	tpl.Values = strings.Join(values, ",")
+	res, err := tpl.Parse()
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(directory+dir.Sep()+table.Name()+".go", res, 0644); err != nil {
+		return err
+	}
+
+	debug.Info("create table[%s] success.", table.Name())
+	return nil
+}
+
 func Orm(driverName, dsn, directory, dbname string) error {
 	if err := os.MkdirAll(directory, 0755); err != nil {
 		if !os.IsExist(err) {
@@ -43,49 +90,9 @@ func Orm(driverName, dsn, directory, dbname string) error {
 			continue
 		}
 
-		debug.Info("create table[%s] begin...", table.Name())
-		defer debug.Info("create table[%s] end.", table.Name())
-		ddlSql, err := db.ShowDDLBy(ctx, conn, table.Name())
-		tpl := &modelTpl{Package: packageName, Table: table.Name(), Comment: table.Comment(), CreateTime: time.Now().Format(time.DateTime), Version: version.Version(), Sql: ddlSql}
-		tpl.ModelTag = tag("-")
-		name := formatName(table.Name())
-		tpl.Name = name
-		tpl.DbName = dbname
-		var columns []string
-		var values []string
-		for _, column := range table.Fields() {
-			f := field{Name: formatName(column.Name()), Comment: column.Comment(), Type: getType(column.Type()), Tag: tag(column.Name())}
-			f.CanNull = column.Nullable()
-			tpl.Fields = append(tpl.Fields, f)
-			tpl.Consts = append(tpl.Consts, constInfo{Table: tpl.Name, Name: column.Name(), Column: f.Name, Comment: f.Comment})
-			if f.Type == "time.Time" {
-				tpl.Imports = append(tpl.Imports, "time")
-			}
-			if column.Key() == "PRI" {
-				tpl.PrimaryId = fmt.Sprintf("Table_%s_%s", tpl.Name, f.Name)
-				if f.Type == "string" {
-					tpl.PrimaryType = "Type_Str"
-				} else {
-					tpl.PrimaryType = "Type_Int"
-				}
-			}
-
-			columns = append(columns, fmt.Sprintf("Table_%s_%s", tpl.Name, f.Name))
-			values = append(values, "&self."+formatName(column.Name()))
-		}
-
-		tpl.Columns = strings.Join(columns, ",")
-		tpl.Values = strings.Join(values, ",")
-		res, err := tpl.Parse()
-		if err != nil {
+		if err := create(ctx, conn, table, packageName, dbname, directory); err != nil {
 			return err
 		}
-
-		if err := os.WriteFile(directory+dir.Sep()+table.Name()+".go", res, 0644); err != nil {
-			return err
-		}
-
-		debug.Info("create table[%s] success.", table.Name())
 	}
 
 	return nil

@@ -8,7 +8,7 @@ package models
 // from database: test_dev
 // table:         user_ext
 // orm version:   1.0.1
-// created time:  2025-01-13 14:04:37
+// created time:  2025-01-13 17:33:22
 /**
 Table DDL:
 CREATE TABLE `user_ext` (
@@ -52,7 +52,7 @@ type UserExt struct {
 }
 
 func NewUserExt() *UserExt {
-	return &UserExt{Model: model.NewModel(Table_UserExt, "id", model.Type_Int)}
+	return &UserExt{Model: model.NewModel(Table_UserExt, Table_UserExt_Id, model.Type_Int)}
 }
 
 func (self *UserExt) Save(ctx context.Context) error {

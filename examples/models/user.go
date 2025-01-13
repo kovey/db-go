@@ -8,7 +8,7 @@ package models
 // from database: test_dev
 // table:         user
 // orm version:   1.0.1
-// created time:  2025-01-13 14:04:37
+// created time:  2025-01-13 17:33:22
 /**
 Table DDL:
 CREATE TABLE `user` (
@@ -62,7 +62,7 @@ type User struct {
 }
 
 func NewUser() *User {
-	return &User{Model: model.NewModel(Table_User, "id", model.Type_Int)}
+	return &User{Model: model.NewModel(Table_User, Table_User_Id, model.Type_Int)}
 }
 
 func (self *User) Save(ctx context.Context) error {

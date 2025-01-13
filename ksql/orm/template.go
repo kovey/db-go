@@ -39,7 +39,7 @@ type {{.Name}} struct {
 }
 
 func New{{.Name}}() *{{.Name}} {
-	return &{{.Name}}{Model: model.NewModel(Table_{{.Name}}, "{{.PrimaryId}}", model.{{.PrimaryType}})}
+	return &{{.Name}}{Model: model.NewModel(Table_{{.Name}}, {{.PrimaryId}}, model.{{.PrimaryType}})}
 }
 
 func (self *{{.Name}}) Save(ctx context.Context) error {
