@@ -41,6 +41,7 @@ func (c *Connection) BeginTo(ctx context.Context, point string) error {
 func (c *Connection) beginTo(ctx context.Context) error {
 	c.transCount++
 	if err := c.BeginTo(ctx, fmt.Sprintf("trans_%d", c.transCount)); err != nil {
+		c.transCount--
 		if err == Err_Un_Support_Save_Point {
 			return nil
 		}
@@ -48,7 +49,6 @@ func (c *Connection) beginTo(ctx context.Context) error {
 		return err
 	}
 
-	c.transCount--
 	return nil
 }
 

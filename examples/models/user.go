@@ -7,8 +7,8 @@ package models
 // 用户表
 // from database: test_dev
 // table:         user
-// orm version:   1.0.1
-// created time:  2025-01-13 17:33:22
+// orm version:   1.0.4
+// created time:  2025-01-14 09:14:41
 /**
 Table DDL:
 CREATE TABLE `user` (

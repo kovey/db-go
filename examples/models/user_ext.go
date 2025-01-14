@@ -7,8 +7,8 @@ package models
 // 用户扩展信息
 // from database: test_dev
 // table:         user_ext
-// orm version:   1.0.1
-// created time:  2025-01-13 17:33:22
+// orm version:   1.0.4
+// created time:  2025-01-14 09:14:41
 /**
 Table DDL:
 CREATE TABLE `user_ext` (
