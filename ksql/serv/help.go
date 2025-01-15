@@ -37,8 +37,8 @@ The commands are:
 	show  show migrator status
 	make  create upgrade and downgrade file 
 	build build migrator to ksql plugins
-	help  show help info
-	
+
+Use "ksql migplug help <command>" for more information about a command.
 		`)
 }
 
