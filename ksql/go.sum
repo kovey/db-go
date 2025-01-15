@@ -4,7 +4,7 @@ github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpv
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/kovey/cli-go v1.1.9 h1:xmqbkku9T9B7Xlx6UR/ETRrObSFT+k9vjdGy0JD194w=
 github.com/kovey/cli-go v1.1.9/go.mod h1:zVvIyTBX59r7jYbRSFanGz0kAvqjWpUDiTbuo3PZ0Uk=
-github.com/kovey/db-go/v3 v3.1.4 h1:q+8pYIlWvKEHITHYOCYYPfRVtVD1y/er7QomX6lXzFQ=
-github.com/kovey/db-go/v3 v3.1.4/go.mod h1:wQMfYGedai2t8RsRT+pNK1IQVKe/w6td2AvlNzp8zh8=
+github.com/kovey/db-go/v3 v3.1.5 h1:vl3jqCo1LGKIGKwQVW09/c+8XdF8h9LA6WyiqdEt4j8=
+github.com/kovey/db-go/v3 v3.1.5/go.mod h1:wQMfYGedai2t8RsRT+pNK1IQVKe/w6td2AvlNzp8zh8=
 github.com/kovey/debug-go v0.0.5 h1:c81KNW/mganMHZOAj9n8FY1e9Zz203GwPNJCnpfsVRQ=
 github.com/kovey/debug-go v0.0.5/go.mod h1:J88EXuunCnkLg62OEafQHDzkD2hq8r3Vi2Lkv+KHd9U=
