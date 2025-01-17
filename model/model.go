@@ -44,6 +44,10 @@ func (m *Model) Empty() bool {
 	return !m.isInitialized
 }
 
+func (m *Model) SetTable(table string) {
+	m.table = table
+}
+
 func (m *Model) Scan(s ksql.ScanInterface, r ksql.RowInterface) error {
 	if err := s.Scan(r.Values()...); err != nil {
 		return err

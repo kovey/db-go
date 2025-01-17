@@ -213,26 +213,7 @@ func QueryRow[T ksql.RowInterface](ctx context.Context, op ksql.QueryInterface, 
 }
 
 func TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, db ksql.ConnectionInterface) error) ksql.TxError {
-	conn := database.Clone()
-	if err := conn.Begin(ctx, options); err != nil {
-		return &TxErr{beginErr: err}
-	}
-
-	callErr := call(ctx, conn)
-	if callErr != nil {
-		txErr := &TxErr{callErr: callErr}
-		if err := conn.Rollback(ctx); err != nil {
-			txErr.rollbackErr = err
-		}
-
-		return txErr
-	}
-
-	if err := conn.Commit(ctx); err != nil {
-		return &TxErr{commitErr: err}
-	}
-
-	return nil
+	return database.Clone().TransactionBy(ctx, options, call)
 }
 
 func Transaction(ctx context.Context, call func(ctx context.Context, db ksql.ConnectionInterface) error) ksql.TxError {
