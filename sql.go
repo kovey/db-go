@@ -213,6 +213,7 @@ type AlterInterface interface {
 	SqlInterface
 	AddColumnInterface
 	DropColumn(column string) AlterInterface
+	DropColumnIfExists(column string) AlterInterface
 	AddIndex(name string, t IndexType, column ...string) AlterInterface
 	DropIndex(name string) AlterInterface
 	Table(table string) AlterInterface

@@ -1,6 +1,6 @@
 package sql
 
-import "github.com/kovey/db-go/v3"
+import ksql "github.com/kovey/db-go/v3"
 
 type DropTable struct {
 	*base

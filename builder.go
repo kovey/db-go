@@ -62,6 +62,7 @@ type BuilderInterface[T RowInterface] interface {
 type TableInterface interface {
 	AddColumnInterface
 	DropColumn(column string) TableInterface
+	DropColumnIfExists(column string) TableInterface
 	AddIndex(name string, t IndexType, column ...string) TableInterface
 	DropIndex(name string) TableInterface
 	Table(table string) TableInterface

@@ -322,6 +322,15 @@ func (ta *TableBuilder) DropColumn(column string) ksql.TableInterface {
 	return ta
 }
 
+func (ta *TableBuilder) DropColumnIfExists(column string) ksql.TableInterface {
+	if !ta.alterMode {
+		return ta
+	}
+
+	ta.alter.DropColumnIfExists(column)
+	return ta
+}
+
 func (ta *TableBuilder) AddIndex(name string, t ksql.IndexType, column ...string) ksql.TableInterface {
 	if ta.alterMode {
 		ta.alter.AddIndex(name, t, column...)

@@ -277,6 +277,16 @@ func DropTable(ctx context.Context, table string) error {
 	return DropTableBy(ctx, database, table)
 }
 
+func DropTableIfExistsBy(ctx context.Context, conn ksql.ConnectionInterface, table string) error {
+	op := NewDropTableIfExists().Table(table)
+	_, err := conn.Exec(ctx, op)
+	return err
+}
+
+func DropTableIfExists(ctx context.Context, table string) error {
+	return DropTableIfExistsBy(ctx, database, table)
+}
+
 func ShowDDLBy(ctx context.Context, conn ksql.ConnectionInterface, table string) (string, error) {
 	var tableName *string
 	var ddl *string

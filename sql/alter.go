@@ -26,17 +26,18 @@ import (
 
 type Alter struct {
 	*base
-	adds        []*table.Column
-	drops       []string
-	indexes     []*table.Index
-	dropIndexes []string
-	changes     []*table.Column
-	changeOlds  []string
-	comment     string
-	charset     string
-	collate     string
-	engine      string
-	table       string
+	adds          []*table.Column
+	dropsIfExists []string
+	drops         []string
+	indexes       []*table.Index
+	dropIndexes   []string
+	changes       []*table.Column
+	changeOlds    []string
+	comment       string
+	charset       string
+	collate       string
+	engine        string
+	table         string
 }
 
 func NewAlter() *Alter {
@@ -173,6 +174,11 @@ func (u *Alter) DropColumn(column string) ksql.AlterInterface {
 	return u
 }
 
+func (u *Alter) DropColumnIfExists(column string) ksql.AlterInterface {
+	u.dropsIfExists = append(u.dropsIfExists, column)
+	return u
+}
+
 func (u *Alter) Comment(comment string) ksql.AlterInterface {
 	u.comment = comment
 	return u
@@ -210,6 +216,16 @@ func (u *Alter) Prepare() string {
 		}
 
 		u.builder.WriteString("DROP COLUMN ")
+		Column(drop, &u.builder)
+	}
+
+	for index, drop := range u.dropsIfExists {
+		canAdd = true
+		if index > 0 {
+			u.builder.WriteString(",")
+		}
+
+		u.builder.WriteString("DROP COLUMN IF EXISTS ")
 		Column(drop, &u.builder)
 	}
 
