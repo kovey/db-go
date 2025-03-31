@@ -19,7 +19,13 @@ func RawValue(val any) string {
 		return fmt.Sprintf("'%s'", tmp)
 	case float32, float64:
 		return fmt.Sprintf("%f", tmp)
+	case bool:
+		return fmt.Sprintf("%t", tmp)
 	default:
+		if t, ok := val.(StringInterface); ok {
+			return fmt.Sprintf("'%s'", t.String())
+		}
+
 		return fmt.Sprintf("%d", tmp)
 	}
 }
