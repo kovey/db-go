@@ -26,7 +26,9 @@ func main() {
 		panic(err)
 	}
 
-	ctx := context.Background()
+	defer db.Close()
+
+	ctx := db.NewContext(context.Background()).WithTraceId(fmt.Sprintf("t_%d", time.Now().UnixNano()))
 	u := models.NewUser()
 	if err := db.Model(u).Where("id", "=", 2).First(ctx); err != nil {
 		panic(err)
@@ -59,6 +61,4 @@ func main() {
 	for _, u := range uus {
 		fmt.Printf("uu: %+v\n", u)
 	}
-
-	db.Close()
 }

@@ -349,4 +349,5 @@ type ContextInterface interface {
 	SqlLogStart(sql SqlInterface)
 	RawSqlLogStart(sql ExpressInterface)
 	SqlLogEnd()
+	WithTraceId(traceId string) ContextInterface
 }

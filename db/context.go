@@ -9,8 +9,10 @@ import (
 
 type Context struct {
 	context.Context
-	logInfo *logger.LogInfo
-	traceId string
+	logInfo    []*logger.LogInfo
+	isStarting bool
+	traceId    string
+	endIndex   int
 }
 
 func NewContext(ctx context.Context) ksql.ContextInterface {
@@ -18,7 +20,7 @@ func NewContext(ctx context.Context) ksql.ContextInterface {
 		return tmp
 	}
 
-	c := &Context{Context: ctx}
+	c := &Context{Context: ctx, endIndex: -1}
 	if trace, ok := ctx.(ksql.TraceInterface); ok {
 		c.traceId = trace.TraceId()
 	}
@@ -26,7 +28,11 @@ func NewContext(ctx context.Context) ksql.ContextInterface {
 	return c
 }
 
-func (c *Context) WithTraceId(traceId string) *Context {
+func (c *Context) WithTraceId(traceId string) ksql.ContextInterface {
+	if c.isStarting {
+		return c
+	}
+
 	c.traceId = traceId
 	return c
 }
@@ -36,9 +42,15 @@ func (c *Context) SqlLogStart(sql ksql.SqlInterface) {
 		return
 	}
 
-	c.logInfo = logger.NewLogInfo()
-	c.logInfo.Start(c.traceId)
-	c.logInfo.ExecSql(sql)
+	if !c.isStarting {
+		c.isStarting = true
+	}
+
+	info := logger.NewLogInfo()
+	info.Start(c.traceId)
+	info.ExecSql(sql)
+	c.logInfo = append(c.logInfo, info)
+	c.endIndex++
 }
 
 func (c *Context) RawSqlLogStart(sql ksql.ExpressInterface) {
@@ -46,17 +58,29 @@ func (c *Context) RawSqlLogStart(sql ksql.ExpressInterface) {
 		return
 	}
 
-	c.logInfo = logger.NewLogInfo()
-	c.logInfo.Start(c.traceId)
-	c.logInfo.ExecRawSql(sql)
+	info := logger.NewLogInfo()
+	info.Start(c.traceId)
+	info.ExecRawSql(sql)
+	c.logInfo = append(c.logInfo, info)
+	c.endIndex++
+}
+
+func (c *Context) reset() {
+	c.isStarting = false
+	c.endIndex = -1
+	c.logInfo = nil
 }
 
 func (c *Context) SqlLogEnd() {
-	if c.logInfo == nil {
+	if c.endIndex < 0 {
 		return
 	}
 
-	c.logInfo.End()
-	logger.Append(c.logInfo.Encode())
-	c.logInfo = nil
+	info := c.logInfo[c.endIndex]
+	info.End()
+	logger.Append(info.Encode())
+	c.endIndex--
+	if c.endIndex < 0 {
+		c.reset()
+	}
 }

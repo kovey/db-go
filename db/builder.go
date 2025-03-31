@@ -326,6 +326,7 @@ func offset(page, pageSize int64) int {
 }
 
 func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql.PaginationInterface[T], error) {
+	ctx = NewContext(ctx)
 	b.query.Limit(int(pageSize)).Offset(offset(page, pageSize))
 	if err := b.All(ctx); err != nil {
 		return nil, err
