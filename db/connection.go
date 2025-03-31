@@ -259,6 +259,10 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 }
 
 func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface, model ksql.RowInterface) error {
+	if raw.IsExec() {
+		return Err_Sql_Not_Query
+	}
+
 	cc := NewContext(ctx)
 	cc.RawSqlLogStart(raw)
 	defer cc.SqlLogEnd()
@@ -298,6 +302,10 @@ func (c *Connection) PrepareRaw(ctx context.Context, raw ksql.ExpressInterface) 
 }
 
 func (c *Connection) ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sql.Result, error) {
+	if !raw.IsExec() {
+		return nil, Err_Sql_Not_Exec
+	}
+
 	cc := NewContext(ctx)
 	cc.RawSqlLogStart(raw)
 	defer cc.SqlLogEnd()
@@ -317,6 +325,10 @@ func (c *Connection) InTransaction() bool {
 }
 
 func (c *Connection) ScanRaw(ctx context.Context, raw ksql.ExpressInterface, data ...any) error {
+	if raw.IsExec() {
+		return Err_Sql_Not_Query
+	}
+
 	cc := NewContext(ctx)
 	cc.RawSqlLogStart(raw)
 	defer cc.SqlLogEnd()
@@ -338,6 +350,33 @@ func (c *Connection) ScanRaw(ctx context.Context, raw ksql.ExpressInterface, dat
 		}
 
 		return _errRaw(err, raw)
+	}
+
+	return nil
+}
+
+func (c *Connection) Scan(ctx context.Context, query ksql.QueryInterface, data ...any) error {
+	cc := NewContext(ctx)
+	cc.SqlLogStart(query)
+	defer cc.SqlLogEnd()
+
+	stmt, err := c.Prepare(cc, query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(cc, query.Binds()...)
+	if row.Err() != nil {
+		return _err(err, query)
+	}
+
+	if err := row.Scan(data...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+
+		return _err(err, query)
 	}
 
 	return nil

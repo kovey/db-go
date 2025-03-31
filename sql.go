@@ -17,6 +17,17 @@ const (
 	Index_Type_Spatial  IndexType = 5
 )
 
+type SqlType string
+
+const (
+	Sql_Type_Insert SqlType = "INSERT"
+	Sql_Type_Update SqlType = "UPDATE"
+	Sql_Type_Delete SqlType = "DELETE"
+	Sql_Type_Drop   SqlType = "DROP"
+	Sql_Type_Alter  SqlType = "ALTER"
+	Sql_Type_Query  SqlType = "QUERY"
+)
+
 type Sharding byte
 
 const (
@@ -76,11 +87,14 @@ type ConnectionInterface interface {
 	RollbackTo(ctx context.Context, point string) error
 	CommitTo(ctx context.Context, point string) error
 	ScanRaw(ctx context.Context, raw ExpressInterface, data ...any) error
+	Scan(ctx context.Context, query QueryInterface, data ...any) error
 }
 
 type ExpressInterface interface {
 	Statement() string
 	Binds() []any
+	IsExec() bool
+	Type() SqlType
 }
 
 type RowInterface interface {

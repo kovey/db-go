@@ -3,11 +3,24 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	ksql "github.com/kovey/db-go/v3"
 )
 
+var (
+	Err_Sql_Not_Delete = errors.New("sql not delete")
+	Err_Sql_Not_Update = errors.New("sql not update")
+	Err_Sql_Not_Insert = errors.New("sql not insert")
+	Err_Sql_Not_Query  = errors.New("sql not query")
+	Err_Sql_Not_Exec   = errors.New("sql not exec")
+)
+
 func InsertRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
+	if raw.Type() != ksql.Sql_Type_Insert {
+		return 0, Err_Sql_Not_Insert
+	}
+
 	result, err := conn.ExecRaw(ctx, raw)
 	if err != nil {
 		return 0, err
@@ -21,6 +34,10 @@ func InsertRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
 }
 
 func UpdateRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
+	if raw.Type() != ksql.Sql_Type_Update {
+		return 0, Err_Sql_Not_Update
+	}
+
 	result, err := conn.ExecRaw(ctx, raw)
 	if err != nil {
 		return 0, err
@@ -34,6 +51,10 @@ func UpdateRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
 }
 
 func DeleteRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
+	if raw.Type() != ksql.Sql_Type_Delete {
+		return 0, Err_Sql_Not_Delete
+	}
+
 	result, err := conn.ExecRaw(ctx, raw)
 	if err != nil {
 		return 0, err
@@ -47,6 +68,10 @@ func DeleteRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
 }
 
 func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface, models *[]T) error {
+	if raw.IsExec() {
+		return Err_Sql_Not_Query
+	}
+
 	cc := NewContext(ctx)
 	cc.RawSqlLogStart(raw)
 	defer cc.SqlLogEnd()
@@ -91,6 +116,10 @@ func QueryRaw[T ksql.RowInterface](ctx context.Context, raw ksql.ExpressInterfac
 }
 
 func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface, model T) error {
+	if raw.IsExec() {
+		return Err_Sql_Not_Query
+	}
+
 	cc := NewContext(ctx)
 	cc.RawSqlLogStart(raw)
 	defer cc.SqlLogEnd()

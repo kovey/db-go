@@ -300,3 +300,11 @@ func ShowDDLBy(ctx context.Context, conn ksql.ConnectionInterface, table string)
 func ShowDDL(ctx context.Context, table string) (string, error) {
 	return ShowDDLBy(ctx, database, table)
 }
+
+func ScanBy(ctx context.Context, conn ksql.ConnectionInterface, query ksql.QueryInterface, vals ...any) error {
+	return conn.Scan(ctx, query, vals...)
+}
+
+func Scan(ctx context.Context, query ksql.QueryInterface, vals ...any) error {
+	return ScanBy(ctx, database, query)
+}
