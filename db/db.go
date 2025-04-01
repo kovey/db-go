@@ -98,6 +98,16 @@ func Insert(ctx context.Context, table string, data *Data) (int64, error) {
 	return InsertBy(ctx, database, table, data)
 }
 
+func InsertFromBy(ctx context.Context, conn ksql.ConnectionInterface, table string, columns []string, query ksql.QueryInterface) (int64, error) {
+	op := NewInsert()
+	op.Table(table).Columns(columns...).From(query)
+	return conn.Insert(ctx, op)
+}
+
+func InsertFrom(ctx context.Context, table string, columns []string, query ksql.QueryInterface) (int64, error) {
+	return InsertFromBy(ctx, database, table, columns, query)
+}
+
 func UpdateBy(ctx context.Context, conn ksql.ConnectionInterface, table string, data *Data, where ksql.WhereInterface) (int64, error) {
 	op := NewUpdate()
 	op.Table(table)
@@ -255,7 +265,13 @@ func LockBy(ctx context.Context, conn ksql.ConnectionInterface, model ksql.Model
 }
 
 func Table(ctx context.Context, table string, call func(table ksql.TableInterface)) error {
-	ta := NewTable().Table(table)
+	ta := NewTable().Table(table).Alter()
+	call(ta)
+	return ta.Exec(ctx)
+}
+
+func Create(ctx context.Context, table string, call func(table ksql.TableInterface)) error {
+	ta := NewTable().Table(table).Create()
 	call(ta)
 	return ta.Exec(ctx)
 }

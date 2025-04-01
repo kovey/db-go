@@ -25,6 +25,7 @@ const (
 	Sql_Type_Delete SqlType = "DELETE"
 	Sql_Type_Drop   SqlType = "DROP"
 	Sql_Type_Alter  SqlType = "ALTER"
+	Sql_Type_Create SqlType = "CREATE"
 	Sql_Type_Query  SqlType = "QUERY"
 )
 
@@ -178,6 +179,8 @@ type InsertInterface interface {
 	SqlInterface
 	Add(column string, data any) InsertInterface
 	Table(table string) InsertInterface
+	From(query QueryInterface) InsertInterface
+	Columns(columns ...string) InsertInterface
 }
 
 type UpdateInterface interface {
@@ -308,6 +311,8 @@ type CreateTableInterface interface {
 	Comment(comment string) CreateTableInterface
 	AddPrimary(column string) CreateTableInterface
 	AddUnique(name string, columns ...string) CreateTableInterface
+	From(QueryInterface) CreateTableInterface
+	Like(table string) CreateTableInterface
 }
 
 type DropTableInterface interface {

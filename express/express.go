@@ -33,8 +33,9 @@ func (s *Statement) parse() {
 		return
 	}
 	first = ksql.SqlType(strings.ToUpper(s.raw[:5]))
-	if first == ksql.Sql_Type_Alter {
-		s.typ = ksql.Sql_Type_Alter
+	switch first {
+	case ksql.Sql_Type_Alter, ksql.Sql_Type_Create:
+		s.typ = first
 		return
 	}
 

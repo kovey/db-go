@@ -1,12 +1,13 @@
 package sql
 
 import (
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 type Insert struct {
 	*base
 	columns []string
+	from    ksql.QueryInterface
 }
 
 func NewInsert() *Insert {
@@ -27,6 +28,30 @@ func (i *Insert) Add(column string, data any) ksql.InsertInterface {
 	return i
 }
 
+func (i *Insert) Columns(columns ...string) ksql.InsertInterface {
+	i.columns = columns
+	return i
+}
+
+func (i *Insert) buildFrom() string {
+	i.builder.WriteString(") ")
+	i.builder.WriteString(i.from.Prepare())
+	i.binds = append(i.binds, i.from.Binds()...)
+	return i.base.Prepare()
+}
+
+func (i *Insert) buildNormal() string {
+	i.builder.WriteString(") VALUES (")
+	for j := 0; j < len(i.binds); j++ {
+		if j > 0 {
+			i.builder.WriteString(",")
+		}
+		i.builder.WriteString("?")
+	}
+	i.builder.WriteString(")")
+	return i.base.Prepare()
+}
+
 func (i *Insert) Prepare() string {
 	if i.hasPrepared {
 		return i.base.Prepare()
@@ -41,13 +66,14 @@ func (i *Insert) Prepare() string {
 		Column(column, &i.builder)
 	}
 
-	i.builder.WriteString(") VALUES (")
-	for j := 0; j < len(i.binds); j++ {
-		if j > 0 {
-			i.builder.WriteString(",")
-		}
-		i.builder.WriteString("?")
+	if i.from != nil {
+		return i.buildFrom()
 	}
-	i.builder.WriteString(")")
-	return i.base.Prepare()
+
+	return i.buildNormal()
+}
+
+func (i *Insert) From(query ksql.QueryInterface) ksql.InsertInterface {
+	i.from = query
+	return i
 }

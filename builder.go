@@ -79,4 +79,6 @@ type TableInterface interface {
 	HasColumn(ctx context.Context, column string) (bool, error)
 	HasIndex(ctx context.Context, index string) (bool, error)
 	WithConn(conn ConnectionInterface) TableInterface
+	From(query QueryInterface) TableInterface
+	Like(table string) TableInterface
 }

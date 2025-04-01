@@ -64,8 +64,7 @@ func setup() {
 		panic(err)
 	}
 
-    db.Table(context.Background(), "user", func (table ksql.TableInterface) {
-		table.Create()
+    db.Create(context.Background(), "user", func (table ksql.TableInterface) {
 		table.AddString("account", 63).Comment("账号").Default("")
 		table.AddDate("create_date").Comment("创建日期").Default("")
 		table.AddBigInt("create_time").Comment("创建时间").Unsigned().Default("0")
@@ -82,8 +81,7 @@ func setup() {
 }
 
 func TestCreateTable(t *testing.T) {
-    err := db.Table(context.Background(), "user", func (table ksql.TableInterface) {
-		table.Create()
+    err := db.Create(context.Background(), "user", func (table ksql.TableInterface) {
 		table.AddString("account", 63).Comment("账号").Default("")
 		table.AddDate("create_date").Comment("创建日期").Default("")
 		table.AddBigInt("create_time").Comment("创建时间").Unsigned().Default("0")
@@ -103,7 +101,6 @@ func TestCreateTable(t *testing.T) {
 
 func TestAlterTable(t *testing.T) {
     err := db.Table(context.Background(), "user", func (table ksql.TableInterface) {
-	    table.Alter()
 	    table.AddString("foo", 63).Comment("foo").Default("")
             table.DropColumn("boo").DropIndex("idx_xxxx")
 	    table.ChangeColumn("nickname", "nick", "varchar", 31, 0).Comment("nickname").Default("")

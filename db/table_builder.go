@@ -477,3 +477,19 @@ func (t *TableBuilder) HasIndex(ctx context.Context, index string) (bool, error)
 
 	return HasIndexBy(ctx, t.conn, t.table, index)
 }
+
+func (t *TableBuilder) From(query ksql.QueryInterface) ksql.TableInterface {
+	if t.createMode {
+		t.create.From(query)
+	}
+
+	return t
+}
+
+func (t *TableBuilder) Like(table string) ksql.TableInterface {
+	if t.createMode {
+		t.create.Like(table)
+	}
+
+	return t
+}

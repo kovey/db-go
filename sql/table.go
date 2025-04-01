@@ -7,18 +7,30 @@ import (
 
 type Table struct {
 	*base
-	table   string
-	engine  string
-	charset string
-	collate string
-	comment string
-	columns []*table.Column
-	indexes []*table.Index
+	table     string
+	engine    string
+	charset   string
+	collate   string
+	comment   string
+	columns   []*table.Column
+	indexes   []*table.Index
+	from      ksql.QueryInterface
+	likeTable string
 }
 
 func NewTable() *Table {
 	ta := &Table{base: &base{hasPrepared: false}, engine: "InnoDB", charset: "utf8mb4", collate: "utf8mb4_general_ci"}
 	ta.keyword("CREATE TABLE ")
+	return ta
+}
+
+func (ta *Table) Like(table string) ksql.CreateTableInterface {
+	ta.likeTable = table
+	return ta
+}
+
+func (ta *Table) From(query ksql.QueryInterface) ksql.CreateTableInterface {
+	ta.from = query
 	return ta
 }
 
@@ -156,13 +168,14 @@ func (ta *Table) Comment(comment string) ksql.CreateTableInterface {
 	return ta
 }
 
-func (ta *Table) Prepare() string {
-	if ta.hasPrepared {
-		return ta.base.Prepare()
-	}
+func (ta *Table) buildFrom() string {
+	ta.builder.WriteString(" AS ")
+	ta.builder.WriteString(ta.from.Prepare())
+	ta.binds = append(ta.binds, ta.from.Binds()...)
+	return ta.base.Prepare()
+}
 
-	ta.hasPrepared = true
-	Column(ta.table, &ta.builder)
+func (ta *Table) buildNormal() string {
 	ta.builder.WriteString(" (")
 	for idx, column := range ta.columns {
 		if idx > 0 {
@@ -189,4 +202,28 @@ func (ta *Table) Prepare() string {
 	}
 
 	return ta.base.Prepare()
+}
+
+func (ta *Table) buildLike() string {
+	ta.builder.WriteString(" LIKE ")
+	Column(ta.likeTable, &ta.builder)
+	return ta.base.Prepare()
+}
+
+func (ta *Table) Prepare() string {
+	if ta.hasPrepared {
+		return ta.base.Prepare()
+	}
+
+	ta.hasPrepared = true
+	Column(ta.table, &ta.builder)
+	if ta.likeTable != "" {
+		return ta.buildLike()
+	}
+
+	if ta.from != nil {
+		return ta.buildFrom()
+	}
+
+	return ta.buildNormal()
 }
