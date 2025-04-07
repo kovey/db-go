@@ -1,6 +1,10 @@
 package sql
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestDetele(t *testing.T) {
 	d := NewDelete()
@@ -8,6 +12,7 @@ func TestDetele(t *testing.T) {
 	w.Where("id", "=", 1)
 	d.Table("user").Where(w)
 
-	t.Logf("prepare: %s", d.Prepare())
-	t.Logf("binds: %v", d.Binds())
+	assert.Equal(t, "DELETE FROM `user` WHERE `id` = ?", d.Prepare())
+	assert.Equal(t, []any{1}, d.Binds())
+	assert.Equal(t, "DELETE FROM `user` WHERE `id` = ?", d.Prepare())
 }

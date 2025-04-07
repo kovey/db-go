@@ -34,7 +34,7 @@ func (s *Statement) parse() {
 	}
 	first = ksql.SqlType(strings.ToUpper(s.raw[:5]))
 	switch first {
-	case ksql.Sql_Type_Alter, ksql.Sql_Type_Create:
+	case ksql.Sql_Type_Alter, ksql.Sql_Type_Query:
 		s.typ = first
 		return
 	}
@@ -45,7 +45,7 @@ func (s *Statement) parse() {
 
 	first = ksql.SqlType(strings.ToUpper(s.raw[:6]))
 	switch first {
-	case ksql.Sql_Type_Insert, ksql.Sql_Type_Update, ksql.Sql_Type_Delete:
+	case ksql.Sql_Type_Insert, ksql.Sql_Type_Update, ksql.Sql_Type_Delete, ksql.Sql_Type_Create:
 		s.typ = first
 	}
 }

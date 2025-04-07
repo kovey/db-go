@@ -2,6 +2,7 @@ package table
 
 import (
 	"fmt"
+	"strings"
 
 	ksql "github.com/kovey/db-go/v3"
 )
@@ -32,6 +33,8 @@ type Column struct {
 	comment    string
 	isAutoInc  bool
 	isUnsigned bool
+	isBuild    bool
+	builder    strings.Builder
 }
 
 func NewColumn(name string, t *ColumnType) *Column {
@@ -39,30 +42,57 @@ func NewColumn(name string, t *ColumnType) *Column {
 }
 
 func (c *Column) Express() string {
+	if c.isBuild {
+		return c.builder.String()
+	}
+
+	c.isBuild = true
 	null := "NULL"
 	if !c.isNull {
 		null = "NOT NULL"
 	}
 
 	unsigned := ""
-	if c.isUnsigned {
+	if c.isUnsigned && c.t.IsNumeric() {
 		unsigned = "unsigned"
 	}
 
 	autoInc := ""
-	if c.isAutoInc {
+	if c.isAutoInc && c.t.IsInteger() {
 		autoInc = "AUTO_INCREMENT"
+		null = "NOT NULL"
+		c.def = nil
 	}
 
 	if c.t.Name == "BIT" && c.def != nil {
 		c.def.IsByte = true
 	}
 
+	builder := strings.Builder{}
+	builder.WriteString("`")
+	builder.WriteString(c.name)
+	builder.WriteString("` ")
+	builder.WriteString(c.t.Express())
+	if unsigned != "" {
+		builder.WriteString(" ")
+		builder.WriteString(unsigned)
+	}
+	builder.WriteString(" ")
+	builder.WriteString(null)
+	if autoInc != "" {
+		builder.WriteString(" ")
+		builder.WriteString(autoInc)
+	}
 	if c.def != nil {
-		return fmt.Sprintf("`%s` %s %s %s %s %s %s", c.name, c.t.Express(), unsigned, null, autoInc, c.def.Express(), c.comment)
+		builder.WriteString(" ")
+		builder.WriteString(c.def.Express())
+	}
+	if c.comment != "" {
+		builder.WriteString(" ")
+		builder.WriteString(c.comment)
 	}
 
-	return fmt.Sprintf("`%s` %s %s %s %s %s", c.name, c.t.Express(), unsigned, null, autoInc, c.comment)
+	return builder.String()
 }
 
 func (c *Column) Nullable() ksql.ColumnInterface {
@@ -91,6 +121,10 @@ func (c *Column) UseCurrentOnUpdate() ksql.ColumnInterface {
 }
 
 func (c *Column) Default(value string) ksql.ColumnInterface {
+	if c.def != nil {
+		return c
+	}
+
 	c.def = &Default{Value: value, IsKeyword: ksql.IsDefaultKeyword(value)}
 	return c
 }

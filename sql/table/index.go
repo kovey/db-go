@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 )
 
 type Index struct {
@@ -37,7 +37,7 @@ func (i *Index) Express() string {
 func (i *Index) AlterExpress() string {
 	switch i.Type {
 	case ksql.Index_Type_Unique:
-		return fmt.Sprintf("ADD UNIQUE INDEX %s (%s)", i.Name, strings.Join(i.columns, ","))
+		return fmt.Sprintf("ADD UNIQUE INDEX `%s` (%s)", i.Name, strings.Join(i.columns, ","))
 	case ksql.Index_Type_Primary:
 		return fmt.Sprintf("ADD PRIMARY INDEX (%s)", i.columns[0])
 	case ksql.Index_Type_FullText:
@@ -45,6 +45,6 @@ func (i *Index) AlterExpress() string {
 	case ksql.Index_Type_Spatial:
 		return fmt.Sprintf("ADD SPATIAL INDEX (%s)", i.columns[0])
 	default:
-		return fmt.Sprintf("ADD INDEX %s (%s)", i.Name, strings.Join(i.columns, ","))
+		return fmt.Sprintf("ADD INDEX `%s` (%s)", i.Name, strings.Join(i.columns, ","))
 	}
 }

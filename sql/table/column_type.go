@@ -8,10 +8,10 @@ import (
 type ScaleType byte
 
 const (
-	Scale_Type_Zero ScaleType = 1
-	Scale_Type_One  ScaleType = 2
-	Scale_Type_Two  ScaleType = 3
-	Scale_Type_More ScaleType = 4
+	Scale_Type_Zero ScaleType = 0x1
+	Scale_Type_One  ScaleType = 0x2
+	Scale_Type_Two  ScaleType = 0x3
+	Scale_Type_More ScaleType = 0x4
 )
 
 type ColumnType struct {
@@ -20,6 +20,14 @@ type ColumnType struct {
 	Length int
 	Scale  int
 	sets   []string
+}
+
+func (c *ColumnType) IsNumeric() bool {
+	return isNumeric(c.Name)
+}
+
+func (c *ColumnType) IsInteger() bool {
+	return isInteger(c.Name)
 }
 
 func (c *ColumnType) Set(sets ...string) *ColumnType {

@@ -154,7 +154,7 @@ func (o *Query) WhereNotInBy(column string, sub ksql.QueryInterface) ksql.QueryI
 	return o
 }
 
-func (o *Query) Where(column string, op string, val any) ksql.QueryInterface {
+func (o *Query) Where(column string, op ksql.Op, val any) ksql.QueryInterface {
 	o.where.Where(column, op, val)
 	return o
 }
@@ -186,6 +186,11 @@ func (q *Query) AndWhere(call func(w ksql.WhereInterface)) ksql.QueryInterface {
 
 func (o *Query) Between(column string, begin, end any) ksql.QueryInterface {
 	o.where.Between(column, begin, end)
+	return o
+}
+
+func (o *Query) NotBetween(column string, begin, end any) ksql.QueryInterface {
+	o.where.NotBetween(column, begin, end)
 	return o
 }
 
@@ -344,6 +349,11 @@ func (o *Query) HavingBetween(column string, begin, end any) ksql.QueryInterface
 	return o
 }
 
+func (o *Query) HavingNotBetween(column string, begin, end any) ksql.QueryInterface {
+	o.having.NotBetween(column, begin, end)
+	return o
+}
+
 func (o *Query) HavingIsNull(column string) ksql.QueryInterface {
 	o.having.IsNull(column)
 	return o
@@ -374,7 +384,7 @@ func (o *Query) HavingNotInBy(column string, sub ksql.QueryInterface) ksql.Query
 	return o
 }
 
-func (o *Query) Having(column string, op string, val any) ksql.QueryInterface {
+func (o *Query) Having(column string, op ksql.Op, val any) ksql.QueryInterface {
 	o.having.Having(column, op, val)
 	return o
 }

@@ -1,6 +1,10 @@
 package sql
 
-import ksql "github.com/kovey/db-go/v3"
+import (
+	"fmt"
+
+	ksql "github.com/kovey/db-go/v3"
+)
 
 type Having struct {
 	*base
@@ -10,14 +14,18 @@ func NewHaving() *Having {
 	return &Having{base: &base{hasPrepared: false}}
 }
 
-func (w *Having) Having(column string, op string, data any) ksql.HavingInterface {
+func (w *Having) Having(column string, op ksql.Op, data any) ksql.HavingInterface {
+	if !ksql.SupportOp(op) {
+		panic(fmt.Sprintf("op %s not support", op))
+	}
+
 	if w.builder.Len() > 0 {
 		w.builder.WriteString(" AND ")
 	}
 
 	Column(column, &w.builder)
 	w.builder.WriteString(" ")
-	w.builder.WriteString(op)
+	w.builder.WriteString(string(op))
 	w.builder.WriteString(" ?")
 	w.binds = append(w.binds, data)
 	return w
@@ -133,15 +141,25 @@ func (w *Having) NotInBy(column string, sub ksql.QueryInterface) ksql.HavingInte
 }
 
 func (w *Having) Between(column string, begin, end any) ksql.HavingInterface {
+	return w.between("BETWEEN", column, begin, end)
+}
+
+func (w *Having) between(op, column string, begin, end any) ksql.HavingInterface {
 	if w.builder.Len() > 0 {
 		w.builder.WriteString(" AND ")
 	}
 
 	Column(column, &w.builder)
-	w.builder.WriteString(" BETWEEN ? ")
+	w.builder.WriteString(" ")
+	w.builder.WriteString(op)
+	w.builder.WriteString(" ? ")
 	w.builder.WriteString(" AND ? ")
 	w.binds = append(w.binds, begin, end)
 	return w
+}
+
+func (w *Having) NotBetween(column string, begin, end any) ksql.HavingInterface {
+	return w.between("NOT BETWEEN", column, begin, end)
 }
 
 func (w *Having) Empty() bool {

@@ -12,14 +12,14 @@ func NewWhere() *Where {
 	return &Where{base: &base{hasPrepared: false}}
 }
 
-func (w *Where) Where(column string, op string, data any) ksql.WhereInterface {
+func (w *Where) Where(column string, op ksql.Op, data any) ksql.WhereInterface {
 	if w.builder.Len() > 0 {
 		w.builder.WriteString(" AND ")
 	}
 
 	Column(column, &w.builder)
 	w.builder.WriteString(" ")
-	w.builder.WriteString(op)
+	w.builder.WriteString(string(op))
 	w.builder.WriteString(" ?")
 	w.binds = append(w.binds, data)
 	return w
@@ -134,13 +134,23 @@ func (w *Where) NotInBy(column string, sub ksql.QueryInterface) ksql.WhereInterf
 }
 
 func (w *Where) Between(column string, begin, end any) ksql.WhereInterface {
+	return w.between("BETWEEN", column, begin, end)
+}
+
+func (w *Where) NotBetween(column string, begin, end any) ksql.WhereInterface {
+	return w.between("NOT BETWEEN", column, begin, end)
+}
+
+func (w *Where) between(op, column string, begin, end any) ksql.WhereInterface {
 	if w.builder.Len() > 0 {
 		w.builder.WriteString(" AND ")
 	}
 
 	Column(column, &w.builder)
-	w.builder.WriteString(" BETWEEN ? ")
-	w.builder.WriteString(" AND ? ")
+	w.builder.WriteString(" ")
+	w.builder.WriteString(op)
+	w.builder.WriteString(" ? ")
+	w.builder.WriteString("AND ?")
 	w.binds = append(w.binds, begin, end)
 	return w
 }

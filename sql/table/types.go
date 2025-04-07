@@ -65,3 +65,25 @@ func ParseType(t string, length, scale int, sets ...string) *ColumnType {
 
 	return c
 }
+
+func isInteger(t string) bool {
+	switch strings.ToUpper(t) {
+	case Type_TinyInt, Type_SmallInt, Type_MediumInt, Type_Int, Type_BigInt:
+		return true
+	default:
+		return false
+	}
+}
+
+func isNumeric(t string) bool {
+	if isInteger(t) {
+		return true
+	}
+
+	switch strings.ToUpper(t) {
+	case Type_Decimal, Type_Float, Type_Double:
+		return true
+	default:
+		return false
+	}
+}

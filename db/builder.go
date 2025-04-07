@@ -57,7 +57,7 @@ func (b *Builder[T]) ColumnsExpress(expresses ...ksql.ExpressInterface) ksql.Bui
 	return b
 }
 
-func (b *Builder[T]) Where(column string, op string, val any) ksql.BuilderInterface[T] {
+func (b *Builder[T]) Where(column string, op ksql.Op, val any) ksql.BuilderInterface[T] {
 	b.query.Where(column, op, val)
 	return b
 }
@@ -112,7 +112,12 @@ func (b *Builder[T]) Between(column string, begin, end any) ksql.BuilderInterfac
 	return b
 }
 
-func (b *Builder[T]) Having(column string, op string, val any) ksql.BuilderInterface[T] {
+func (b *Builder[T]) NotBetween(column string, begin, end any) ksql.BuilderInterface[T] {
+	b.query.NotBetween(column, begin, end)
+	return b
+}
+
+func (b *Builder[T]) Having(column string, op ksql.Op, val any) ksql.BuilderInterface[T] {
 	b.query.Having(column, op, val)
 	return b
 }
@@ -159,6 +164,11 @@ func (b *Builder[T]) HavingNotInBy(column string, sub ksql.QueryInterface) ksql.
 
 func (b *Builder[T]) HavingBetween(column string, begin, end any) ksql.BuilderInterface[T] {
 	b.query.HavingBetween(column, begin, end)
+	return b
+}
+
+func (b *Builder[T]) HavingNotBetween(column string, begin, end any) ksql.BuilderInterface[T] {
+	b.query.HavingNotBetween(column, begin, end)
 	return b
 }
 

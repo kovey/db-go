@@ -4,17 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
 type IndexType byte
 
 const (
-	Index_Type_Normal   IndexType = 1
-	Index_Type_Unique   IndexType = 2
-	Index_Type_Primary  IndexType = 3
-	Index_Type_FullText IndexType = 4
-	Index_Type_Spatial  IndexType = 5
+	Index_Type_Normal   IndexType = 0x1
+	Index_Type_Unique   IndexType = 0x2
+	Index_Type_Primary  IndexType = 0x3
+	Index_Type_FullText IndexType = 0x4
+	Index_Type_Spatial  IndexType = 0x5
 )
 
 type SqlType string
@@ -28,6 +29,33 @@ const (
 	Sql_Type_Create SqlType = "CREATE"
 	Sql_Type_Query  SqlType = "QUERY"
 )
+
+type Op string
+
+const (
+	Eq   Op = "="
+	Le   Op = "<="
+	Lt   Op = "<"
+	Ge   Op = ">="
+	Gt   Op = ">"
+	Like Op = "LIKE"
+	Neq  Op = "<>"
+)
+
+var ops = map[Op]byte{
+	Eq:   1,
+	Le:   1,
+	Lt:   1,
+	Ge:   1,
+	Gt:   1,
+	Like: 1,
+	Neq:  1,
+}
+
+func SupportOp(op Op) bool {
+	_, ok := ops[Op(strings.ToUpper(string(op)))]
+	return ok
+}
 
 type Sharding byte
 
@@ -130,7 +158,7 @@ type SqlInterface interface {
 
 type WhereInterface interface {
 	SqlInterface
-	Where(column string, op string, data any) WhereInterface
+	Where(column string, op Op, data any) WhereInterface
 	In(column string, data []any) WhereInterface
 	NotIn(column string, data []any) WhereInterface
 	IsNull(column string) WhereInterface
@@ -140,13 +168,14 @@ type WhereInterface interface {
 	InBy(column string, sub QueryInterface) WhereInterface
 	NotInBy(column string, sub QueryInterface) WhereInterface
 	Between(column string, begin, end any) WhereInterface
+	NotBetween(column string, begin, end any) WhereInterface
 	AndWhere(call func(o WhereInterface)) WhereInterface
 	Empty() bool
 }
 
 type HavingInterface interface {
 	SqlInterface
-	Having(column string, op string, data any) HavingInterface
+	Having(column string, op Op, data any) HavingInterface
 	In(column string, data []any) HavingInterface
 	NotIn(column string, data []any) HavingInterface
 	IsNull(column string) HavingInterface
@@ -156,6 +185,7 @@ type HavingInterface interface {
 	InBy(column string, sub QueryInterface) HavingInterface
 	NotInBy(column string, sub QueryInterface) HavingInterface
 	Between(column string, begin, end any) HavingInterface
+	NotBetween(column string, begin, end any) HavingInterface
 	AndHaving(call func(o HavingInterface)) HavingInterface
 	Empty() bool
 }
@@ -260,7 +290,7 @@ type QueryInterface interface {
 	Func(fun, column, as string) QueryInterface
 	Columns(columns ...string) QueryInterface
 	ColumnsExpress(expresses ...ExpressInterface) QueryInterface
-	Where(column string, op string, val any) QueryInterface
+	Where(column string, op Op, val any) QueryInterface
 	WhereExpress(expresses ...ExpressInterface) QueryInterface
 	OrWhere(callback func(WhereInterface)) QueryInterface
 	WhereIsNull(column string) QueryInterface
@@ -271,7 +301,8 @@ type QueryInterface interface {
 	WhereNotInBy(column string, query QueryInterface) QueryInterface
 	AndWhere(call func(w WhereInterface)) QueryInterface
 	Between(column string, begin, end any) QueryInterface
-	Having(column string, op string, val any) QueryInterface
+	NotBetween(column string, begin, end any) QueryInterface
+	Having(column string, op Op, val any) QueryInterface
 	HavingExpress(expresses ...ExpressInterface) QueryInterface
 	OrHaving(callback func(HavingInterface)) QueryInterface
 	HavingIsNull(column string) QueryInterface
@@ -281,6 +312,7 @@ type QueryInterface interface {
 	HavingInBy(column string, query QueryInterface) QueryInterface
 	HavingNotInBy(column string, query QueryInterface) QueryInterface
 	HavingBetween(column string, begin, end any) QueryInterface
+	HavingNotBetween(column string, begin, end any) QueryInterface
 	AndHaving(call func(h HavingInterface)) QueryInterface
 	Limit(limit int) QueryInterface
 	Offset(offset int) QueryInterface

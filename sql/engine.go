@@ -78,9 +78,9 @@ func (e *Engine) value(val any) string {
 	case *float64:
 		return fmt.Sprintf("%f", *tmp)
 	case time.Time:
-		return tmp.Format(e.timeFormat)
+		return fmt.Sprintf("%s%s%s", e.quote, tmp.Format(e.timeFormat), e.quote)
 	case *time.Time:
-		return tmp.Format(e.timeFormat)
+		return fmt.Sprintf("%s%s%s", e.quote, tmp.Format(e.timeFormat), e.quote)
 	case bool:
 		return fmt.Sprintf("%t", tmp)
 	case *bool:
