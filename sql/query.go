@@ -255,7 +255,7 @@ func (o *Query) _join(t string, table string) ksql.JoinInterface {
 }
 
 func (o *Query) Join(table string) ksql.JoinInterface {
-	return o._join(" JOIN ", table)
+	return o._join("JOIN", table)
 }
 
 func (o *Query) _joinExpress(t string, express ksql.ExpressInterface) ksql.JoinInterface {

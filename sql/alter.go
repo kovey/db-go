@@ -38,6 +38,7 @@ type Alter struct {
 	collate       string
 	engine        string
 	table         string
+	modifies      []*table.Column
 }
 
 func NewAlter() *Alter {
@@ -49,6 +50,17 @@ func NewAlter() *Alter {
 func (u *Alter) Table(table string) ksql.AlterInterface {
 	u.table = table
 	return u
+}
+
+func (a *Alter) ModifyColumn(column, t string, length, scale int, sets ...string) ksql.ColumnInterface {
+	c := table.ParseType(t, length, scale, sets...)
+	if c == nil {
+		return nil
+	}
+
+	col := table.NewColumn(column, c)
+	a.modifies = append(a.modifies, col)
+	return col
 }
 
 func (a *Alter) ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ksql.ColumnInterface {
@@ -260,6 +272,15 @@ func (u *Alter) Prepare() string {
 		u.builder.WriteString(change.Express())
 	}
 
+	for index, modify := range u.modifies {
+		if canAdd || index > 0 {
+			u.builder.WriteString(",")
+		}
+		canAdd = true
+		u.builder.WriteString("MODIFY COLUMN ")
+		u.builder.WriteString(modify.Express())
+	}
+
 	for index, add := range u.indexes {
 		if canAdd || index > 0 {
 			u.builder.WriteString(",")
@@ -300,6 +321,12 @@ func (a *Alter) AddPrimary(column string) ksql.AlterInterface {
 }
 
 func (a *Alter) Rename(as string) ksql.AlterInterface {
+	if a.hasPrepared {
+		return a
+	}
+
+	a.hasPrepared = true
+	Column(a.table, &a.builder)
 	a.builder.WriteString(" RENAME AS ")
 	Backtick(as, &a.builder)
 

@@ -265,12 +265,14 @@ type AlterInterface interface {
 	DropIndex(name string) AlterInterface
 	Table(table string) AlterInterface
 	ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ColumnInterface
+	ModifyColumn(column, t string, length, scale int, sets ...string) ColumnInterface
 	Comment(comment string) AlterInterface
 	AddPrimary(column string) AlterInterface
 	AddUnique(name string, columns ...string) AlterInterface
 	Charset(charset string) AlterInterface
 	Collate(collate string) AlterInterface
 	Engine(engine string) AlterInterface
+	Rename(as string) AlterInterface
 }
 
 type DeleteInterface interface {

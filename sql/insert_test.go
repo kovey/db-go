@@ -22,7 +22,7 @@ func TestInsertFrom(t *testing.T) {
 	query.Where("u.name", "LIKE", "%test%")
 	in := NewInsert()
 	in.Table("user").Columns("name", "kovey", "date").From(query)
-	assert.Equal(t, "INSERT INTO `user` (`name`,`kovey`,`date`) SELECT `u`.`name`,`u`.`kovey`,`e`.`date` FROM `user_back` AS `u`  JOIN  `email` AS `e` ON `e`.`id`=`u`.`id` WHERE `u`.`name` LIKE ?", in.Prepare())
+	assert.Equal(t, "INSERT INTO `user` (`name`,`kovey`,`date`) SELECT `u`.`name`,`u`.`kovey`,`e`.`date` FROM `user_back` AS `u` JOIN `email` AS `e` ON `e`.`id`=`u`.`id` WHERE `u`.`name` LIKE ?", in.Prepare())
 	assert.Equal(t, []any{"%test%"}, in.Binds())
-	assert.Equal(t, "INSERT INTO `user` (`name`,`kovey`,`date`) SELECT `u`.`name`,`u`.`kovey`,`e`.`date` FROM `user_back` AS `u`  JOIN  `email` AS `e` ON `e`.`id`=`u`.`id` WHERE `u`.`name` LIKE ?", in.Prepare())
+	assert.Equal(t, "INSERT INTO `user` (`name`,`kovey`,`date`) SELECT `u`.`name`,`u`.`kovey`,`e`.`date` FROM `user_back` AS `u` JOIN `email` AS `e` ON `e`.`id`=`u`.`id` WHERE `u`.`name` LIKE ?", in.Prepare())
 }

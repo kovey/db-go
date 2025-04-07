@@ -6,3 +6,4 @@ tests
 ksql/.env
 examples/diffs
 examples/.env
+*.out

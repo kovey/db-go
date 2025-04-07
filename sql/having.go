@@ -153,7 +153,7 @@ func (w *Having) between(op, column string, begin, end any) ksql.HavingInterface
 	w.builder.WriteString(" ")
 	w.builder.WriteString(op)
 	w.builder.WriteString(" ? ")
-	w.builder.WriteString(" AND ? ")
+	w.builder.WriteString("AND ?")
 	w.binds = append(w.binds, begin, end)
 	return w
 }
