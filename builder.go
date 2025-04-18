@@ -43,10 +43,9 @@ type BuilderInterface[T RowInterface] interface {
 	Join(table string) JoinInterface
 	JoinExpress(ExpressInterface) JoinInterface
 	LeftJoin(table string) JoinInterface
-	LeftJoinExpress(ExpressInterface) JoinInterface
 	RightJoin(table string) JoinInterface
-	RightJoinExpress(ExpressInterface) JoinInterface
 	ForUpdate() BuilderInterface[T]
+	For() ForInterface
 	All(context.Context) error
 	First(context.Context) error
 	Max(ctx context.Context, column string) error
@@ -56,7 +55,7 @@ type BuilderInterface[T RowInterface] interface {
 	SumInt(ctx context.Context, column string) (uint64, error)
 	SumFloat(ctx context.Context, column string) (float64, error)
 	Pagination(ctx context.Context, page, pageSize int64) (PaginationInterface[T], error)
-	Distinct(column string) BuilderInterface[T]
+	Distinct() BuilderInterface[T]
 	FuncDistinct(fun, column, as string) BuilderInterface[T]
 	WithConn(conn ConnectionInterface) BuilderInterface[T]
 }
@@ -65,7 +64,7 @@ type TableInterface interface {
 	AddColumnInterface
 	DropColumn(column string) TableInterface
 	DropColumnIfExists(column string) TableInterface
-	AddIndex(name string, t IndexType, column ...string) TableInterface
+	AddIndex(name string) TableIndexInterface
 	DropIndex(name string) TableInterface
 	Table(table string) TableInterface
 	ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ColumnInterface

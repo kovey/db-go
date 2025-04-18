@@ -66,11 +66,13 @@ func TestEngineFormat(t *testing.T) {
 	in.Add("p_num_float32", &num_float32)
 	in.Add("p_num_float64", &num_float64)
 	in.Add("e_data", &e_data{meta: 100, name: "aaaa"})
-	assert.Equal(t, "INSERT INTO `user` (`num_int8`,`num_int16`,`num_int32`,`num_int64`,`num_uint8`,`num_uint16`,`num_uint32`,`num_uint64`,`num_uint`,`num_int`,`bool_val`,`str`,`date`,`num_float32`,`num_float64`,`p_num_int`,`p_num_int8`,`p_num_int16`,`p_num_int32`,`p_num_int64`,`p_num_uint`,`p_num_uint8`,`p_num_uint16`,`p_num_uint32`,`p_num_uint64`,`p_bool_val`,`p_str_val`,`p_date`,`p_num_float32`,`p_num_float64`,`e_data`) VALUES (8,16,32,64,8,16,32,64,642,642,true,'kovey','2025-04-02 13:40:42',11.110000,12.120000,1,8,16,32,64,1,8,16,32,64,false,'kkk','2025-04-02 13:40:42',13.130000,14.130000,'100-aaaa')", e.Format(in))
+	assert.Equal(t, "INSERT INTO `user` (`num_int8`, `num_int16`, `num_int32`, `num_int64`, `num_uint8`, `num_uint16`, `num_uint32`, `num_uint64`, `num_uint`, `num_int`, `bool_val`, `str`, `date`, `num_float32`, `num_float64`, `p_num_int`, `p_num_int8`, `p_num_int16`, `p_num_int32`, `p_num_int64`, `p_num_uint`, `p_num_uint8`, `p_num_uint16`, `p_num_uint32`, `p_num_uint64`, `p_bool_val`, `p_str_val`, `p_date`, `p_num_float32`, `p_num_float64`, `e_data`) VALUES (8, 16, 32, 64, 8, 16, 32, 64, 642, 642, true, 'kovey', '2025-04-02 13:40:42', 11.110000, 12.120000, 1, 8, 16, 32, 64, 1, 8, 16, 32, 64, false, 'kkk', '2025-04-02 13:40:42', 13.130000, 14.130000, '100-aaaa')", e.Format(in))
+	assert.Equal(t, "INSERT INTO `user` (`num_int8`, `num_int16`, `num_int32`, `num_int64`, `num_uint8`, `num_uint16`, `num_uint32`, `num_uint64`, `num_uint`, `num_int`, `bool_val`, `str`, `date`, `num_float32`, `num_float64`, `p_num_int`, `p_num_int8`, `p_num_int16`, `p_num_int32`, `p_num_int64`, `p_num_uint`, `p_num_uint8`, `p_num_uint16`, `p_num_uint32`, `p_num_uint64`, `p_bool_val`, `p_str_val`, `p_date`, `p_num_float32`, `p_num_float64`, `e_data`) VALUES (8, 16, 32, 64, 8, 16, 32, 64, 642, 642, true, kovey, 2025-04-02 13:40:42, 11.110000, 12.120000, 1, 8, 16, 32, 64, 1, 8, 16, 32, 64, false, kkk, 2025-04-02 13:40:42, 13.130000, 14.130000, 100-aaaa)", e.formatOriginal(in))
 }
 
 func TestEngineFormatRaw(t *testing.T) {
 	e := DefaultEngine()
 	raw := Raw("select * from user where id = ? and name like ? between ? and ? limit ?", 1, "%test%", 100, 1000, 10)
 	assert.Equal(t, "select * from user where id = 1 and name like '%test%' between 100 and 1000 limit 10", e.FormatRaw(raw))
+	assert.Equal(t, "select * from user where id = 1 and name like %test% between 100 and 1000 limit 10", e.formatOriginalRaw(raw))
 }

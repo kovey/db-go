@@ -6,6 +6,7 @@ import (
 
 	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/express"
+	"github.com/kovey/db-go/v3/sql/operator"
 )
 
 func Raw(raw string, binds ...any) ksql.ExpressInterface {
@@ -31,41 +32,15 @@ func RawValue(val any) string {
 }
 
 func Quote(name string, builder *strings.Builder) {
-	builder.WriteString("'")
-	builder.WriteString(name)
-	builder.WriteString("'")
+	operator.Quote(name, builder)
 }
 
 func Backtick(name string, builder *strings.Builder) {
-	if strings.HasPrefix(name, "(") {
-		builder.WriteString(name)
-		return
-	}
-
-	builder.WriteString("`")
-	builder.WriteString(name)
-	builder.WriteString("`")
+	operator.Backtick(name, builder)
 }
 
 func Column(column string, builder *strings.Builder) {
-	if strings.HasPrefix(column, "(") {
-		builder.WriteString(column)
-		return
-	}
-
-	var table = ""
-	if strings.Contains(column, ".") {
-		info := strings.Split(column, ".")
-		table = info[0]
-		column = info[1]
-	}
-
-	if table != "" {
-		Backtick(table, builder)
-		builder.WriteString(".")
-	}
-
-	Backtick(column, builder)
+	operator.Column(column, builder)
 }
 
 func _formatSharding(name string, sharding ksql.Sharding) string {

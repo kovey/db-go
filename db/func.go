@@ -12,7 +12,6 @@ type NewUpdateFun func() ksql.UpdateInterface
 type NewDeleteFun func() ksql.DeleteInterface
 type NewSchemaFun func() ksql.SchemaInterface
 type NewDropTableFun func() ksql.DropTableInterface
-type NewDropTableIfExistsFun func() ksql.DropTableInterface
 type NewCreateTableFun func() ksql.CreateTableInterface
 type NewAlterTableFun func() ksql.AlterInterface
 type NewTableFun func() ksql.TableInterface
@@ -39,9 +38,6 @@ var NewSchema NewSchemaFun = func() ksql.SchemaInterface {
 }
 var NewDropTable NewDropTableFun = func() ksql.DropTableInterface {
 	return sql.NewDropTable()
-}
-var NewDropTableIfExists NewDropTableIfExistsFun = func() ksql.DropTableInterface {
-	return sql.NewDropTableIfExists()
 }
 var NewCreateTable NewCreateTableFun = func() ksql.CreateTableInterface {
 	return sql.NewTable()

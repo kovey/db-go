@@ -1,75 +1,193 @@
 package sql
 
 import (
+	"fmt"
+	"strings"
+
 	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/sql/operator"
 )
 
+type whereOp struct {
+	column     string
+	op         ksql.Op
+	value      any
+	isArr      bool
+	isConst    bool
+	constValue string
+	values     []any
+	expr       ksql.ExpressInterface
+	sub        ksql.QueryInterface
+	isBetween  bool
+}
+
+func (w *whereOp) binds() []any {
+	if w.expr != nil {
+		return w.expr.Binds()
+	}
+
+	if w.sub != nil {
+		return w.sub.Binds()
+	}
+
+	if w.isConst {
+		return nil
+	}
+
+	if w.isArr || w.isBetween {
+		return w.values
+	}
+
+	return []any{w.value}
+}
+
+func (w *whereOp) Build(builder *strings.Builder) {
+	if w.expr != nil {
+		builder.WriteString(w.expr.Statement())
+		return
+	}
+
+	operator.Column(w.column, builder)
+	operator.BuildPureString(string(w.op), builder)
+	if w.sub != nil {
+		builder.WriteString(" (")
+		builder.WriteString(w.sub.Prepare())
+		builder.WriteString(")")
+		return
+	}
+
+	if w.isConst {
+		operator.BuildPureString(w.constValue, builder)
+		return
+	}
+
+	if w.isBetween {
+		operator.BuildPureString("?", builder)
+		operator.BuildPureString("AND", builder)
+		operator.BuildPureString("?", builder)
+		return
+	}
+
+	if !w.isArr {
+		operator.BuildPureString("?", builder)
+		return
+	}
+
+	builder.WriteString(" (")
+	for index := range w.values {
+		if index > 0 {
+			builder.WriteString(", ")
+		}
+		builder.WriteString("?")
+	}
+	builder.WriteString(")")
+}
+
 type Where struct {
-	*base
+	ops       []*whereOp
+	orWheres  []*Where
+	andWheres []*Where
+	opChain   *operator.Chain
+	onlyBody  bool
+	binds     []any
 }
 
 func NewWhere() *Where {
-	return &Where{base: &base{hasPrepared: false}}
+	w := &Where{opChain: operator.NewChain()}
+	w.opChain.Append(w._keyword, w._ops, w._andWheres, w._orWheres)
+	return w
+}
+
+func (w *Where) _keyword(builder *strings.Builder) {
+	if w.onlyBody {
+		return
+	}
+
+	builder.WriteString("WHERE")
+}
+
+func (w *Where) _ops(builder *strings.Builder) {
+	if len(w.ops) == 0 {
+		return
+	}
+
+	if !w.onlyBody {
+		builder.WriteString(" ")
+	}
+	for index, op := range w.ops {
+		if index > 0 {
+			builder.WriteString(" AND ")
+		}
+		op.Build(builder)
+		w.binds = append(w.binds, op.binds()...)
+	}
+}
+
+func (w *Where) _andWheres(builder *strings.Builder) {
+	if len(w.ops) == 0 {
+		w._where("", "AND", w.andWheres, builder)
+		return
+	}
+
+	w._where("AND", "AND", w.andWheres, builder)
+}
+
+func (w *Where) _orWheres(builder *strings.Builder) {
+	if len(w.ops) == 0 && len(w.andWheres) == 0 {
+		w._where("", "OR", w.orWheres, builder)
+		return
+	}
+
+	w._where("OR", "OR", w.orWheres, builder)
+}
+
+func (w *Where) _where(prefix, op string, wheres []*Where, builder *strings.Builder) {
+	if len(wheres) == 0 {
+		return
+	}
+
+	builder.WriteString(" ")
+	if prefix != "" {
+		builder.WriteString(prefix)
+	}
+
+	for index, where := range wheres {
+		if index > 0 {
+			builder.WriteString(" ")
+			builder.WriteString(op)
+		}
+
+		builder.WriteString(" (")
+		where.Build(builder)
+		builder.WriteString(")")
+		w.binds = append(w.binds, where.Binds()...)
+	}
+}
+
+func (w *Where) Build(builder *strings.Builder) {
+	w.opChain.Call(builder)
 }
 
 func (w *Where) Where(column string, op ksql.Op, data any) ksql.WhereInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
+	if !ksql.SupportOp(op) {
+		panic(fmt.Sprintf("op %s not support", op))
 	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" ")
-	w.builder.WriteString(string(op))
-	w.builder.WriteString(" ?")
-	w.binds = append(w.binds, data)
+	w.ops = append(w.ops, &whereOp{column: column, op: op, value: data})
 	return w
 }
 
 func (w *Where) In(column string, data []any) ksql.WhereInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" IN (")
-	for i := 0; i < len(data); i++ {
-		if i > 0 {
-			w.builder.WriteString(",")
-		}
-		w.builder.WriteString("?")
-	}
-
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, data...)
+	w.ops = append(w.ops, &whereOp{column: column, op: "IN", values: data, isArr: true})
 	return w
 }
 
 func (w *Where) NotIn(column string, data []any) ksql.WhereInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" NOT IN (")
-	for i := 0; i < len(data); i++ {
-		if i > 0 {
-			w.builder.WriteString(",")
-		}
-		w.builder.WriteString("?")
-	}
-
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, data...)
+	w.ops = append(w.ops, &whereOp{column: column, op: "NOT IN", values: data, isArr: true})
 	return w
 }
 
 func (w *Where) _is(column string, op string) ksql.WhereInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-	Column(column, &w.builder)
-	w.builder.WriteString(" IS ")
-	w.builder.WriteString(op)
+	w.ops = append(w.ops, &whereOp{column: column, op: "IS", constValue: op, isConst: true})
 	return w
 }
 
@@ -82,12 +200,7 @@ func (w *Where) IsNotNull(column string) ksql.WhereInterface {
 }
 
 func (w *Where) Express(raw ksql.ExpressInterface) ksql.WhereInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	w.builder.WriteString(raw.Statement())
-	w.binds = append(w.binds, raw.Binds()...)
+	w.ops = append(w.ops, &whereOp{expr: raw})
 	return w
 }
 
@@ -96,14 +209,15 @@ func (w *Where) OrWhere(call func(o ksql.WhereInterface)) ksql.WhereInterface {
 }
 
 func (w *Where) _by(op string, call func(o ksql.WhereInterface)) ksql.WhereInterface {
-	w.builder.WriteString(" ")
-	w.builder.WriteString(op)
-	w.builder.WriteString(" (")
 	n := NewWhere()
+	n.onlyBody = true
 	call(n)
-	w.builder.WriteString(n.Prepare())
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, n.binds...)
+	if op == "OR" {
+		w.orWheres = append(w.orWheres, n)
+		return w
+	}
+
+	w.andWheres = append(w.andWheres, n)
 	return w
 }
 
@@ -112,16 +226,7 @@ func (w *Where) AndWhere(call func(o ksql.WhereInterface)) ksql.WhereInterface {
 }
 
 func (w *Where) _inBy(column string, sub ksql.QueryInterface, op string) ksql.WhereInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-	Column(column, &w.builder)
-	w.builder.WriteString(" ")
-	w.builder.WriteString(op)
-	w.builder.WriteString(" (")
-	w.builder.WriteString(sub.Prepare())
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, sub.Binds()...)
+	w.ops = append(w.ops, &whereOp{column: column, sub: sub, op: ksql.Op(op)})
 	return w
 }
 
@@ -142,19 +247,14 @@ func (w *Where) NotBetween(column string, begin, end any) ksql.WhereInterface {
 }
 
 func (w *Where) between(op, column string, begin, end any) ksql.WhereInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" ")
-	w.builder.WriteString(op)
-	w.builder.WriteString(" ? ")
-	w.builder.WriteString("AND ?")
-	w.binds = append(w.binds, begin, end)
+	w.ops = append(w.ops, &whereOp{column: column, op: ksql.Op(op), values: []any{begin, end}, isBetween: true})
 	return w
 }
 
 func (w *Where) Empty() bool {
-	return w.builder.Len() == 0
+	return len(w.ops) == 0 && len(w.andWheres) == 0 && len(w.orWheres) == 0
+}
+
+func (w *Where) Binds() []any {
+	return w.binds
 }

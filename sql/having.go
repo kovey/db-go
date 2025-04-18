@@ -2,16 +2,99 @@ package sql
 
 import (
 	"fmt"
+	"strings"
 
 	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/sql/operator"
 )
 
 type Having struct {
-	*base
+	ops       []*whereOp
+	orWheres  []*Having
+	andWheres []*Having
+	opChain   *operator.Chain
+	onlyBody  bool
+	binds     []any
 }
 
 func NewHaving() *Having {
-	return &Having{base: &base{hasPrepared: false}}
+	h := &Having{opChain: operator.NewChain()}
+	h.opChain.Append(h._keyword, h._ops, h._andWheres, h._orWheres)
+	return h
+}
+
+func (w *Having) _keyword(builder *strings.Builder) {
+	if w.onlyBody {
+		return
+	}
+
+	builder.WriteString("HAVING")
+}
+
+func (w *Having) _ops(builder *strings.Builder) {
+	if len(w.ops) == 0 {
+		return
+	}
+
+	if !w.onlyBody {
+		builder.WriteString(" ")
+	}
+	for index, op := range w.ops {
+		if index > 0 {
+			builder.WriteString(" AND ")
+		}
+		op.Build(builder)
+		w.binds = append(w.binds, op.binds()...)
+	}
+}
+
+func (w *Having) _andWheres(builder *strings.Builder) {
+	if len(w.ops) == 0 {
+		w._where("", "AND", w.andWheres, builder)
+		return
+	}
+
+	w._where("AND", "AND", w.andWheres, builder)
+}
+
+func (w *Having) _orWheres(builder *strings.Builder) {
+	if len(w.ops) == 0 && len(w.andWheres) == 0 {
+		w._where("", "OR", w.orWheres, builder)
+		return
+	}
+
+	w._where("OR", "OR", w.orWheres, builder)
+}
+
+func (w *Having) _where(prefix, op string, wheres []*Having, builder *strings.Builder) {
+	if len(wheres) == 0 {
+		return
+	}
+
+	builder.WriteString(" ")
+	if prefix != "" {
+		builder.WriteString(prefix)
+	}
+
+	for index, where := range wheres {
+		if index > 0 {
+			builder.WriteString(" ")
+			builder.WriteString(op)
+		}
+
+		builder.WriteString(" (")
+		where.Build(builder)
+		builder.WriteString(")")
+		w.binds = append(w.binds, where.Binds()...)
+	}
+}
+
+func (w *Having) Binds() []any {
+	return w.binds
+}
+
+func (w *Having) Build(builder *strings.Builder) {
+	w.opChain.Call(builder)
 }
 
 func (w *Having) Having(column string, op ksql.Op, data any) ksql.HavingInterface {
@@ -19,63 +102,22 @@ func (w *Having) Having(column string, op ksql.Op, data any) ksql.HavingInterfac
 		panic(fmt.Sprintf("op %s not support", op))
 	}
 
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" ")
-	w.builder.WriteString(string(op))
-	w.builder.WriteString(" ?")
-	w.binds = append(w.binds, data)
+	w.ops = append(w.ops, &whereOp{column: column, op: op, value: data})
 	return w
 }
 
 func (w *Having) In(column string, data []any) ksql.HavingInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" IN (")
-	for i := 0; i < len(data); i++ {
-		if i > 0 {
-			w.builder.WriteString(",")
-		}
-		w.builder.WriteString("?")
-	}
-
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, data...)
+	w.ops = append(w.ops, &whereOp{column: column, values: data, isArr: true, op: "IN"})
 	return w
 }
 
 func (w *Having) NotIn(column string, data []any) ksql.HavingInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" NOT IN (")
-	for i := 0; i < len(data); i++ {
-		if i > 0 {
-			w.builder.WriteString(",")
-		}
-		w.builder.WriteString("?")
-	}
-
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, data...)
+	w.ops = append(w.ops, &whereOp{column: column, values: data, isArr: true, op: "NOT IN"})
 	return w
 }
 
 func (w *Having) _is(column string, op string) ksql.HavingInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-	Column(column, &w.builder)
-	w.builder.WriteString(" IS ")
-	w.builder.WriteString(op)
+	w.ops = append(w.ops, &whereOp{column: column, op: "IS", constValue: op, isConst: true})
 	return w
 }
 
@@ -88,25 +130,20 @@ func (w *Having) IsNotNull(column string) ksql.HavingInterface {
 }
 
 func (w *Having) Express(raw ksql.ExpressInterface) ksql.HavingInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	w.builder.WriteString(raw.Statement())
-	w.binds = append(w.binds, raw.Binds()...)
+	w.ops = append(w.ops, &whereOp{expr: raw})
 	return w
 }
 
 func (h *Having) _by(op string, call func(o ksql.HavingInterface)) ksql.HavingInterface {
-	h.builder.WriteString(" ")
-	h.builder.WriteString(op)
-	h.builder.WriteString(" (")
 	n := NewHaving()
+	n.onlyBody = true
 	call(n)
-	h.builder.WriteString(n.Prepare())
-	h.builder.WriteString(")")
-	h.binds = append(h.binds, n.binds...)
+	if op == "OR" {
+		h.orWheres = append(h.orWheres, n)
+		return h
+	}
 
+	h.andWheres = append(h.andWheres, n)
 	return h
 }
 
@@ -119,16 +156,7 @@ func (w *Having) AndHaving(call func(o ksql.HavingInterface)) ksql.HavingInterfa
 }
 
 func (w *Having) _inBy(column string, sub ksql.QueryInterface, op string) ksql.HavingInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-	Column(column, &w.builder)
-	w.builder.WriteString(" ")
-	w.builder.WriteString(op)
-	w.builder.WriteString(" (")
-	w.builder.WriteString(sub.Prepare())
-	w.builder.WriteString(")")
-	w.binds = append(w.binds, sub.Binds()...)
+	w.ops = append(w.ops, &whereOp{column: column, sub: sub, op: ksql.Op(op)})
 	return w
 }
 
@@ -145,16 +173,7 @@ func (w *Having) Between(column string, begin, end any) ksql.HavingInterface {
 }
 
 func (w *Having) between(op, column string, begin, end any) ksql.HavingInterface {
-	if w.builder.Len() > 0 {
-		w.builder.WriteString(" AND ")
-	}
-
-	Column(column, &w.builder)
-	w.builder.WriteString(" ")
-	w.builder.WriteString(op)
-	w.builder.WriteString(" ? ")
-	w.builder.WriteString("AND ?")
-	w.binds = append(w.binds, begin, end)
+	w.ops = append(w.ops, &whereOp{column: column, op: ksql.Op(op), values: []any{begin, end}, isBetween: true})
 	return w
 }
 
@@ -163,5 +182,5 @@ func (w *Having) NotBetween(column string, begin, end any) ksql.HavingInterface 
 }
 
 func (w *Having) Empty() bool {
-	return w.builder.Len() == 0
+	return len(w.ops) == 0 && len(w.andWheres) == 0 && len(w.orWheres) == 0
 }

@@ -12,3 +12,17 @@ func TestTableDrop(t *testing.T) {
 	assert.Nil(t, d.Binds())
 	assert.Equal(t, "DROP TABLE `user`", d.Prepare())
 }
+
+func TestTableDropTemporary(t *testing.T) {
+	d := NewDropTable().Table("user").Temporary()
+	assert.Equal(t, "DROP TEMPORARY TABLE `user`", d.Prepare())
+	assert.Nil(t, d.Binds())
+	assert.Equal(t, "DROP TEMPORARY TABLE `user`", d.Prepare())
+}
+
+func TestTableDropIfExists(t *testing.T) {
+	d := NewDropTable().Table("user").IfExists().Table("users")
+	assert.Equal(t, "DROP TABLE IF EXISTS `user`, `users`", d.Prepare())
+	assert.Nil(t, d.Binds())
+	assert.Equal(t, "DROP TABLE IF EXISTS `user`, `users`", d.Prepare())
+}

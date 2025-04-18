@@ -243,13 +243,34 @@ func FindBy(ctx context.Context, model ksql.ModelInterface, call func(query ksql
 	return QueryRow(ctx, query, model)
 }
 
+func LockShare[T FindType](ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, id T) error {
+	if conn == nil || !conn.InTransaction() {
+		return Err_Not_In_Transaction
+	}
+
+	query := NewQuery()
+	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id).For().Share()
+	return QueryRowBy(ctx, conn, query, model)
+}
+
+func LockByShare(ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, call func(query ksql.QueryInterface)) error {
+	if conn == nil || !conn.InTransaction() {
+		return Err_Not_In_Transaction
+	}
+
+	query := NewQuery()
+	query.Table(model.Table()).Columns(model.Columns()...).For().Share()
+	call(query)
+	return QueryRowBy(ctx, conn, query, model)
+}
+
 func Lock[T FindType](ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, id T) error {
 	if conn == nil || !conn.InTransaction() {
 		return Err_Not_In_Transaction
 	}
 
 	query := NewQuery()
-	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id).ForUpdate()
+	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id).For().Update()
 	return QueryRowBy(ctx, conn, query, model)
 }
 
@@ -259,7 +280,7 @@ func LockBy(ctx context.Context, conn ksql.ConnectionInterface, model ksql.Model
 	}
 
 	query := NewQuery()
-	query.Table(model.Table()).Columns(model.Columns()...).ForUpdate()
+	query.Table(model.Table()).Columns(model.Columns()...).For().Update()
 	call(query)
 	return QueryRowBy(ctx, conn, query, model)
 }
@@ -294,7 +315,7 @@ func DropTable(ctx context.Context, table string) error {
 }
 
 func DropTableIfExistsBy(ctx context.Context, conn ksql.ConnectionInterface, table string) error {
-	op := NewDropTableIfExists().Table(table)
+	op := NewDropTable().Table(table).IfExists()
 	_, err := conn.Exec(ctx, op)
 	return err
 }

@@ -1,6 +1,7 @@
 package table
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,9 @@ func TestParseTypeZero(t *testing.T) {
 	assert.Equal(t, Scale_Type_Zero, ct.Type)
 	assert.False(t, ct.IsInteger())
 	assert.False(t, ct.IsNumeric())
-	assert.Equal(t, "DATE", ct.Express())
+	var builder strings.Builder
+	ct.Build(&builder)
+	assert.Equal(t, " DATE", builder.String())
 }
 
 func TestParseTypeOneNum(t *testing.T) {
@@ -19,7 +22,9 @@ func TestParseTypeOneNum(t *testing.T) {
 	assert.Equal(t, Scale_Type_One, ct.Type)
 	assert.True(t, ct.IsInteger())
 	assert.True(t, ct.IsNumeric())
-	assert.Equal(t, "INT(10)", ct.Express())
+	var builder strings.Builder
+	ct.Build(&builder)
+	assert.Equal(t, " INT(10)", builder.String())
 }
 
 func TestParseTypeOne(t *testing.T) {
@@ -27,7 +32,9 @@ func TestParseTypeOne(t *testing.T) {
 	assert.Equal(t, Scale_Type_One, ct.Type)
 	assert.False(t, ct.IsInteger())
 	assert.False(t, ct.IsNumeric())
-	assert.Equal(t, "VARCHAR(20)", ct.Express())
+	var builder strings.Builder
+	ct.Build(&builder)
+	assert.Equal(t, " VARCHAR(20)", builder.String())
 }
 
 func TestParseTypeTwo(t *testing.T) {
@@ -35,7 +42,9 @@ func TestParseTypeTwo(t *testing.T) {
 	assert.Equal(t, Scale_Type_Two, ct.Type)
 	assert.False(t, ct.IsInteger())
 	assert.True(t, ct.IsNumeric())
-	assert.Equal(t, "DOUBLE(20,3)", ct.Express())
+	var builder strings.Builder
+	ct.Build(&builder)
+	assert.Equal(t, " DOUBLE(20,3)", builder.String())
 }
 
 func TestParseTypeMore(t *testing.T) {
@@ -43,5 +52,7 @@ func TestParseTypeMore(t *testing.T) {
 	assert.Equal(t, Scale_Type_More, ct.Type)
 	assert.False(t, ct.IsInteger())
 	assert.False(t, ct.IsNumeric())
-	assert.Equal(t, "ENUM('A','B','C')", ct.Express())
+	var builder strings.Builder
+	ct.Build(&builder)
+	assert.Equal(t, " ENUM('A','B','C')", builder.String())
 }

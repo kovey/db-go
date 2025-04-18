@@ -2,6 +2,7 @@ package table
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -38,15 +39,23 @@ func (c *ColumnType) Set(sets ...string) *ColumnType {
 	return c
 }
 
-func (c *ColumnType) Express() string {
+func (c *ColumnType) Build(builder *strings.Builder) {
+	builder.WriteString(" ")
+	builder.WriteString(c.Name)
 	switch c.Type {
 	case Scale_Type_One:
-		return fmt.Sprintf("%s(%d)", c.Name, c.Length)
+		builder.WriteString("(")
+		builder.WriteString(strconv.Itoa(c.Length))
+		builder.WriteString(")")
 	case Scale_Type_Two:
-		return fmt.Sprintf("%s(%d,%d)", c.Name, c.Length, c.Scale)
+		builder.WriteString("(")
+		builder.WriteString(strconv.Itoa(c.Length))
+		builder.WriteString(",")
+		builder.WriteString(strconv.Itoa(c.Scale))
+		builder.WriteString(")")
 	case Scale_Type_More:
-		return fmt.Sprintf("%s(%s)", c.Name, strings.Join(c.sets, ","))
-	default:
-		return c.Name
+		builder.WriteString("(")
+		builder.WriteString(strings.Join(c.sets, ","))
+		builder.WriteString(")")
 	}
 }

@@ -1,26 +1,123 @@
 package sql
 
 import (
+	"strings"
+
 	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/sql/table"
 )
 
 type Table struct {
 	*base
-	table     string
-	engine    string
-	charset   string
-	collate   string
-	comment   string
-	columns   []*table.Column
-	indexes   []*table.Index
-	from      ksql.QueryInterface
-	likeTable string
+	table            string
+	ifNotExists      bool
+	columns          []*table.Column
+	indexes          []*table.Index
+	options          *table.Options
+	partitionOptions *table.PartitionOptions
+	asOption         string
+	as               ksql.QueryInterface
+	likeTable        string
+	temporary        string
 }
 
 func NewTable() *Table {
-	ta := &Table{base: &base{hasPrepared: false}, engine: "InnoDB", charset: "utf8mb4", collate: "utf8mb4_general_ci"}
-	ta.keyword("CREATE TABLE ")
+	ta := &Table{base: newBase(), options: table.NewOptions()}
+	ta.opChain.Append(keywordCreate, ta._table, ta._like, ta._columns, ta._options, ta._partOptions, ta._as)
+	return ta
+}
+
+func (ta *Table) _table(builder *strings.Builder) {
+	if ta.temporary != "" {
+		builder.WriteString(" ")
+		builder.WriteString(ta.temporary)
+	}
+
+	builder.WriteString(" TABLE")
+	if ta.ifNotExists {
+		builder.WriteString(" IF NOT EXISTS")
+	}
+
+	builder.WriteString(" ")
+	Column(ta.table, builder)
+}
+
+func (ta *Table) _like(builder *strings.Builder) {
+	if ta.likeTable == "" {
+		return
+	}
+
+	builder.WriteString(" (LIKE ")
+	Column(ta.likeTable, builder)
+	builder.WriteString(")")
+}
+
+func (ta *Table) _columns(builder *strings.Builder) {
+	if ta.likeTable != "" || len(ta.columns) == 0 {
+		return
+	}
+
+	builder.WriteString(" (")
+	index := 0
+	for _, column := range ta.columns {
+		if index > 0 {
+			builder.WriteString(", ")
+		}
+
+		column.Build(builder)
+		index++
+	}
+
+	for _, i := range ta.indexes {
+		if index > 0 {
+			builder.WriteString(", ")
+		}
+
+		i.Build(builder)
+	}
+
+	builder.WriteString(")")
+}
+
+func (ta *Table) _options(builder *strings.Builder) {
+	if ta.likeTable != "" || ta.options.Empty() {
+		return
+	}
+
+	builder.WriteString(" ")
+	ta.options.Build(builder)
+}
+
+func (ta *Table) _partOptions(builder *strings.Builder) {
+	if ta.likeTable != "" || ta.partitionOptions == nil {
+		return
+	}
+
+	ta.partitionOptions.Build(builder)
+}
+
+func (ta *Table) _as(builder *strings.Builder) {
+	if ta.likeTable != "" || ta.as == nil {
+		return
+	}
+
+	if ta.asOption != "" {
+		builder.WriteString(" ")
+		builder.WriteString(ta.asOption)
+	}
+
+	builder.WriteString(" AS ")
+	builder.WriteString(ta.as.Prepare())
+	ta.binds = append(ta.binds, ta.as.Binds()...)
+}
+
+func (ta *Table) IfNotExists() ksql.CreateTableInterface {
+	ta.ifNotExists = true
+	return ta
+}
+
+func (ta *Table) Temporary() ksql.CreateTableInterface {
+	ta.temporary = "TEMPORARY"
 	return ta
 }
 
@@ -29,8 +126,8 @@ func (ta *Table) Like(table string) ksql.CreateTableInterface {
 	return ta
 }
 
-func (ta *Table) From(query ksql.QueryInterface) ksql.CreateTableInterface {
-	ta.from = query
+func (ta *Table) As(query ksql.QueryInterface) ksql.CreateTableInterface {
+	ta.as = query
 	return ta
 }
 
@@ -128,19 +225,18 @@ func (ta *Table) AddColumn(column, t string, length, scale int, sets ...string) 
 	return col
 }
 
-func (ta *Table) AddIndex(name string, t ksql.IndexType, column ...string) ksql.CreateTableInterface {
-	index := &table.Index{Name: name, Type: t}
-	index.Columns(column...)
+func (ta *Table) AddIndex(name string) ksql.TableIndexInterface {
+	index := table.NewIndex(name)
 	ta.indexes = append(ta.indexes, index)
-	return ta
+	return index
 }
 
-func (ta *Table) AddPrimary(column string) ksql.CreateTableInterface {
-	return ta.AddIndex("", ksql.Index_Type_Primary, column)
+func (ta *Table) AddPrimary(column string) ksql.TableIndexInterface {
+	return ta.AddIndex("").Primary().Columns(column)
 }
 
-func (ta *Table) AddUnique(name string, columns ...string) ksql.CreateTableInterface {
-	return ta.AddIndex(name, ksql.Index_Type_Unique, columns...)
+func (ta *Table) AddUnique(name string, columns ...string) ksql.TableIndexInterface {
+	return ta.AddIndex(name).Unique().Columns(columns...)
 }
 
 func (ta *Table) Table(table string) ksql.CreateTableInterface {
@@ -148,82 +244,34 @@ func (ta *Table) Table(table string) ksql.CreateTableInterface {
 	return ta
 }
 
+func (ta *Table) Options() ksql.TableOptionsInterface {
+	return ta.options
+}
+
+func (ta *Table) PartitionOptions() ksql.PartitionOptionsInterface {
+	if ta.partitionOptions == nil {
+		ta.partitionOptions = &table.PartitionOptions{}
+	}
+
+	return ta.partitionOptions
+}
+
 func (ta *Table) Engine(engine string) ksql.CreateTableInterface {
-	ta.engine = engine
+	ta.options.Append(ksql.Table_Opt_Key_Engine, engine)
 	return ta
 }
 
 func (ta *Table) Charset(charset string) ksql.CreateTableInterface {
-	ta.charset = charset
+	ta.options.Append(ksql.Table_Opt_Key_Character_Set, charset)
 	return ta
 }
 
 func (ta *Table) Collate(collate string) ksql.CreateTableInterface {
-	ta.collate = collate
+	ta.options.Append(ksql.Table_Opt_Key_Collate, collate)
 	return ta
 }
 
 func (ta *Table) Comment(comment string) ksql.CreateTableInterface {
-	ta.comment = comment
+	ta.options.Append(ksql.Table_Opt_Key_Comment, comment)
 	return ta
-}
-
-func (ta *Table) buildFrom() string {
-	ta.builder.WriteString(" AS ")
-	ta.builder.WriteString(ta.from.Prepare())
-	ta.binds = append(ta.binds, ta.from.Binds()...)
-	return ta.base.Prepare()
-}
-
-func (ta *Table) buildNormal() string {
-	ta.builder.WriteString(" (")
-	for idx, column := range ta.columns {
-		if idx > 0 {
-			ta.builder.WriteString(",")
-		}
-
-		ta.builder.WriteString(column.Express())
-	}
-
-	for _, index := range ta.indexes {
-		ta.builder.WriteString(",")
-		ta.builder.WriteString(index.Express())
-	}
-
-	ta.builder.WriteString(") ENGINE=")
-	ta.builder.WriteString(ta.engine)
-	ta.builder.WriteString(" DEFAULT CHARSET=")
-	ta.builder.WriteString(ta.charset)
-	ta.builder.WriteString(" COLLATE=")
-	ta.builder.WriteString(ta.collate)
-	if ta.comment != "" {
-		ta.builder.WriteString(" COMMENT=")
-		Quote(ta.comment, &ta.builder)
-	}
-
-	return ta.base.Prepare()
-}
-
-func (ta *Table) buildLike() string {
-	ta.builder.WriteString(" LIKE ")
-	Column(ta.likeTable, &ta.builder)
-	return ta.base.Prepare()
-}
-
-func (ta *Table) Prepare() string {
-	if ta.hasPrepared {
-		return ta.base.Prepare()
-	}
-
-	ta.hasPrepared = true
-	Column(ta.table, &ta.builder)
-	if ta.likeTable != "" {
-		return ta.buildLike()
-	}
-
-	if ta.from != nil {
-		return ta.buildFrom()
-	}
-
-	return ta.buildNormal()
 }

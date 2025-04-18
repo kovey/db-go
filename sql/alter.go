@@ -1,50 +1,68 @@
 package sql
 
 import (
+	"strings"
+
 	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/sql/operator"
 	"github.com/kovey/db-go/v3/sql/table"
 )
 
-//ALTER TABLE `skillw-ios`.`activity_record`
-//DROP COLUMN `others`,
-//ADD COLUMN `atest` VARCHAR(45) NOT NULL DEFAULT '' AFTER `updated_at`,
-//ADD COLUMN `btest` VARCHAR(45) NOT NULL DEFAULT '' AFTER `atest`;
-
-// ALTER TABLE `skillw-ios`.`activity_record`
-// ADD UNIQUE INDEX `idx_test` (`activity_id` ASC, `date_end` ASC) VISIBLE,
-// ADD INDEX `idx_normal` (`param3` ASC) VISIBLE,
-// ADD INDEX `idx_more` (`param4` ASC, `param5` ASC) VISIBLE,
-// DROP INDEX `date` ;
-
-// ALTER TABLE `skillw-ios`.`activity_record`
-// CHANGE COLUMN `param6` `param7` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '餐宿' ,
-// ADD UNIQUE INDEX `param7_UNIQUE` (`param7` ASC) VISIBLE;
-// COMMENT = '活动记录'
-
-// ALTER TABLE `skillw-ios`.`abtest_configs`
-// CHARACTER SET = utf8 , COLLATE = utf8_latvian_ci,ENGINE = MEMORY  ;
-
 type Alter struct {
 	*base
-	adds          []*table.Column
-	dropsIfExists []string
-	drops         []string
-	indexes       []*table.Index
-	dropIndexes   []string
-	changes       []*table.Column
-	changeOlds    []string
-	comment       string
-	charset       string
-	collate       string
-	engine        string
-	table         string
-	modifies      []*table.Column
+	options           *table.AlterOptions
+	tableOptions      *table.Options
+	partitionOperates *table.PartitionOperates
+	table             string
+	orders            []string
 }
 
 func NewAlter() *Alter {
-	u := &Alter{base: &base{hasPrepared: false}}
-	u.keyword("ALTER TABLE ")
+	u := &Alter{base: newBase(), options: &table.AlterOptions{}, tableOptions: table.NewOptions(), partitionOperates: &table.PartitionOperates{}}
+	u.opChain.Append(u._keyword, u._tableOptions, u._options, u._partitionOptions)
 	return u
+}
+
+func (u *Alter) _keyword(builder *strings.Builder) {
+	builder.WriteString("ALTER TABLE")
+	operator.BuildColumnString(u.table, builder)
+}
+
+func (u *Alter) _options(builder *strings.Builder) {
+	if u.options.Empty() {
+		return
+	}
+
+	if u.tableOptions.Empty() {
+		builder.WriteString(" ")
+	} else {
+		builder.WriteString(", ")
+	}
+
+	u.options.Build(builder)
+}
+
+func (u *Alter) _tableOptions(builder *strings.Builder) {
+	if u.tableOptions.Empty() {
+		return
+	}
+
+	builder.WriteString(" ")
+	u.tableOptions.Build(builder)
+}
+
+func (u *Alter) _partitionOptions(builder *strings.Builder) {
+	if u.partitionOperates.Empty() {
+		return
+	}
+
+	u.partitionOperates.Build(builder)
+}
+
+func (u *Alter) AlterColumn(column string) ksql.AlterColumnInterface {
+	ac := table.NewAlterColumn()
+	u.options.Append(ac)
+	return ac
 }
 
 func (u *Alter) Table(table string) ksql.AlterInterface {
@@ -52,38 +70,89 @@ func (u *Alter) Table(table string) ksql.AlterInterface {
 	return u
 }
 
-func (a *Alter) ModifyColumn(column, t string, length, scale int, sets ...string) ksql.ColumnInterface {
-	c := table.ParseType(t, length, scale, sets...)
-	if c == nil {
-		return nil
-	}
-
-	col := table.NewColumn(column, c)
-	a.modifies = append(a.modifies, col)
-	return col
+func (a *Alter) AddCheck(expr string) ksql.ColumnCheckConstraintInterface {
+	cc := table.NewColumnCheckConstraint().Check(expr)
+	a.options.Append(table.NewAddAlterOption(cc))
+	return cc
 }
 
-func (a *Alter) ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ksql.ColumnInterface {
-	c := table.ParseType(t, length, scale, sets...)
-	if c == nil {
-		return nil
-	}
-
-	col := table.NewColumn(newColumn, c)
-	a.changes = append(a.changes, col)
-	a.changeOlds = append(a.changeOlds, oldColumn)
-	return col
-}
-
-func (a *Alter) AddIndex(name string, t ksql.IndexType, column ...string) ksql.AlterInterface {
-	index := &table.Index{Name: name, Type: t}
-	index.Columns(column...)
-	a.indexes = append(a.indexes, index)
+func (a *Alter) DropCheck(symbol string) ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("DROP", "CHECK", symbol))
 	return a
 }
 
+func (a *Alter) DropConstraint(symbol string) ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("DROP", "CONSTRAINT", symbol))
+	return a
+}
+
+func (a *Alter) AlterCheck(symbol string) ksql.ColumnCheckConstraintInterface {
+	cc := table.NewColumnCheckConstraint().Constraint(symbol)
+	a.options.Append(table.NewEditAlterOption(cc))
+	return cc
+}
+
+func (a *Alter) Algorithm(alg ksql.AlterOptAlg) ksql.AlterInterface {
+	a.options.Append(table.NewEqAlterOption("ALGORITHM", string(alg)))
+	return a
+}
+
+func (a *Alter) ModifyColumn(column string) ksql.ModifyColumnInterface {
+	m := table.NewModifyColumn(column)
+	a.options.Append(m)
+	return m
+}
+
+func (a *Alter) ChangeColumn(oldColumn string) ksql.ChangeColumnInterface {
+	c := table.NewChangeColumn().Old(oldColumn)
+	a.options.Append(c)
+	return c
+}
+
+func (a *Alter) AddIndex(name string) ksql.TableIndexInterface {
+	add := table.NewAddIndex(name)
+	a.options.Append(add)
+	return add.Index()
+}
+
+func (a *Alter) AlterIndex(index string) ksql.AlterIndexInterface {
+	al := table.NewAlterIndex().Index(index)
+	a.options.Append(al)
+	return al
+}
+
 func (a *Alter) DropIndex(name string) ksql.AlterInterface {
-	a.dropIndexes = append(a.dropIndexes, name)
+	a.options.Append(table.NewAlterOption("DROP", "INDEX", name).IsField())
+	return a
+}
+
+func (a *Alter) DropKey(name string) ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("DROP", "KEY", name).IsField())
+	return a
+}
+
+func (a *Alter) DropPrimary() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("DROP", "PRIMARY", "KEY"))
+	return a
+}
+
+func (a *Alter) DropForeign(name string) ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("DROP", "FOREIGN KEY", name).IsField())
+	return a
+}
+
+func (a *Alter) Force() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("FORCE", "", ""))
+	return a
+}
+
+func (a *Alter) Lock(lock ksql.IndexLockOption) ksql.AlterInterface {
+	a.options.Append(table.NewEqAlterOption("LOCK", string(lock)))
+	return a
+}
+
+func (a *Alter) OrderBy(columns ...string) ksql.AlterInterface {
+	a.orders = append(a.orders, columns...)
 	return a
 }
 
@@ -171,164 +240,177 @@ func (a *Alter) AddChar(column string, length int) ksql.ColumnInterface {
 }
 
 func (u *Alter) AddColumn(column, t string, length, scale int, sets ...string) ksql.ColumnInterface {
-	c := table.ParseType(t, length, scale, sets...)
-	if c == nil {
-		return nil
+	add := table.NewAddColumn()
+	col := add.Column(column, t, length, scale, sets...)
+	if col != nil {
+		u.options.Append(add)
 	}
-
-	col := table.NewColumn(column, c)
-	u.adds = append(u.adds, col)
 	return col
 }
 
+func (u *Alter) AddColumnBy(column, t string, length, scale int, sets ...string) ksql.TableAddColumnInterface {
+	add := table.NewAddColumn()
+	if add.Column(column, t, length, scale, sets...) != nil {
+		u.options.Append(add)
+	}
+	return add
+}
+
 func (u *Alter) DropColumn(column string) ksql.AlterInterface {
-	u.drops = append(u.drops, column)
+	d := table.NewAlterOption("DROP", "COLUMN", column).IsField()
+	u.options.Append(d)
 	return u
 }
 
 func (u *Alter) DropColumnIfExists(column string) ksql.AlterInterface {
-	u.dropsIfExists = append(u.dropsIfExists, column)
-	return u
+	return u.DropColumn(column)
 }
 
 func (u *Alter) Comment(comment string) ksql.AlterInterface {
-	u.comment = comment
+	u.tableOptions.Append(ksql.Table_Opt_Key_Comment, comment)
 	return u
 }
 
 func (u *Alter) Charset(charset string) ksql.AlterInterface {
-	u.charset = charset
+	u.tableOptions.Append(ksql.Table_Opt_Key_Character_Set, charset)
 	return u
 }
 
 func (u *Alter) Collate(collate string) ksql.AlterInterface {
-	u.collate = collate
+	u.tableOptions.Append(ksql.Table_Opt_Key_Collate, collate)
 	return u
 }
 
 func (u *Alter) Engine(engine string) ksql.AlterInterface {
-	u.engine = engine
+	u.tableOptions.Append(ksql.Table_Opt_Key_Engine, engine)
 	return u
 }
 
-func (u *Alter) Prepare() string {
-	if u.hasPrepared {
-		return u.base.Prepare()
-	}
-
-	u.hasPrepared = true
-	Column(u.table, &u.builder)
-	u.builder.WriteString(" ")
-	canAdd := false
-
-	for index, drop := range u.drops {
-		canAdd = true
-		if index > 0 {
-			u.builder.WriteString(",")
-		}
-
-		u.builder.WriteString("DROP COLUMN ")
-		Column(drop, &u.builder)
-	}
-
-	for index, drop := range u.dropsIfExists {
-		canAdd = true
-		if index > 0 {
-			u.builder.WriteString(",")
-		}
-
-		u.builder.WriteString("DROP COLUMN IF EXISTS ")
-		Column(drop, &u.builder)
-	}
-
-	for idx, drop := range u.dropIndexes {
-		if canAdd || idx > 0 {
-			u.builder.WriteString(",")
-		}
-
-		canAdd = true
-		u.builder.WriteString("DROP INDEX ")
-		Column(drop, &u.builder)
-	}
-
-	for index, add := range u.adds {
-		if canAdd || index > 0 {
-			u.builder.WriteString(",")
-		}
-
-		canAdd = true
-		u.builder.WriteString("ADD COLUMN ")
-		u.builder.WriteString(add.Express())
-	}
-
-	for index, change := range u.changes {
-		if canAdd || index > 0 {
-			u.builder.WriteString(",")
-		}
-		canAdd = true
-		u.builder.WriteString("CHANGE COLUMN ")
-		Column(u.changeOlds[index], &u.builder)
-		u.builder.WriteString(" ")
-		u.builder.WriteString(change.Express())
-	}
-
-	for index, modify := range u.modifies {
-		if canAdd || index > 0 {
-			u.builder.WriteString(",")
-		}
-		canAdd = true
-		u.builder.WriteString("MODIFY COLUMN ")
-		u.builder.WriteString(modify.Express())
-	}
-
-	for index, add := range u.indexes {
-		if canAdd || index > 0 {
-			u.builder.WriteString(",")
-		}
-
-		canAdd = true
-		u.builder.WriteString(add.AlterExpress())
-	}
-
-	u._write("CHARACTER SET", u.charset, &canAdd)
-	u._write("COLLATE", u.collate, &canAdd)
-	u._write("ENGINE", u.engine, &canAdd)
-	u._write("COMMENT", u.comment, &canAdd)
-
-	return u.base.Prepare()
+func (a *Alter) AddForeign(name string, columns ...string) ksql.TableIndexInterface {
+	add := table.NewAddIndex(name)
+	add.Index().Foreign().Columns(columns...)
+	a.options.Append(add)
+	return add.Index()
 }
 
-func (a *Alter) _write(key, val string, canAdd *bool) {
-	if val == "" {
-		return
-	}
-
-	if *canAdd {
-		a.builder.WriteString(",")
-	}
-	*canAdd = true
-	a.builder.WriteString(key)
-	a.builder.WriteString(" = ")
-	Quote(val, &a.builder)
+func (a *Alter) AddUnique(name string, columns ...string) ksql.TableIndexInterface {
+	add := table.NewAddIndex(name)
+	add.Index().Unique().Columns(columns...)
+	a.options.Append(add)
+	return add.Index()
 }
 
-func (a *Alter) AddUnique(name string, columns ...string) ksql.AlterInterface {
-	return a.AddIndex(name, ksql.Index_Type_Unique, columns...)
+func (a *Alter) AddPrimary(columns ...string) ksql.AlterInterface {
+	add := table.NewAddIndex("")
+	add.Index().Primary().Columns(columns...)
+	a.options.Append(add)
+	return a
 }
 
-func (a *Alter) AddPrimary(column string) ksql.AlterInterface {
-	return a.AddIndex("", ksql.Index_Type_Primary, column)
+func (a *Alter) Default(charset, collate string) ksql.AlterInterface {
+	d := &table.DefaultAlterOption{}
+	if charset != "" {
+		d.Option("CHARACTER SET", charset)
+	}
+
+	if collate != "" {
+		d.Option("COLLATE", collate)
+	}
+
+	if !d.Empty() {
+		a.options.Append(d)
+	}
+	return a
 }
 
 func (a *Alter) Rename(as string) ksql.AlterInterface {
-	if a.hasPrepared {
-		return a
-	}
-
-	a.hasPrepared = true
-	Column(a.table, &a.builder)
-	a.builder.WriteString(" RENAME AS ")
-	Backtick(as, &a.builder)
-
+	a.options.Append(table.NewAlterOption("RENAME", "AS", as).IsField())
 	return a
+}
+
+func (a *Alter) RenameTo(to string) ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("RENAME", "TO", to).IsField())
+	return a
+}
+
+func (a *Alter) RenameColumn(oldName, newName string) ksql.AlterInterface {
+	rc := &table.RenameColumn{}
+	rc.Old(oldName).New(newName)
+	a.options.Append(rc)
+	return a
+}
+
+func (a *Alter) RenameKey(oldName, newName string) ksql.AlterInterface {
+	rc := &table.RenameIndex{}
+	rc.Old(oldName).New(newName).Type(ksql.Index_Sub_Type_Key)
+	a.options.Append(rc)
+	return a
+}
+
+func (a *Alter) RenameIndex(oldName, newName string) ksql.AlterInterface {
+	rc := &table.RenameIndex{}
+	rc.Old(oldName).New(newName).Type(ksql.Index_Sub_Type_Index)
+	a.options.Append(rc)
+	return a
+}
+
+func (a *Alter) WithValidation() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("WITH", "VALIDATION", ""))
+	return a
+}
+
+func (a *Alter) WithoutValidation() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("WITHOUT", "VALIDATION", ""))
+	return a
+}
+
+func (a *Alter) DisableKeys() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("DISABLE", "KEYS", ""))
+	return a
+}
+
+func (a *Alter) EnableKeys() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("ENABLE", "KEYS", ""))
+	return a
+}
+
+func (a *Alter) DiscardTablespace() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("DISCARD", "TABLESPACE", ""))
+	return a
+}
+
+func (a *Alter) ImportTablespace() ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("IMPORT", "TABLESPACE", ""))
+	return a
+}
+
+func (a *Alter) ConvertToCharset(charset string, collate string) ksql.AlterInterface {
+	a.options.Append(table.NewAlterOption("CONVERT TO", "CHARACTER SET", charset))
+	if collate != "" {
+		a.options.Append(table.NewAlterOption("COLLATE", collate, ""))
+	}
+	return a
+}
+
+func (a *Alter) Options() ksql.TableOptionsInterface {
+	return a.tableOptions
+}
+
+func (a *Alter) AddPartition(name string) ksql.PartitionDefinitionInterface {
+	op := table.NewPartitionOperate(name)
+	a.partitionOperates.Append(op)
+	return op.Add()
+}
+
+func (a *Alter) CoalescePartition(number int) ksql.AlterInterface {
+	op := table.NewPartitionOperate()
+	op.Coalesce(number)
+	a.partitionOperates.Append(op)
+	return a
+}
+
+func (a *Alter) PartitionOperate(partitionNames ...string) ksql.PartitionOperateInterface {
+	op := table.NewPartitionOperate(partitionNames...)
+	a.partitionOperates.Append(op)
+	return op
 }

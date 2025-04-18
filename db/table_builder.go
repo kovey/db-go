@@ -331,14 +331,12 @@ func (ta *TableBuilder) DropColumnIfExists(column string) ksql.TableInterface {
 	return ta
 }
 
-func (ta *TableBuilder) AddIndex(name string, t ksql.IndexType, column ...string) ksql.TableInterface {
+func (ta *TableBuilder) AddIndex(name string) ksql.TableIndexInterface {
 	if ta.alterMode {
-		ta.alter.AddIndex(name, t, column...)
-		return ta
+		return ta.alter.AddIndex(name)
 	}
 
-	ta.create.AddIndex(name, t, column...)
-	return ta
+	return ta.create.AddIndex(name)
 }
 
 func (ta *TableBuilder) DropIndex(name string) ksql.TableInterface {
@@ -480,7 +478,7 @@ func (t *TableBuilder) HasIndex(ctx context.Context, index string) (bool, error)
 
 func (t *TableBuilder) From(query ksql.QueryInterface) ksql.TableInterface {
 	if t.createMode {
-		t.create.From(query)
+		t.create.As(query)
 	}
 
 	return t

@@ -4,51 +4,409 @@ import (
 	"strings"
 
 	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/sql/operator"
 )
+
+type columnInfo struct {
+	fun    string
+	column string
+	as     string
+	prefix string
+	isFunc bool
+	expr   ksql.ExpressInterface
+}
+
+func (c *columnInfo) Binds() []any {
+	if c.expr == nil {
+		return nil
+	}
+
+	return c.expr.Binds()
+}
+
+type columnInfos struct {
+	columns []*columnInfo
+	binds   []any
+}
+
+func (c *columnInfos) Empty() bool {
+	return len(c.columns) == 0
+}
+
+func (c *columnInfos) Build(builder *strings.Builder) {
+	for index, column := range c.columns {
+		if index > 0 {
+			builder.WriteString(", ")
+		}
+		column.Build(builder)
+		c.binds = append(c.binds, column.Binds()...)
+	}
+}
+
+func (c *columnInfos) Append(column *columnInfo) {
+	c.columns = append(c.columns, column)
+}
+
+func (c *columnInfo) Build(builder *strings.Builder) {
+	if c.expr != nil {
+		builder.WriteString("(")
+		builder.WriteString(c.expr.Statement())
+		builder.WriteString(")")
+	} else if c.isFunc {
+		builder.WriteString(c.fun)
+		builder.WriteString("(")
+		if c.prefix != "" {
+			builder.WriteString(c.prefix)
+			operator.BuildColumnString(c.column, builder)
+		} else {
+			operator.Column(c.column, builder)
+		}
+		builder.WriteString(")")
+	} else {
+		builder.WriteString(c.prefix)
+		if c.prefix != "" {
+			operator.BuildColumnString(c.column, builder)
+		} else {
+			operator.Column(c.column, builder)
+		}
+	}
+
+	if c.as != "" {
+		builder.WriteString(" AS")
+		operator.BuildColumnString(c.as, builder)
+	}
+}
+
+type orderMeta struct {
+	column *columnInfo
+	typ    string
+}
+
+func (o *orderMeta) Build(builder *strings.Builder) {
+	o.column.Build(builder)
+	builder.WriteString(" ")
+	builder.WriteString(o.typ)
+}
+
+type orderInfo struct {
+	columns []*orderMeta
+	with    string
+}
+
+func (o *orderInfo) Append(column *orderMeta) {
+	o.columns = append(o.columns, column)
+}
+
+func (o *orderInfo) Empty() bool {
+	return len(o.columns) == 0
+}
+
+func (o *orderInfo) Build(builder *strings.Builder) {
+	builder.WriteString(" ORDER BY ")
+	for index, column := range o.columns {
+		if index > 0 {
+			builder.WriteString(", ")
+		}
+		column.Build(builder)
+	}
+
+	if o.with != "" {
+		builder.WriteString(", ")
+		builder.WriteString(o.with)
+	}
+}
+
+type groupInfo struct {
+	columns *columnInfos
+	with    string
+}
+
+func newGroupInfo() *groupInfo {
+	return &groupInfo{columns: &columnInfos{}}
+}
+
+func (o *groupInfo) Empty() bool {
+	return o.columns.Empty()
+}
+
+func (o *groupInfo) Build(builder *strings.Builder) {
+	builder.WriteString("GROUP BY ")
+	o.columns.Build(builder)
+	if o.with != "" {
+		builder.WriteString(", ")
+		builder.WriteString(o.with)
+	}
+}
+
+type tableInfo struct {
+	table string
+	sub   ksql.QueryInterface
+	as    string
+}
+
+func (t *tableInfo) Build(builder *strings.Builder) {
+	if t.sub != nil {
+		builder.WriteString(" (")
+		builder.WriteString(t.sub.Prepare())
+		builder.WriteString(")")
+	} else {
+		operator.BuildColumnString(t.table, builder)
+	}
+
+	if t.as != "" {
+		builder.WriteString(" AS")
+		operator.BuildColumnString(t.as, builder)
+	}
+}
+
+func (t *tableInfo) Binds() []any {
+	if t.sub == nil {
+		return nil
+	}
+
+	return t.sub.Binds()
+}
+
+type window struct {
+	name string
+	as   string
+}
+
+func (w *window) Build(builder *strings.Builder) {
+	operator.BuildColumnString(w.name, builder)
+	builder.WriteString(" AS")
+	operator.BuildColumnString(w.as, builder)
+}
+
+type windows struct {
+	data []*window
+}
+
+func (w *windows) Empty() bool {
+	return len(w.data) == 0
+}
+
+func (w *windows) Append(wd *window) {
+	w.data = append(w.data, wd)
+}
+
+func (w *windows) Build(builder *strings.Builder) {
+	builder.WriteString("WINDOW")
+	for index, window := range w.data {
+		if index > 0 {
+			builder.WriteString(",")
+		}
+		window.Build(builder)
+	}
+}
+
+type limitInfo struct {
+	hasLimit  bool
+	limit     int
+	hasOffset bool
+	offset    int
+}
+
+func (l *limitInfo) Binds() []any {
+	var res []any
+	if l.hasLimit {
+		res = append(res, l.limit)
+	}
+	if l.hasOffset {
+		res = append(res, l.offset)
+	}
+
+	return res
+}
+
+func (l *limitInfo) Build(builder *strings.Builder) {
+	if l.hasLimit {
+		builder.WriteString(" LIMIT ?")
+	}
+
+	if l.hasOffset {
+		builder.WriteString(" OFFSET ?")
+	}
+}
 
 type Query struct {
 	*base
-	table     string
-	as        string
-	columns   strings.Builder
-	where     ksql.WhereInterface
-	join      []ksql.JoinInterface
-	limit     int
-	offset    int
-	order     strings.Builder
-	group     strings.Builder
-	having    ksql.HavingInterface
-	forUpdate bool
-	sharding  ksql.Sharding
-	initBinds []any
+	modifer          string
+	table            *tableInfo
+	columns          *columnInfos
+	intoVars         []string
+	where            ksql.WhereInterface
+	join             []ksql.JoinInterface
+	limitInfo        *limitInfo
+	order            *orderInfo
+	group            *groupInfo
+	having           ksql.HavingInterface
+	sharding         ksql.Sharding
+	initBinds        []any
+	forSql           *For
+	partitions       []string
+	highPriority     string
+	straightJoin     string
+	sqlSmallResult   string
+	sqlBigResult     string
+	sqlBufferResult  string
+	sqlNoCache       string
+	sqlCalcFoundRows string
+	windows          *windows
 }
 
 func NewQuery() *Query {
-	q := &Query{base: &base{hasPrepared: false}, where: NewWhere(), having: NewHaving(), sharding: ksql.Sharding_None}
-	q.keyword("SELECT ")
+	q := &Query{
+		base: newBase(), where: NewWhere(), having: NewHaving(), sharding: ksql.Sharding_None, columns: &columnInfos{}, group: newGroupInfo(), order: &orderInfo{},
+		forSql: &For{}, table: &tableInfo{}, windows: &windows{}, limitInfo: &limitInfo{},
+	}
+	q.opChain.Append(q._keyword, q._columns, q._into, q._from, q._joinInfo, q._partition, q._where, q._group, q._having, q._window, q._order, q._limit, q._for)
 	return q
+}
+
+func (o *Query) _keyword(builder *strings.Builder) {
+	builder.WriteString("SELECT")
+	operator.BuildPureString(o.modifer, builder)
+	operator.BuildPureString(o.highPriority, builder)
+	operator.BuildPureString(o.straightJoin, builder)
+	operator.BuildPureString(o.sqlSmallResult, builder)
+	operator.BuildPureString(o.sqlBigResult, builder)
+	operator.BuildPureString(o.sqlBufferResult, builder)
+	operator.BuildPureString(o.sqlNoCache, builder)
+	operator.BuildPureString(o.sqlCalcFoundRows, builder)
+}
+
+func (o *Query) _columns(builder *strings.Builder) {
+	if o.columns.Empty() {
+		builder.WriteString(" *")
+		return
+	}
+
+	builder.WriteString(" ")
+	o.columns.Build(builder)
+	o.binds = append(o.binds, o.columns.binds...)
+}
+
+func (o *Query) _into(builder *strings.Builder) {
+	if len(o.intoVars) == 0 {
+		return
+	}
+
+	builder.WriteString(" INTO ")
+	for index, intoVar := range o.intoVars {
+		if index > 0 {
+			builder.WriteString(",")
+		}
+
+		operator.BuildColumnString(intoVar, builder)
+	}
+}
+
+func (o *Query) _from(builder *strings.Builder) {
+	builder.WriteString(" FROM")
+	o.table.Build(builder)
+	o.binds = append(o.binds, o.table.Binds()...)
+}
+
+func (o *Query) _joinInfo(builder *strings.Builder) {
+	if len(o.join) == 0 {
+		return
+	}
+
+	for _, join := range o.join {
+		builder.WriteString(" ")
+		join.Build(builder)
+		o.binds = append(o.binds, join.Binds()...)
+	}
+}
+
+func (o *Query) _partition(builder *strings.Builder) {
+	if len(o.partitions) == 0 {
+		return
+	}
+
+	builder.WriteString(" PARTITION")
+	for index, partition := range o.partitions {
+		if index > 0 {
+			builder.WriteString(",")
+		}
+
+		operator.BuildColumnString(partition, builder)
+	}
+}
+
+func (o *Query) _where(builder *strings.Builder) {
+	if o.where.Empty() {
+		return
+	}
+
+	builder.WriteString(" ")
+	o.where.Build(builder)
+	o.binds = append(o.binds, o.where.Binds()...)
+}
+
+func (o *Query) _group(builder *strings.Builder) {
+	if o.group.Empty() {
+		return
+	}
+
+	builder.WriteString(" ")
+	o.group.Build(builder)
+}
+
+func (o *Query) _having(builder *strings.Builder) {
+	if o.having.Empty() {
+		return
+	}
+
+	builder.WriteString(" ")
+	o.having.Build(builder)
+	o.binds = append(o.binds, o.having.Binds()...)
+}
+
+func (o *Query) _window(builder *strings.Builder) {
+	if o.windows.Empty() {
+		return
+	}
+
+	builder.WriteString(" ")
+	o.windows.Build(builder)
+}
+
+func (o *Query) _order(builder *strings.Builder) {
+	if o.order.Empty() {
+		return
+	}
+
+	o.order.Build(builder)
+}
+
+func (o *Query) _limit(builder *strings.Builder) {
+	if o.limitInfo.hasLimit || o.limitInfo.hasOffset {
+		o.limitInfo.Build(builder)
+		o.binds = append(o.binds, o.limitInfo.Binds()...)
+	}
+}
+
+func (o *Query) _for(builder *strings.Builder) {
+	if o.forSql.Empty() {
+		return
+	}
+
+	o.forSql.Build(builder)
 }
 
 func (o *Query) Clone() ksql.QueryInterface {
 	q := &Query{
-		base: &base{hasPrepared: false}, where: o.where, having: o.having,
-		table: o.table, as: o.as, join: o.join, group: o.group, initBinds: o.initBinds,
+		base: newBase(), where: o.where, having: o.having,
+		table: o.table, join: o.join, group: o.group, initBinds: o.initBinds, order: o.order, intoVars: o.intoVars, limitInfo: o.limitInfo,
+		forSql: o.forSql, partitions: o.partitions, highPriority: o.highPriority, straightJoin: o.straightJoin, windows: o.windows,
 	}
-	q.keyword("SELECT ")
 	return q
 }
 
 func (o *Query) TableBy(operater ksql.QueryInterface, as string) ksql.QueryInterface {
-	operater.Prepare()
-	var tmp = make([]any, len(operater.Binds()))
-	copy(tmp, operater.Binds())
-	o.initBinds = append(tmp, o.initBinds...)
-	o.as = as
-	var builder strings.Builder
-	builder.WriteString("(")
-	builder.WriteString(operater.Prepare())
-	builder.WriteString(")")
-	o.table = builder.String()
+	o.table.sub = operater
 	return o
 }
 
@@ -61,48 +419,33 @@ func (o *Query) GetSharding() ksql.Sharding {
 }
 
 func (o *Query) Table(table string) ksql.QueryInterface {
-	o.table = strings.Trim(table, "\r\n ")
+	o.table.table = table
 	return o
 }
 
 func (o *Query) As(as string) ksql.QueryInterface {
-	o.as = as
+	o.table.as = as
 	return o
 }
 
 func (o *Query) Func(fun, column, as string) ksql.QueryInterface {
-	if o.columns.Len() > 0 {
-		o.columns.WriteString(",")
-	}
-
-	o.columns.WriteString(fun)
-	o.columns.WriteString("(")
-	Column(column, &o.columns)
-	o.columns.WriteString(")")
-	o.columns.WriteString(" AS ")
-	Backtick(as, &o.columns)
-
+	o.columns.Append(&columnInfo{isFunc: true, column: column, fun: fun, as: as})
 	return o
 }
 
 func (o *Query) Column(column, as string) ksql.QueryInterface {
-	if o.columns.Len() > 0 {
-		o.columns.WriteString(",")
-	}
+	o.columns.Append(&columnInfo{column: column, as: as})
+	return o
+}
 
-	Column(column, &o.columns)
-	o.columns.WriteString(" AS ")
-	Backtick(as, &o.columns)
+func (o *Query) IntoVar(vars ...string) ksql.QueryInterface {
+	o.intoVars = append(o.intoVars, vars...)
 	return o
 }
 
 func (o *Query) Columns(columns ...string) ksql.QueryInterface {
 	for _, column := range columns {
-		if o.columns.Len() > 0 {
-			o.columns.WriteString(",")
-		}
-
-		Column(column, &o.columns)
+		o.columns.Append(&columnInfo{column: column})
 	}
 
 	return o
@@ -110,11 +453,7 @@ func (o *Query) Columns(columns ...string) ksql.QueryInterface {
 
 func (o *Query) ColumnsExpress(columns ...ksql.ExpressInterface) ksql.QueryInterface {
 	for _, column := range columns {
-		if o.columns.Len() > 0 {
-			o.columns.WriteString(",")
-		}
-
-		o.columns.WriteString(column.Statement())
+		o.columns.Append(&columnInfo{expr: column})
 	}
 
 	return o
@@ -195,153 +534,72 @@ func (o *Query) NotBetween(column string, begin, end any) ksql.QueryInterface {
 }
 
 func (o *Query) Limit(limit int) ksql.QueryInterface {
-	o.limit = limit
+	o.limitInfo.hasLimit = true
+	o.limitInfo.limit = limit
 	return o
 }
 
 func (o *Query) Offset(offset int) ksql.QueryInterface {
-	o.offset = offset
+	o.limitInfo.hasOffset = true
+	o.limitInfo.offset = offset
 	return o
 }
 
 func (o *Query) Pagination(page, pageSize int) ksql.QueryInterface {
-	o.limit = pageSize
-	o.offset = (page - 1) * pageSize
+	o.Limit(pageSize)
+	o.Offset((page - 1) * pageSize)
 	return o
 }
 
-func (o *Query) Order(column string) ksql.QueryInterface {
-	if o.order.Len() > 0 {
-		o.order.WriteString(",")
-	} else {
-		o.order.WriteString(" ORDER BY ")
+func (o *Query) Order(columns ...string) ksql.QueryInterface {
+	for _, column := range columns {
+		o.order.Append(&orderMeta{column: &columnInfo{column: column}, typ: "ASC"})
 	}
-	Column(column, &o.order)
-	o.order.WriteString(" ASC")
 	return o
 }
 
-func (o *Query) OrderDesc(column string) ksql.QueryInterface {
-	if o.order.Len() > 0 {
-		o.order.WriteString(",")
-	} else {
-		o.order.WriteString(" ORDER BY ")
+func (o *Query) OrderDesc(columns ...string) ksql.QueryInterface {
+	for _, column := range columns {
+		o.order.Append(&orderMeta{column: &columnInfo{column: column}, typ: "DESC"})
 	}
-	Column(column, &o.order)
-	o.order.WriteString(" DESC")
 	return o
 }
 
 func (o *Query) Group(columns ...string) ksql.QueryInterface {
-	if o.group.Len() > 0 {
-		o.group.WriteString(",")
-	} else {
-		o.group.WriteString(" GROUP BY ")
+	for _, column := range columns {
+		o.group.columns.Append(&columnInfo{column: column})
 	}
-	Column(columns[0], &o.group)
-	for _, column := range columns[1:] {
-		o.group.WriteString(",")
-		Column(column, &o.group)
-	}
-
 	return o
 }
 
-func (o *Query) _join(t string, table string) ksql.JoinInterface {
-	join := NewJoin(t)
+func (o *Query) _join(table string) ksql.JoinInterface {
+	join := NewJoin()
 	join.Table(table)
 	o.join = append(o.join, join)
 	return join
 }
 
 func (o *Query) Join(table string) ksql.JoinInterface {
-	return o._join("JOIN", table)
+	return o._join(table).Inner()
 }
 
-func (o *Query) _joinExpress(t string, express ksql.ExpressInterface) ksql.JoinInterface {
-	join := NewJoin(t)
+func (o *Query) _joinExpress(express ksql.ExpressInterface) ksql.JoinInterface {
+	join := NewJoin()
 	join.Express(express)
 	o.join = append(o.join, join)
 	return join
 }
 
 func (o *Query) JoinExpress(express ksql.ExpressInterface) ksql.JoinInterface {
-	return o._joinExpress("JOIN", express)
+	return o._joinExpress(express)
 }
 
 func (o *Query) LeftJoin(table string) ksql.JoinInterface {
-	return o._join("LEFT JOIN", table)
-}
-
-func (o *Query) LeftJoinExpress(express ksql.ExpressInterface) ksql.JoinInterface {
-	return o._joinExpress("LEFT JOIN", express)
+	return o._join(table).Left()
 }
 
 func (o *Query) RightJoin(table string) ksql.JoinInterface {
-	return o._join("RIGHT JOIN", table)
-}
-
-func (o *Query) RightJoinExpress(express ksql.ExpressInterface) ksql.JoinInterface {
-	return o._joinExpress("RIGHT JOIN", express)
-}
-
-func (o *Query) Prepare() string {
-	if o.hasPrepared {
-		return o.base.Prepare()
-	}
-
-	o._data(o.initBinds...)
-	o.hasPrepared = true
-	if o.columns.Len() == 0 {
-		o.builder.WriteString("*")
-	} else {
-		o.builder.WriteString(o.columns.String())
-	}
-
-	o.builder.WriteString(" FROM ")
-	Column(_formatSharding(o.table, o.sharding), &o.builder)
-	if o.as != "" {
-		o.builder.WriteString(" AS ")
-		Backtick(o.as, &o.builder)
-	}
-
-	for _, join := range o.join {
-		o.builder.WriteString(" ")
-		o.builder.WriteString(join.Prepare())
-		o._data(join.Binds()...)
-	}
-	if !o.where.Empty() {
-		o.builder.WriteString(" WHERE ")
-		o.builder.WriteString(o.where.Prepare())
-		o._data(o.where.Binds()...)
-	}
-
-	if o.group.Len() > 0 {
-		o.builder.WriteString(o.group.String())
-	}
-
-	if !o.having.Empty() {
-		o.builder.WriteString(" HAVING ")
-		o.builder.WriteString(o.having.Prepare())
-		o._data(o.having.Binds()...)
-	}
-
-	if o.order.Len() > 0 {
-		o.builder.WriteString(o.order.String())
-	}
-
-	if o.limit > 0 {
-		o.builder.WriteString(" LIMIT ")
-		o.builder.WriteString(RawValue(o.offset))
-		o.builder.WriteString(",")
-		o.builder.WriteString(RawValue(o.limit))
-	}
-
-	if o.forUpdate {
-		o.builder.WriteString(" FOR UPDATE")
-	}
-
-	return o.base.Prepare()
+	return o._join(table).Right()
 }
 
 func (o *Query) HavingBetween(column string, begin, end any) ksql.QueryInterface {
@@ -413,31 +671,99 @@ func (o *Query) OrHaving(call func(h ksql.HavingInterface)) ksql.QueryInterface 
 }
 
 func (o *Query) ForUpdate() ksql.QueryInterface {
-	o.forUpdate = true
+	o.forSql.Update()
 	return o
 }
 
-func (o *Query) Distinct(column string) ksql.QueryInterface {
-	if o.columns.Len() > 0 {
-		o.columns.WriteString(",")
-	}
-
-	o.columns.WriteString("DISTINCT ")
-	Column(column, &o.columns)
+func (o *Query) Distinct() ksql.QueryInterface {
+	o.modifer = "DISTINCT"
 	return o
 }
 
 func (o *Query) FuncDistinct(fun, column, as string) ksql.QueryInterface {
-	if o.columns.Len() > 0 {
-		o.columns.WriteString(",")
-	}
+	o.columns.Append(&columnInfo{prefix: "DISTINCT", column: column, fun: fun, as: as})
+	return o
+}
 
-	o.columns.WriteString(fun)
-	o.columns.WriteString("(")
-	o.columns.WriteString("DISTINCT ")
-	Column(column, &o.columns)
-	o.columns.WriteString(")")
-	o.columns.WriteString(" AS ")
-	Backtick(as, &o.columns)
+func (o *Query) All() ksql.QueryInterface {
+	o.modifer = "ALL"
+	return o
+}
+
+func (o *Query) DistinctRow() ksql.QueryInterface {
+	o.modifer = "DISTINCTROW"
+	return o
+}
+
+func (o *Query) HighPriority() ksql.QueryInterface {
+	o.highPriority = "HIGH_PRIORITY"
+	return o
+}
+
+func (o *Query) StraightJoin() ksql.QueryInterface {
+	o.straightJoin = "STRAIGHT_JOIN"
+	return o
+}
+
+func (o *Query) SqlSmallResult() ksql.QueryInterface {
+	o.sqlSmallResult = "SQL_SMALL_RESULT"
+	return o
+}
+
+func (o *Query) SqlBigResult() ksql.QueryInterface {
+	o.sqlBigResult = "SQL_BIG_RESULT"
+	return o
+}
+
+func (o *Query) SqlBufferResult() ksql.QueryInterface {
+	o.sqlBufferResult = "SQL_BUFFER_RESULT"
+	return o
+}
+
+func (o *Query) SqlNoCache() ksql.QueryInterface {
+	o.sqlNoCache = "SQL_NO_CACHE"
+	return o
+}
+
+func (o *Query) SqlCalcFoundRows() ksql.QueryInterface {
+	o.sqlCalcFoundRows = "SQL_CALC_FOUND_ROWS"
+	return o
+}
+
+func (o *Query) Partitions(names ...string) ksql.QueryInterface {
+	o.partitions = append(o.partitions, names...)
+	return o
+}
+
+func (o *Query) GroupWithRollUp() ksql.QueryInterface {
+	o.group.with = "WITH ROLLUP"
+	return o
+}
+
+func (o *Query) Window(win, as string) ksql.QueryInterface {
+	o.windows.Append(&window{name: win, as: as})
+	return o
+}
+
+func (o *Query) OrderWithRollUp() ksql.QueryInterface {
+	o.order.with = "WITH ROLLUP"
+	return o
+}
+
+func (o *Query) For() ksql.ForInterface {
+	return o.forSql
+}
+
+func (o *Query) WhereInCall(column string, call func(query ksql.QueryInterface)) ksql.QueryInterface {
+	query := NewQuery()
+	call(query)
+	o.where.InBy(column, query)
+	return o
+}
+
+func (o *Query) WhereNotInCall(column string, call func(query ksql.QueryInterface)) ksql.QueryInterface {
+	query := NewQuery()
+	call(query)
+	o.where.NotInBy(column, query)
 	return o
 }

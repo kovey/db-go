@@ -124,7 +124,7 @@ func TestBuilderWithSubSelect(t *testing.T) {
 	var rows []*test_user_count
 	builder := Rows(&rows).(*Builder[*test_user_count])
 	builder.TableBy(sub, "u").Columns(columns...).Where("us.id", ksql.Ge, 1).LeftJoin("user").As("us").On("us.id", "=", "u.id")
-	mock.ExpectPrepare("SELECT `u`.`id`,`us`.`age`,`us`.`name`,`us`.`create_time`,`us`.`balance`,`u`.`count` FROM").ExpectQuery().WithArgs(100, 200, 1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
+	mock.ExpectPrepare("SELECT `u`.`id`, `us`.`age`, `us`.`name`, `us`.`create_time`, `us`.`balance`, `u`.`count` FROM").ExpectQuery().WithArgs(100, 200, 1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
 	err = builder.All(context.Background())
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())

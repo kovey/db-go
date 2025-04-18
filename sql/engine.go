@@ -43,6 +43,24 @@ func (e *Engine) FormatRaw(sql ksql.ExpressInterface) string {
 	return tpl
 }
 
+func (e *Engine) formatOriginal(sql ksql.SqlInterface) string {
+	tpl := sql.Prepare()
+	for _, bind := range sql.Binds() {
+		tpl = strings.Replace(tpl, "?", e.valueNotQuote(bind), 1)
+	}
+
+	return tpl
+}
+
+func (e *Engine) formatOriginalRaw(sql ksql.ExpressInterface) string {
+	tpl := sql.Statement()
+	for _, bind := range sql.Binds() {
+		tpl = strings.Replace(tpl, "?", e.valueNotQuote(bind), 1)
+	}
+
+	return tpl
+}
+
 func (e *Engine) value(val any) string {
 	switch tmp := val.(type) {
 	case string:
@@ -88,6 +106,57 @@ func (e *Engine) value(val any) string {
 	default:
 		if s, ok := val.(StringInterface); ok {
 			return fmt.Sprintf("%s%s%s", e.quote, s.String(), e.quote)
+		}
+
+		return fmt.Sprintf("%v", tmp)
+	}
+}
+
+func (e *Engine) valueNotQuote(val any) string {
+	switch tmp := val.(type) {
+	case string:
+		return fmt.Sprintf("%s", tmp)
+	case *string:
+		return fmt.Sprintf("%s", *tmp)
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", tmp)
+	case float32, float64:
+		return fmt.Sprintf("%f", tmp)
+	case *int:
+		return fmt.Sprintf("%d", *tmp)
+	case *int8:
+		return fmt.Sprintf("%d", *tmp)
+	case *int16:
+		return fmt.Sprintf("%d", *tmp)
+	case *int32:
+		return fmt.Sprintf("%d", *tmp)
+	case *int64:
+		return fmt.Sprintf("%d", *tmp)
+	case *uint:
+		return fmt.Sprintf("%d", *tmp)
+	case *uint8:
+		return fmt.Sprintf("%d", *tmp)
+	case *uint16:
+		return fmt.Sprintf("%d", *tmp)
+	case *uint32:
+		return fmt.Sprintf("%d", *tmp)
+	case *uint64:
+		return fmt.Sprintf("%d", *tmp)
+	case *float32:
+		return fmt.Sprintf("%f", *tmp)
+	case *float64:
+		return fmt.Sprintf("%f", *tmp)
+	case time.Time:
+		return fmt.Sprintf("%s", tmp.Format(e.timeFormat))
+	case *time.Time:
+		return fmt.Sprintf("%s", tmp.Format(e.timeFormat))
+	case bool:
+		return fmt.Sprintf("%t", tmp)
+	case *bool:
+		return fmt.Sprintf("%t", *tmp)
+	default:
+		if s, ok := val.(StringInterface); ok {
+			return fmt.Sprintf("%s", s.String())
 		}
 
 		return fmt.Sprintf("%v", tmp)

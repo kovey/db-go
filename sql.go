@@ -16,6 +16,52 @@ const (
 	Index_Type_Primary  IndexType = 0x3
 	Index_Type_FullText IndexType = 0x4
 	Index_Type_Spatial  IndexType = 0x5
+	Index_Type_Foreign  IndexType = 0x6
+)
+
+func (i IndexType) String() string {
+	switch i {
+	case Index_Type_FullText:
+		return "FULLTEXT"
+	case Index_Type_Spatial:
+		return "SPATIAL"
+	case Index_Type_Unique:
+		return "UNIQUE"
+	default:
+		return ""
+	}
+}
+
+type IndexSubType string
+
+const (
+	Index_Sub_Type_Key   IndexSubType = "KEY"
+	Index_Sub_Type_Index IndexSubType = "INDEX"
+)
+
+type IndexAlg string
+
+const (
+	Index_Alg_BTree IndexAlg = "BTREE"
+	Index_Alg_Hash  IndexAlg = "HASH"
+)
+
+type IndexAlgOption string
+
+const (
+	Index_Alg_Option_Default IndexAlgOption = "DEFAULT"
+	Index_Alg_Option_Inplace IndexAlgOption = "INPLACE"
+	Index_Alg_Option_Copy    IndexAlgOption = "COPY"
+)
+
+// DEFAULT | NONE | SHARED | EXCLUSIVE
+type IndexLockOption string
+
+const (
+	Index_Lock_Option_Default   IndexLockOption = "DEFAULT"
+	Index_Lock_Option_None      IndexLockOption = "NONE"
+	Index_Lock_Option_Shared    IndexLockOption = "SHARED"
+	Index_Lock_Option_Exclusive IndexLockOption = "EXCLUSIVE"
 )
 
 type SqlType string
@@ -157,7 +203,7 @@ type SqlInterface interface {
 }
 
 type WhereInterface interface {
-	SqlInterface
+	BuildInterface
 	Where(column string, op Op, data any) WhereInterface
 	In(column string, data []any) WhereInterface
 	NotIn(column string, data []any) WhereInterface
@@ -171,10 +217,11 @@ type WhereInterface interface {
 	NotBetween(column string, begin, end any) WhereInterface
 	AndWhere(call func(o WhereInterface)) WhereInterface
 	Empty() bool
+	Binds() []any
 }
 
 type HavingInterface interface {
-	SqlInterface
+	BuildInterface
 	Having(column string, op Op, data any) HavingInterface
 	In(column string, data []any) HavingInterface
 	NotIn(column string, data []any) HavingInterface
@@ -188,21 +235,26 @@ type HavingInterface interface {
 	NotBetween(column string, begin, end any) HavingInterface
 	AndHaving(call func(o HavingInterface)) HavingInterface
 	Empty() bool
+	Binds() []any
 }
 
 type JoinInterface interface {
-	SqlInterface
+	BuildInterface
 	Table(table string) JoinInterface
 	As(as string) JoinInterface
 	On(column, op, val string) JoinInterface
 	OnOr(call func(JoinOnInterface)) JoinInterface
 	Express(express ExpressInterface) JoinInterface
-	Type() string
+	Left() JoinInterface
+	Right() JoinInterface
+	Inner() JoinInterface
+	Binds() []any
 }
 
 type JoinOnInterface interface {
-	SqlInterface
-	On(column, op, val string) JoinInterface
+	BuildInterface
+	On(column, op, val string) JoinOnInterface
+	OnVal(column, op string, val any) JoinOnInterface
 }
 
 type InsertInterface interface {
@@ -210,7 +262,21 @@ type InsertInterface interface {
 	Add(column string, data any) InsertInterface
 	Table(table string) InsertInterface
 	From(query QueryInterface) InsertInterface
+	FromTable(table string) InsertInterface
 	Columns(columns ...string) InsertInterface
+	Values(datas ...any) InsertInterface
+	Set(column, value string) InsertInterface
+	SetColumn(column, otherColumn string) InsertInterface
+	SetExpress(expr ExpressInterface) InsertInterface
+	LowPriority() InsertInterface
+	Delayed() InsertInterface
+	HighPriority() InsertInterface
+	Ignore() InsertInterface
+	Partitions(names ...string) InsertInterface
+	As(rowAlias string, colAlias ...string) InsertInterface
+	OnDuplicateKeyUpdate(column, value string) InsertInterface
+	OnDuplicateKeyUpdateColumn(column, otherColumn string) InsertInterface
+	OnDuplicateKeyUpdateExpress(expr ExpressInterface) InsertInterface
 }
 
 type UpdateInterface interface {
@@ -218,15 +284,108 @@ type UpdateInterface interface {
 	Set(column string, data any) UpdateInterface
 	Where(WhereInterface) UpdateInterface
 	Table(table string) UpdateInterface
+	LowPriority() UpdateInterface
+	Ignore() UpdateInterface
+	OrderByAsc(columns ...string) UpdateInterface
+	OrderByDesc(columns ...string) UpdateInterface
+	SetExpress(expre ExpressInterface) UpdateInterface
+	SetColumn(column string, otherColumn string) UpdateInterface
+	Limit(limit int) UpdateInterface
+}
+
+type UpdateMultiInterface interface {
+	SqlInterface
+	Set(column string, data any) UpdateMultiInterface
+	Where(WhereInterface) UpdateMultiInterface
+	Table(table string) UpdateMultiInterface
+	SetExpress(expre ExpressInterface) UpdateMultiInterface
+	SetColumn(column string, otherColumn string) UpdateMultiInterface
+	LowPriority() UpdateMultiInterface
+	Ignore() UpdateMultiInterface
+	Join(table string) JoinInterface
+	JoinExpress(express ExpressInterface) JoinInterface
+	LeftJoin(table string) JoinInterface
+	RightJoin(table string) JoinInterface
+}
+
+type ColumnFormat string
+
+const (
+	Column_Format_Fixed   ColumnFormat = "FIXED"
+	Column_Format_Dynamic ColumnFormat = "DYNAMIC"
+	Column_Format_Default ColumnFormat = "DEFAULT"
+)
+
+type ColumnStorage string
+
+const (
+	Column_Storage_Disk   ColumnStorage = "DISK"
+	Column_Storage_Memory ColumnStorage = "MEMORY"
+)
+
+type ReferenceMatch string
+
+const (
+	Reference_Match_Full   ReferenceMatch = "FULL"
+	Reference_Match_Patial ReferenceMatch = "PARTIAL"
+	Reference_Match_Simple ReferenceMatch = "SIMPLE"
+)
+
+type ReferenceOnOpt string
+
+const (
+	Reference_On_Opt_DELETE ReferenceOnOpt = "DELETE"
+	Reference_On_Opt_UPDATE ReferenceOnOpt = "UPDATE"
+)
+
+type ReferenceOption string
+
+const (
+	Reference_Option_Restrict    ReferenceOption = "RESTRICT"
+	Reference_Option_Cascade     ReferenceOption = "CASCADE"
+	Reference_Option_Set_Null    ReferenceOption = "SET NULL"
+	Reference_Option_No_Action   ReferenceOption = "NO ACTION"
+	Reference_Option_Set_Default ReferenceOption = "SET DEFAULT"
+)
+
+type ColumnReferenceInterface interface {
+	Column(name string, length int, order Order) ColumnReferenceInterface
+	Express(express string, order Order) ColumnReferenceInterface
+	Match(match ReferenceMatch) ColumnReferenceInterface
+	On(op ReferenceOnOpt, option ReferenceOption) ColumnReferenceInterface
+	Build(builder *strings.Builder)
+}
+
+type ColumnCheckConstraintInterface interface {
+	Constraint(symbol string) ColumnCheckConstraintInterface
+	Check(expr string) ColumnCheckConstraintInterface
+	Enforced() ColumnCheckConstraintInterface
+	NotEnforced() ColumnCheckConstraintInterface
+	Build(builder *strings.Builder)
 }
 
 type ColumnInterface interface {
-	Express() string
+	Build(builder *strings.Builder)
 	Nullable() ColumnInterface
-	AutoIncrement() ColumnInterface
-	Unsigned() ColumnInterface
+	NotNullable() ColumnInterface
 	Default(value string) ColumnInterface
+	DefaultExpress(expr string) ColumnInterface
+	DefaultBit(value string) ColumnInterface
+	Visible() ColumnInterface
+	Invisible() ColumnInterface
+	AutoIncrement() ColumnInterface
+	Unique() ColumnInterface
+	Primary() ColumnInterface
+	Index() ColumnInterface
 	Comment(comment string) ColumnInterface
+	Collate(collate string) ColumnInterface
+	Format(format ColumnFormat) ColumnInterface
+	EngineAttribute(engineAttr string) ColumnInterface
+	SecondaryEngineAttribute(secEngineAttr string) ColumnInterface
+	Storage(storage ColumnStorage) ColumnInterface
+	Reference(table string) ColumnReferenceInterface
+	CheckConstraint() ColumnCheckConstraintInterface
+	Unsigned() ColumnInterface
 	UseCurrent() ColumnInterface
 	UseCurrentOnUpdate() ColumnInterface
 }
@@ -256,29 +415,106 @@ type AddColumnInterface interface {
 	AddChar(column string, length int) ColumnInterface
 }
 
+type PartitionOperateInterface interface {
+	BuildInterface
+	Drop() PartitionOperateInterface
+	Discard() PartitionOperateInterface
+	Import() PartitionOperateInterface
+	Truncate() PartitionOperateInterface
+	Reorganize() PartitionDefinitionInterface
+	Exchange(table, validation string) PartitionOperateInterface
+	Analyze() PartitionOperateInterface
+	Check() PartitionOperateInterface
+	Optimize() PartitionOperateInterface
+	Rebuild() PartitionOperateInterface
+	Repair() PartitionOperateInterface
+	Remove() PartitionOperateInterface
+}
+
 type AlterInterface interface {
 	SqlInterface
 	AddColumnInterface
+	AlterColumn(column string) AlterColumnInterface
 	DropColumn(column string) AlterInterface
 	DropColumnIfExists(column string) AlterInterface
-	AddIndex(name string, t IndexType, column ...string) AlterInterface
+	AddIndex(name string) TableIndexInterface
+	AlterIndex(index string) AlterIndexInterface
+	AddCheck(expr string) ColumnCheckConstraintInterface
+	DropCheck(symbol string) AlterInterface
+	DropConstraint(symbol string) AlterInterface
+	AlterCheck(symbol string) ColumnCheckConstraintInterface
+	Algorithm(alg AlterOptAlg) AlterInterface
 	DropIndex(name string) AlterInterface
+	DropKey(name string) AlterInterface
+	DropPrimary() AlterInterface
+	DropForeign(name string) AlterInterface
+	Force() AlterInterface
+	Lock(lock IndexLockOption) AlterInterface
+	OrderBy(columns ...string) AlterInterface
 	Table(table string) AlterInterface
-	ChangeColumn(oldColumn, newColumn, t string, length, scale int, sets ...string) ColumnInterface
-	ModifyColumn(column, t string, length, scale int, sets ...string) ColumnInterface
+	ChangeColumn(oldColumn string) ChangeColumnInterface
+	ModifyColumn(column string) ModifyColumnInterface
 	Comment(comment string) AlterInterface
-	AddPrimary(column string) AlterInterface
-	AddUnique(name string, columns ...string) AlterInterface
+	AddPrimary(columns ...string) AlterInterface
+	AddUnique(name string, columns ...string) TableIndexInterface
+	AddForeign(name string, columns ...string) TableIndexInterface
+	Default(charset, collate string) AlterInterface
 	Charset(charset string) AlterInterface
 	Collate(collate string) AlterInterface
 	Engine(engine string) AlterInterface
 	Rename(as string) AlterInterface
+	RenameTo(to string) AlterInterface
+	RenameColumn(oldName, newName string) AlterInterface
+	RenameKey(oldName, newName string) AlterInterface
+	RenameIndex(oldName, newName string) AlterInterface
+	WithValidation() AlterInterface
+	WithoutValidation() AlterInterface
+	DisableKeys() AlterInterface
+	EnableKeys() AlterInterface
+	DiscardTablespace() AlterInterface
+	ImportTablespace() AlterInterface
+	ConvertToCharset(charset string, collate string) AlterInterface
+	Options() TableOptionsInterface
+	AddPartition(name string) PartitionDefinitionInterface
+	CoalescePartition(number int) AlterInterface
+	PartitionOperate(partitionNames ...string) PartitionOperateInterface
 }
 
 type DeleteInterface interface {
 	SqlInterface
-	Where(WhereInterface) DeleteInterface
+	LowPriority() DeleteInterface
+	Quick() DeleteInterface
+	Ignore() DeleteInterface
 	Table(table string) DeleteInterface
+	As(as string) DeleteInterface
+	Partitions(names ...string) DeleteInterface
+	Where(WhereInterface) DeleteInterface
+	OrderByDesc(columns ...string) DeleteInterface
+	OrderByAsc(columns ...string) DeleteInterface
+	Limit(limit int) DeleteInterface
+}
+
+type DeleteMultiInterface interface {
+	SqlInterface
+	LowPriority() DeleteMultiInterface
+	Quick() DeleteMultiInterface
+	Ignore() DeleteMultiInterface
+	Table(table string) DeleteMultiInterface
+	Join(table string) JoinInterface
+	JoinExpress(express ExpressInterface) JoinInterface
+	LeftJoin(table string) JoinInterface
+	RightJoin(table string) JoinInterface
+	Where(WhereInterface) DeleteMultiInterface
+}
+
+type ForInterface interface {
+	BuildInterface
+	Update() ForInterface
+	Share() ForInterface
+	Of(tables ...string) ForInterface
+	NoWait() ForInterface
+	SkipLocked() ForInterface
+	LockInShareMode() ForInterface
 }
 
 type QueryInterface interface {
@@ -318,40 +554,144 @@ type QueryInterface interface {
 	AndHaving(call func(h HavingInterface)) QueryInterface
 	Limit(limit int) QueryInterface
 	Offset(offset int) QueryInterface
-	Order(column string) QueryInterface
-	OrderDesc(column string) QueryInterface
+	Order(column ...string) QueryInterface
+	OrderDesc(column ...string) QueryInterface
 	Group(column ...string) QueryInterface
 	Join(table string) JoinInterface
 	JoinExpress(express ExpressInterface) JoinInterface
 	LeftJoin(table string) JoinInterface
-	LeftJoinExpress(express ExpressInterface) JoinInterface
 	RightJoin(table string) JoinInterface
-	RightJoinExpress(express ExpressInterface) JoinInterface
-	ForUpdate() QueryInterface
 	Clone() QueryInterface
 	Pagination(page, pageSize int) QueryInterface
-	Distinct(column string) QueryInterface
+	Distinct() QueryInterface
 	FuncDistinct(fun, column, as string) QueryInterface
+	IntoVar(vars ...string) QueryInterface
+	All() QueryInterface
+	DistinctRow() QueryInterface
+	HighPriority() QueryInterface
+	StraightJoin() QueryInterface
+	SqlSmallResult() QueryInterface
+	SqlBigResult() QueryInterface
+	SqlBufferResult() QueryInterface
+	SqlNoCache() QueryInterface
+	SqlCalcFoundRows() QueryInterface
+	Partitions(names ...string) QueryInterface
+	GroupWithRollUp() QueryInterface
+	Window(window, as string) QueryInterface
+	OrderWithRollUp() QueryInterface
+	For() ForInterface
+	WhereInCall(column string, call func(query QueryInterface)) QueryInterface
+	WhereNotInCall(column string, call func(query QueryInterface)) QueryInterface
 }
 
 type CreateTableInterface interface {
 	SqlInterface
 	AddColumnInterface
-	AddIndex(name string, t IndexType, column ...string) CreateTableInterface
+	AddIndex(name string) TableIndexInterface
 	Table(table string) CreateTableInterface
 	Engine(engine string) CreateTableInterface
 	Charset(charset string) CreateTableInterface
 	Collate(collate string) CreateTableInterface
 	Comment(comment string) CreateTableInterface
-	AddPrimary(column string) CreateTableInterface
-	AddUnique(name string, columns ...string) CreateTableInterface
-	From(QueryInterface) CreateTableInterface
+	AddPrimary(column string) TableIndexInterface
+	AddUnique(name string, columns ...string) TableIndexInterface
+	As(QueryInterface) CreateTableInterface
 	Like(table string) CreateTableInterface
+	Temporary() CreateTableInterface
+	Options() TableOptionsInterface
+	PartitionOptions() PartitionOptionsInterface
+	IfNotExists() CreateTableInterface
 }
 
 type DropTableInterface interface {
 	SqlInterface
 	Table(table string) DropTableInterface
+	IfExists() DropTableInterface
+	Temporary() DropTableInterface
+	Restrict() DropTableInterface
+	Cascade() DropTableInterface
+}
+
+type DropTablespaceInterface interface {
+	SqlInterface
+	Tablespace(table string) DropTablespaceInterface
+	Undo() DropTablespaceInterface
+	Engine(engine string) DropTablespaceInterface
+}
+
+type DropTriggerInterface interface {
+	SqlInterface
+	Trigger(trigger string) DropTriggerInterface
+	IfExists() DropTriggerInterface
+	Schema(schema string) DropTriggerInterface
+}
+
+type DropViewInterface interface {
+	SqlInterface
+	View(view string) DropViewInterface
+	IfExists() DropViewInterface
+	Restrict() DropViewInterface
+	Cascade() DropViewInterface
+}
+
+type RenameTableInterface interface {
+	SqlInterface
+	Table(from, to string) RenameTableInterface
+}
+
+type TruncateTableInterface interface {
+	SqlInterface
+	Table(table string) TruncateTableInterface
+}
+
+type DropSchemaInterface interface {
+	SqlInterface
+	Schema(schema string) DropSchemaInterface
+	IfExists() DropSchemaInterface
+}
+
+type DropEventInterface interface {
+	SqlInterface
+	Event(event string) DropEventInterface
+	IfExists() DropEventInterface
+}
+
+type DropFunctionInterface interface {
+	SqlInterface
+	Function(function string) DropFunctionInterface
+	IfExists() DropFunctionInterface
+}
+
+type DropProcedureInterface interface {
+	SqlInterface
+	Procedure(procedure string) DropProcedureInterface
+	IfExists() DropProcedureInterface
+}
+
+type DropIndexInterface interface {
+	SqlInterface
+	Index(index string) DropIndexInterface
+	Table(table string) DropIndexInterface
+	Algorithm(alg IndexAlgOption) DropIndexInterface
+	Lock(lock IndexLockOption) DropIndexInterface
+}
+
+type DropLogFileGroupInterface interface {
+	SqlInterface
+	LogFileGroup(logFileGroup string) DropLogFileGroupInterface
+	Engine(engine string) DropLogFileGroupInterface
+}
+
+type DropServerInterface interface {
+	SqlInterface
+	Server(server string) DropServerInterface
+	IfExists() DropServerInterface
+}
+
+type DropSpatialReferenceSystemInterface interface {
+	SqlInterface
+	Srid(srid string) DropSpatialReferenceSystemInterface
+	IfExists() DropSpatialReferenceSystemInterface
 }
 
 type SchemaInterface interface {
@@ -361,6 +701,9 @@ type SchemaInterface interface {
 	Schema(schema string) SchemaInterface
 	Charset(charset string) SchemaInterface
 	Collate(collate string) SchemaInterface
+	Encryption(encryption string) SchemaInterface
+	ReadOnly(readOnly string) SchemaInterface
+	IfNotExists() SchemaInterface
 }
 
 type PaginationInterface[T RowInterface] interface {
@@ -389,4 +732,192 @@ type ContextInterface interface {
 	RawSqlLogStart(sql ExpressInterface)
 	SqlLogEnd()
 	WithTraceId(traceId string) ContextInterface
+}
+
+type IntervalUnit string
+
+const (
+	Interval_Year          IntervalUnit = "YEAR"
+	Interval_Quarter       IntervalUnit = "QUARTER"
+	Interval_Month         IntervalUnit = "MONTH"
+	Interval_Day           IntervalUnit = "DAY"
+	Interval_Hour          IntervalUnit = "HOUR"
+	Interval_Minute        IntervalUnit = "MINUTE"
+	Interval_Week          IntervalUnit = "WEEK"
+	Interval_Second        IntervalUnit = "SECOND"
+	Interval_Year_Month    IntervalUnit = "YEAR_MONTH"
+	Interval_Day_Hour      IntervalUnit = "DAY_HOUR"
+	Interval_Day_Minute    IntervalUnit = "DAY_MINUTE"
+	Interval_Day_Second    IntervalUnit = "DAY_SECOND"
+	Interval_Hour_Minute   IntervalUnit = "HOUR_MINUTE"
+	Interval_Hour_Second   IntervalUnit = "HOUR_SECOND"
+	Interval_Minute_Second IntervalUnit = "MINUTE_SECOND"
+)
+
+func (i IntervalUnit) IsNumber() bool {
+	switch i {
+	case Interval_Year, Interval_Quarter, Interval_Month, Interval_Day, Interval_Hour, Interval_Minute, Interval_Week, Interval_Second:
+		return true
+	default:
+		return false
+	}
+}
+
+type EventStatus string
+
+const (
+	Event_Status_Enable           EventStatus = "ENABLE"
+	Event_Status_Disable          EventStatus = "DISABLE"
+	Event_Status_Disable_On_Slave EventStatus = "DISABLE ON SLAVE"
+)
+
+type EventInterface interface {
+	SqlInterface
+	Definer(name string) EventInterface
+	IfNotExists() EventInterface
+	Event(name string) EventInterface
+	Comment(comment string) EventInterface
+	Do(sql SqlInterface) EventInterface
+	DoRaw(sql ExpressInterface) EventInterface
+	At(timestamp string) EventInterface
+	AtInterval(interval string, unit IntervalUnit) EventInterface
+	Every(interval string, unit IntervalUnit) EventInterface
+	Starts(timestamp string) EventInterface
+	StartsInterval(interval string, unit IntervalUnit) EventInterface
+	Ends(timestamp string) EventInterface
+	EndsInterval(interval string, unit IntervalUnit) EventInterface
+	Status(status EventStatus) EventInterface
+	OnCompletion() EventInterface
+	OnCompletionNot() EventInterface
+	Rename(name string) EventInterface
+	Alter() EventInterface
+}
+
+type ProcedureSqlType string
+
+const (
+	Procedure_Sql_Type_Contains_Sql      ProcedureSqlType = "CONTAINS SQL"
+	Procedure_Sql_Type_No_Sql            ProcedureSqlType = "NO SQL"
+	Procedure_Sql_Type_Redis_Sql_Data    ProcedureSqlType = "READS SQL DATA"
+	Procedure_Sql_Type_Modifies_Sql_Data ProcedureSqlType = "MODIFIES SQL DATA"
+)
+
+type SqlSecurity string
+
+const (
+	Sql_Security_Definer SqlSecurity = "DEFINER"
+	Sql_Security_Invoker SqlSecurity = "INVOKER"
+)
+
+type ProcedureInterface interface {
+	SqlInterface
+	Definer(name string) ProcedureInterface
+	IfNotExists() ProcedureInterface
+	Procedure(name string) ProcedureInterface
+	In(name, typ string) ProcedureInterface
+	Out(name, typ string) ProcedureInterface
+	InOut(name, typ string) ProcedureInterface
+	Comment(comment string) ProcedureInterface
+	Language() ProcedureInterface
+	Deterministic() ProcedureInterface
+	DeterministicNot() ProcedureInterface
+	SqlType(sqlType ProcedureSqlType) ProcedureInterface
+	SqlSecurity(security SqlSecurity) ProcedureInterface
+	RoutineBody(sql ExpressInterface) ProcedureInterface
+	Alter() ProcedureInterface
+}
+
+type FunctionInterface interface {
+	SqlInterface
+	Definer(name string) FunctionInterface
+	IfNotExists() FunctionInterface
+	Function(name string) FunctionInterface
+	Param(name, typ string) FunctionInterface
+	Returns(typ string) FunctionInterface
+	Comment(comment string) FunctionInterface
+	Language() FunctionInterface
+	Deterministic() FunctionInterface
+	DeterministicNot() FunctionInterface
+	SqlType(sqlType ProcedureSqlType) FunctionInterface
+	SqlSecurity(security SqlSecurity) FunctionInterface
+	RoutineBody(raw ExpressInterface) FunctionInterface
+	Alter() FunctionInterface
+}
+
+type Order string
+
+const (
+	Order_None Order = "NONE"
+	Order_Asc  Order = "ASC"
+	Order_Desc Order = "DESC"
+)
+
+type IndexInterface interface {
+	SqlInterface
+	Type(typ IndexType) IndexInterface
+	Index(name string) IndexInterface
+	Algorithm(alg IndexAlg) IndexInterface
+	On(table string) IndexInterface
+	Column(name string, length int, order Order) IndexInterface
+	Express(express string, order Order) IndexInterface
+	BlockSize(size string) IndexInterface
+	WithParser(parserName string) IndexInterface
+	Comment(comment string) IndexInterface
+	Visible() IndexInterface
+	Invisible() IndexInterface
+	EngineAttribute(attr string) IndexInterface
+	SecondaryEngineAttribute(attr string) IndexInterface
+	AlgorithmOption(option IndexAlgOption) IndexInterface
+	LockOption(option IndexLockOption) IndexInterface
+}
+
+type LogFileGroupInterface interface {
+	SqlInterface
+	LogFileGroup(name string) LogFileGroupInterface
+	UndoFile(file string) LogFileGroupInterface
+	InitialSize(size string) LogFileGroupInterface
+	UndoBufferSize(size string) LogFileGroupInterface
+	RedoBufferSize(size string) LogFileGroupInterface
+	NodeGroupId(nodegroupId string) LogFileGroupInterface
+	Wait() LogFileGroupInterface
+	Comment(comment string) LogFileGroupInterface
+	Engine(engine string) LogFileGroupInterface
+	Alter() LogFileGroupInterface
+}
+
+type ServOptKey string
+
+const (
+	Serv_Opt_Key_Host     ServOptKey = "HOST"
+	Serv_Opt_Key_Database ServOptKey = "DATABASE"
+	Serv_Opt_Key_User     ServOptKey = "USER"
+	Serv_Opt_Key_Password ServOptKey = "PASSWORD"
+	Serv_Opt_Key_Socket   ServOptKey = "SOCKET"
+	Serv_Opt_Key_Owner    ServOptKey = "OWNER"
+	Serv_Opt_Key_Port     ServOptKey = "PORT"
+)
+
+type ServerInterface interface {
+	SqlInterface
+	Server(name string) ServerInterface
+	WrapperName(wrapperName string) ServerInterface
+	Option(key ServOptKey, val string) ServerInterface
+	Alter() ServerInterface
+}
+
+type SrsAttr string
+
+const (
+	Srs_Attr_Name        SrsAttr = "NAME"
+	Srs_Attr_Definition  SrsAttr = "DEFINITION"
+	Srs_Attr_Description SrsAttr = "DESCRIPTION"
+)
+
+type SpatialReferenceSystemInterface interface {
+	SqlInterface
+	Replace() SpatialReferenceSystemInterface
+	IfNotExists() SpatialReferenceSystemInterface
+	Srid(srid uint32) SpatialReferenceSystemInterface
+	Atrribute(key SrsAttr, value string) SpatialReferenceSystemInterface
+	Organization(value string, identified uint32) SpatialReferenceSystemInterface
 }

@@ -133,7 +133,7 @@ func Lock[T db.FindType](ctx context.Context, model ModelInterface, id T) error 
 	}
 
 	query := db.NewQuery()
-	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id).ForUpdate()
+	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id).For().Update()
 	return db.QueryRowBy(ctx, conn, query, model)
 }
 
@@ -144,7 +144,7 @@ func LockBy(ctx context.Context, model ModelInterface, call func(query ksql.Quer
 	}
 
 	query := db.NewQuery()
-	query.Table(model.Table()).Columns(model.Columns()...).ForUpdate()
+	query.Table(model.Table()).Columns(model.Columns()...).For().Update()
 	call(query)
 	return db.QueryRowBy(ctx, conn, query, model)
 }

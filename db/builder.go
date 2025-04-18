@@ -177,8 +177,8 @@ func (b *Builder[T]) AndHaving(call func(w ksql.HavingInterface)) ksql.BuilderIn
 	return b
 }
 
-func (b *Builder[T]) Distinct(column string) ksql.BuilderInterface[T] {
-	b.query.Distinct(column)
+func (b *Builder[T]) Distinct() ksql.BuilderInterface[T] {
+	b.query.Distinct()
 	return b
 }
 
@@ -224,21 +224,17 @@ func (b *Builder[T]) LeftJoin(table string) ksql.JoinInterface {
 	return b.query.LeftJoin(table)
 }
 
-func (b *Builder[T]) LeftJoinExpress(express ksql.ExpressInterface) ksql.JoinInterface {
-	return b.query.LeftJoinExpress(express)
-}
-
 func (b *Builder[T]) RightJoin(table string) ksql.JoinInterface {
 	return b.query.RightJoin(table)
 }
 
-func (b *Builder[T]) RightJoinExpress(express ksql.ExpressInterface) ksql.JoinInterface {
-	return b.query.RightJoinExpress(express)
+func (b *Builder[T]) ForUpdate() ksql.BuilderInterface[T] {
+	b.query.For().Update()
+	return b
 }
 
-func (b *Builder[T]) ForUpdate() ksql.BuilderInterface[T] {
-	b.query.ForUpdate()
-	return b
+func (b *Builder[T]) For() ksql.ForInterface {
+	return b.query.For()
 }
 
 func (b *Builder[T]) All(ctx context.Context) error {

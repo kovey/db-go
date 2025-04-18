@@ -1,11 +1,20 @@
 package sql
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/kovey/db-go/v3/sql/operator"
+)
 
 type base struct {
 	binds       []any
 	builder     strings.Builder
 	hasPrepared bool
+	opChain     *operator.Chain
+}
+
+func newBase() *base {
+	return &base{opChain: operator.NewChain()}
 }
 
 func (b *base) keyword(keyword string) {
@@ -13,6 +22,10 @@ func (b *base) keyword(keyword string) {
 }
 
 func (b *base) Prepare() string {
+	if b.opChain != nil {
+		b.opChain.Call(&b.builder)
+	}
+
 	return b.builder.String()
 }
 
