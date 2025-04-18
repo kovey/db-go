@@ -26,7 +26,6 @@ func (c *ColumnCheckConstraint) _constraint(builder *strings.Builder) {
 		return
 	}
 
-	builder.WriteString(" ")
 	builder.WriteString(c.constraint)
 	builder.WriteString(" ")
 	builder.WriteString(c.symbol)

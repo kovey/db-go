@@ -3,6 +3,7 @@ package sql
 import (
 	"testing"
 
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,5 +75,21 @@ func TestAlterRename(t *testing.T) {
 	a := NewAlter()
 	a.Table("user").Rename("users")
 	assert.Equal(t, "ALTER TABLE `user` RENAME AS `users`", a.Prepare())
+	assert.Nil(t, a.Binds())
+}
+
+func TestAlterOther(t *testing.T) {
+	a := NewAlter()
+	a.Table("user").AlterColumn("user_name").Default("123").Invisible()
+	a.AddCheck("round(balance, 2)").Constraint("kovey_symbol").Enforced()
+	a.DropCheck("kovey_old").DropConstraint("aaa_con").AlterCheck("bb_symbol").Enforced().Check("sum(amount)")
+	a.Algorithm(ksql.Alter_Opt_Alg_Copy)
+	a.AlterIndex("idx_name").Invisible()
+	a.DropKey("aa_key").DropPrimary().DropForeign("aa_foreign").Lock(ksql.Index_Lock_Option_Default).OrderBy("a_time")
+	a.AddColumnBy("nickname", "varchar", 31, 0).First()
+	a.AddForeign("a_for").Columns("aa", "bb").Constraint("cc")
+	a.Default("utf8", "default")
+	a.RenameTo("user_info")
+	assert.Equal(t, "ALTER TABLE `user` ALTER COLUMN `user_name` SET DEFAULT '123' SET INVISIBLE, ADD CONSTRAINT kovey_symbol CHECK (round(balance, 2)) ENFORCED, DROP CHECK kovey_old, DROP CONSTRAINT aaa_con, ALTER CONSTRAINT bb_symbol CHECK (sum(amount)) ENFORCED, ALGORITHM = COPY, ALTER INDEX `idx_name` INVISIBLE, DROP KEY `aa_key`, DROP PRIMARY KEY, DROP FOREIGN KEY `aa_foreign`, LOCK = DEFAULT, ADD COLUMN `nickname` VARCHAR(31) FIRST, ADD CONSTRAINT cc FOREIGN KEY `a_for` (`aa`, `bb`), DEFAULT CHARACTER SET = utf8 COLLATE = default, RENAME TO `user_info`", a.Prepare())
 	assert.Nil(t, a.Binds())
 }

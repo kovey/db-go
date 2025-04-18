@@ -7,18 +7,13 @@ import (
 )
 
 type base struct {
-	binds       []any
-	builder     strings.Builder
-	hasPrepared bool
-	opChain     *operator.Chain
+	binds   []any
+	builder strings.Builder
+	opChain *operator.Chain
 }
 
 func newBase() *base {
 	return &base{opChain: operator.NewChain()}
-}
-
-func (b *base) keyword(keyword string) {
-	b.builder.WriteString(keyword)
 }
 
 func (b *base) Prepare() string {

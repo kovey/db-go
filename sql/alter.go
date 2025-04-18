@@ -60,7 +60,7 @@ func (u *Alter) _partitionOptions(builder *strings.Builder) {
 }
 
 func (u *Alter) AlterColumn(column string) ksql.AlterColumnInterface {
-	ac := table.NewAlterColumn()
+	ac := table.NewAlterColumn().Column(column)
 	u.options.Append(ac)
 	return ac
 }
