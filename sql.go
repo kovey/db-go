@@ -296,6 +296,7 @@ type UpdateInterface interface {
 	SetExpress(expre ExpressInterface) UpdateInterface
 	SetColumn(column string, otherColumn string) UpdateInterface
 	Limit(limit int) UpdateInterface
+	IncColumn(column string, data int) UpdateInterface
 }
 
 type UpdateMultiInterface interface {

@@ -27,8 +27,54 @@ func (t *test_user) Clone() ksql.RowInterface {
 	return newTestUser()
 }
 
+func (t *test_user) Columns() []string {
+	return []string{"id", "age", "name", "create_time", "balance"}
+}
+
 func (t *test_user) Values() []any {
 	return []any{&t.Id, &t.Age, &t.Name, &t.CreateTime, &t.Balance}
+}
+
+func (t *test_user) Delete(ctx context.Context) error {
+	return nil
+}
+
+func (t *test_user) Empty() bool {
+	return t.Id == 0
+}
+
+func (t *test_user) Table() string {
+	return "user"
+}
+func (t *test_user) PrimaryId() string {
+	return "id"
+}
+func (t *test_user) Save(ctx context.Context) error {
+	return nil
+}
+
+func (t *test_user) OnUpdateBefore(conn ksql.ConnectionInterface) error {
+	return nil
+}
+
+func (t *test_user) OnUpdateAfter(conn ksql.ConnectionInterface) error {
+	return nil
+}
+
+func (t *test_user) OnCreateBefore(conn ksql.ConnectionInterface) error {
+	return nil
+}
+
+func (t *test_user) OnCreateAfter(conn ksql.ConnectionInterface) error {
+	return nil
+}
+
+func (t *test_user) OnDeleteBefore(conn ksql.ConnectionInterface) error {
+	return nil
+}
+
+func (t *test_user) OnDeleteAfter(conn ksql.ConnectionInterface) error {
+	return nil
 }
 
 type test_user_count struct {

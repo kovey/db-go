@@ -14,6 +14,7 @@ type assignment struct {
 	isData  bool
 	data    any
 	expr    ksql.ExpressInterface
+	op      string
 }
 
 func (a *assignment) binds() []any {
@@ -41,6 +42,11 @@ func (a *assignment) Build(builder *strings.Builder) {
 	}
 
 	if a.isData {
+		if a.op != "" {
+			operator.BuildColumnString(a.column, builder)
+			operator.BuildPureString(a.op, builder)
+		}
+
 		builder.WriteString(" ?")
 		return
 	}

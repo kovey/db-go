@@ -114,6 +114,15 @@ func (u *Update) SetColumn(column string, otherColumn string) ksql.UpdateInterfa
 	return u
 }
 
+func (u *Update) IncColumn(column string, data int) ksql.UpdateInterface {
+	if data >= 0 {
+		u.assignments.Append(&assignment{column: column, data: data, isData: true, op: "+"})
+		return u
+	}
+	u.assignments.Append(&assignment{column: column, data: 0 - data, isData: true, op: "-"})
+	return u
+}
+
 func (u *Update) Limit(limit int) ksql.UpdateInterface {
 	u.limit = strconv.Itoa(limit)
 	return u
