@@ -67,13 +67,16 @@ const (
 type SqlType string
 
 const (
-	Sql_Type_Insert SqlType = "INSERT"
-	Sql_Type_Update SqlType = "UPDATE"
-	Sql_Type_Delete SqlType = "DELETE"
-	Sql_Type_Drop   SqlType = "DROP"
-	Sql_Type_Alter  SqlType = "ALTER"
-	Sql_Type_Create SqlType = "CREATE"
-	Sql_Type_Query  SqlType = "QUERY"
+	Sql_Type_Insert     SqlType = "INSERT"
+	Sql_Type_Update     SqlType = "UPDATE"
+	Sql_Type_Delete     SqlType = "DELETE"
+	Sql_Type_Drop       SqlType = "DROP"
+	Sql_Type_Alter      SqlType = "ALTER"
+	Sql_Type_Create     SqlType = "CREATE"
+	Sql_Type_Query      SqlType = "QUERY"
+	Sql_Type_Save_Point SqlType = "SAVEPOINT"
+	Sql_Type_Release    SqlType = "RELEASE"
+	Sql_Type_Rollback   SqlType = "ROLLBACK"
 )
 
 type Op string

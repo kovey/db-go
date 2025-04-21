@@ -57,7 +57,7 @@ func (c *Connection) RollbackTo(ctx context.Context, point string) error {
 		return Err_Un_Support_Save_Point
 	}
 
-	_, err := c.ExecRaw(ctx, ks.Raw("ROLLBACK SAVEPOINT ?", point))
+	_, err := c.ExecRaw(ctx, ks.Raw("ROLLBACK TO SAVEPOINT ?", point))
 	return err
 }
 

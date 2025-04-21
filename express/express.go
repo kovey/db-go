@@ -48,6 +48,34 @@ func (s *Statement) parse() {
 	case ksql.Sql_Type_Insert, ksql.Sql_Type_Update, ksql.Sql_Type_Delete, ksql.Sql_Type_Create:
 		s.typ = first
 	}
+
+	if count < 7 {
+		return
+	}
+	first = ksql.SqlType(strings.ToUpper(s.raw[:7]))
+	switch first {
+	case ksql.Sql_Type_Release:
+		s.typ = first
+	}
+
+	if count < 8 {
+		return
+	}
+	first = ksql.SqlType(strings.ToUpper(s.raw[:8]))
+	switch first {
+	case ksql.Sql_Type_Rollback:
+		s.typ = first
+	}
+
+	if count < 9 {
+		return
+	}
+
+	first = ksql.SqlType(strings.ToUpper(s.raw[:9]))
+	switch first {
+	case ksql.Sql_Type_Save_Point:
+		s.typ = first
+	}
 }
 
 func (s *Statement) Statement() string {
