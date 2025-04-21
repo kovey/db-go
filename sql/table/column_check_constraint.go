@@ -36,7 +36,12 @@ func (c *ColumnCheckConstraint) _check(builder *strings.Builder) {
 		return
 	}
 
-	builder.WriteString(" CHECK (")
+	if c.constraint == "" {
+		builder.WriteString("CHECK (")
+	} else {
+
+		builder.WriteString(" CHECK (")
+	}
 	builder.WriteString(c.expr)
 	builder.WriteString(")")
 }

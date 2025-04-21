@@ -218,6 +218,7 @@ type WhereInterface interface {
 	AndWhere(call func(o WhereInterface)) WhereInterface
 	Empty() bool
 	Binds() []any
+	Clone() WhereInterface
 }
 
 type HavingInterface interface {
@@ -236,6 +237,7 @@ type HavingInterface interface {
 	AndHaving(call func(o HavingInterface)) HavingInterface
 	Empty() bool
 	Binds() []any
+	Clone() HavingInterface
 }
 
 type JoinInterface interface {

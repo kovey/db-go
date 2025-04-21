@@ -30,3 +30,7 @@ func (o *Chain) Call(builder *strings.Builder) *Chain {
 
 	return o
 }
+
+func (o *Chain) Reset() {
+	o.isCall = false
+}

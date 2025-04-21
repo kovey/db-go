@@ -98,6 +98,14 @@ func NewWhere() *Where {
 	return w
 }
 
+func (w *Where) Clone() ksql.WhereInterface {
+	o := NewWhere()
+	o.ops = w.ops
+	o.orWheres = w.orWheres
+	o.andWheres = w.andWheres
+	return o
+}
+
 func (w *Where) _keyword(builder *strings.Builder) {
 	if w.onlyBody {
 		return

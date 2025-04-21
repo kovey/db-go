@@ -23,6 +23,14 @@ func NewHaving() *Having {
 	return h
 }
 
+func (w *Having) Clone() ksql.HavingInterface {
+	o := NewHaving()
+	o.ops = w.ops
+	o.orWheres = w.orWheres
+	o.andWheres = w.andWheres
+	return o
+}
+
 func (w *Having) _keyword(builder *strings.Builder) {
 	if w.onlyBody {
 		return

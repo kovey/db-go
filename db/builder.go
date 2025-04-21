@@ -339,7 +339,7 @@ func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql
 	}
 
 	total := &Builder[T]{query: b.query.Clone(), conn: b.conn}
-	count, err := total.Count(ctx)
+	count, err := total.Limit(1).Offset(0).Count(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -398,10 +398,11 @@ func (o *Query) _for(builder *strings.Builder) {
 
 func (o *Query) Clone() ksql.QueryInterface {
 	q := &Query{
-		base: newBase(), where: o.where, having: o.having,
-		table: o.table, join: o.join, group: o.group, initBinds: o.initBinds, order: o.order, intoVars: o.intoVars, limitInfo: o.limitInfo,
-		forSql: o.forSql, partitions: o.partitions, highPriority: o.highPriority, straightJoin: o.straightJoin, windows: o.windows,
+		base: newBase(), where: o.where.Clone(), having: o.having.Clone(),
+		table: o.table, join: o.join, group: o.group, initBinds: o.initBinds, order: o.order, intoVars: o.intoVars, limitInfo: o.limitInfo, modifer: o.modifer,
+		forSql: o.forSql, partitions: o.partitions, highPriority: o.highPriority, straightJoin: o.straightJoin, windows: o.windows, columns: &columnInfos{},
 	}
+	q.opChain.Append(q._keyword, q._columns, q._into, q._from, q._joinInfo, q._partition, q._where, q._group, q._having, q._window, q._order, q._limit, q._for)
 	return q
 }
 
