@@ -27,8 +27,8 @@ type ConnectionInterface interface {
 	Begin(ctx context.Context, options *sql.TxOptions) ksql.TxError
 	Rollback(ctx context.Context) ksql.TxError
 	Commit(ctx context.Context) ksql.TxError
-	Transaction(ctx context.Context, call func(ctx context.Context, conn ConnectionInterface) error) ksql.TxError
-	TransactionBy(ctx context.Context, options *sql.TxOptions, call func(ctx context.Context, conn ConnectionInterface) error) ksql.TxError
+	Transaction(ctx context.Context, keys []any, call func(ctx context.Context, conn ConnectionInterface) error) ksql.TxError
+	TransactionBy(ctx context.Context, keys []any, options *sql.TxOptions, call func(ctx context.Context, conn ConnectionInterface) error) ksql.TxError
 	ScanRaw(key any, ctx context.Context, raw ksql.ExpressInterface, data ...any) error
 }
 

@@ -49,6 +49,16 @@ func Get() (ksql.ConnectionInterface, error) {
 	return database.Clone(), nil
 }
 
+func InitBy(db *sql.DB, driverName string) error {
+	conn, err := Open(db, driverName)
+	if err != nil {
+		return err
+	}
+
+	database = conn
+	return nil
+}
+
 // init global connection
 func Init(conf Config) error {
 	db, err := sql.Open(conf.DriverName, conf.DataSourceName)
@@ -231,16 +241,24 @@ func Transaction(ctx context.Context, call func(ctx context.Context, db ksql.Con
 }
 
 func Find[T FindType](ctx context.Context, model ksql.ModelInterface, id T) error {
+	return FindWith(ctx, database, model, id)
+}
+
+func FindWith[T FindType](ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, id T) error {
 	query := NewQuery()
 	query.Table(model.Table()).Columns(model.Columns()...).Where(model.PrimaryId(), "=", id)
-	return QueryRow(ctx, query, model)
+	return QueryRowBy(ctx, conn, query, model)
 }
 
 func FindBy(ctx context.Context, model ksql.ModelInterface, call func(query ksql.QueryInterface)) error {
+	return FindByWith(ctx, database, model, call)
+}
+
+func FindByWith(ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, call func(query ksql.QueryInterface)) error {
 	query := NewQuery()
 	query.Table(model.Table()).Columns(model.Columns()...)
 	call(query)
-	return QueryRow(ctx, query, model)
+	return QueryRowBy(ctx, conn, query, model)
 }
 
 func LockShare[T FindType](ctx context.Context, conn ksql.ConnectionInterface, model ksql.ModelInterface, id T) error {

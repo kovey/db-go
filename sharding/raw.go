@@ -9,19 +9,19 @@ import (
 )
 
 func InsertRaw(key any, ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
-	return db.InsertRawBy(ctx, _getConn(key), raw)
+	return db.InsertRawBy(ctx, database.conn(key), raw)
 }
 
 func UpdateRaw(key any, ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
-	return db.UpdateRawBy(ctx, _getConn(key), raw)
+	return db.UpdateRawBy(ctx, database.conn(key), raw)
 }
 
 func DeleteRaw(key any, ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
-	return db.DeleteRawBy(ctx, _getConn(key), raw)
+	return db.DeleteRawBy(ctx, database.conn(key), raw)
 }
 
 func QueryRaw[T ksql.RowInterface](key any, ctx context.Context, raw ksql.ExpressInterface, models *[]T) error {
-	if err := db.QueryRawBy(ctx, _getConn(key), raw, models); err != nil {
+	if err := db.QueryRawBy(ctx, database.conn(key), raw, models); err != nil {
 		return err
 	}
 
@@ -41,51 +41,62 @@ func QueryRowRaw[T ksql.RowInterface](key any, ctx context.Context, raw ksql.Exp
 		t.WithKey(key)
 	}
 
-	return db.QueryRowRawBy(ctx, _getConn(key), raw, model)
+	return db.QueryRowRawBy(ctx, database.conn(key), raw, model)
 }
 
 func HasTable(ctx context.Context, table string) (bool, error) {
-	if connsCount < 1 {
+	if database == nil {
 		return false, db.Err_Database_Not_Initialized
 	}
 
-	for index := 0; index < connsCount; index++ {
-		if has, err := db.HasTableBy(ctx, baseConns[index], table); err != nil || !has {
-			return has, err
+	has := true
+	err := database.Range(func(index int, conn ksql.ConnectionInterface) error {
+		if ok, err := db.HasTableBy(ctx, conn, table); err != nil || !ok {
+			has = ok
+			return err
 		}
-	}
 
-	return true, nil
+		return nil
+	})
+
+	return has, err
 }
 
 func HasColumn(ctx context.Context, table, column string) (bool, error) {
-	if connsCount < 1 {
+	if database == nil {
 		return false, db.Err_Database_Not_Initialized
 	}
 
-	for index := 0; index < connsCount; index++ {
-		if has, err := db.HasColumnBy(ctx, baseConns[index], table, column); err != nil || !has {
-			return has, err
+	has := true
+	err := database.Range(func(index int, conn ksql.ConnectionInterface) error {
+		if ok, err := db.HasColumnBy(ctx, conn, table, column); err != nil || !ok {
+			has = ok
+			return err
 		}
-	}
+		return nil
+	})
 
-	return true, nil
+	return has, err
 }
 
 func HasIndex(ctx context.Context, table, index string) (bool, error) {
-	if connsCount < 1 {
+	if database == nil {
 		return false, db.Err_Database_Not_Initialized
 	}
 
-	for i := 0; i < connsCount; i++ {
-		if has, err := db.HasIndexBy(ctx, baseConns[i], table, index); err != nil || !has {
-			return has, err
+	has := true
+	err := database.Range(func(i int, conn ksql.ConnectionInterface) error {
+		if ok, err := db.HasIndexBy(ctx, conn, table, index); err != nil || !ok {
+			has = ok
+			return err
 		}
-	}
 
-	return true, nil
+		return nil
+	})
+
+	return has, err
 }
 
 func ExecRaw(key any, ctx context.Context, raw ksql.ExpressInterface) (sql.Result, error) {
-	return db.ExecRawBy(ctx, _getConn(key), raw)
+	return db.ExecRawBy(ctx, database.conn(key), raw)
 }

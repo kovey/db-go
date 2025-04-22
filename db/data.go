@@ -16,6 +16,15 @@ func NewData() *Data {
 	return &Data{data: make(map[string]any)}
 }
 
+func (d *Data) From(o *Data) {
+	o.Range(func(key string, val any) {
+		if _, ok := d.data[key]; !ok {
+			d.keys = append(d.keys, key)
+		}
+		d.data[key] = val
+	})
+}
+
 func (d *Data) Set(key string, val any) *Data {
 	if _, ok := d.data[key]; !ok {
 		d.keys = append(d.keys, key)
@@ -24,33 +33,63 @@ func (d *Data) Set(key string, val any) *Data {
 	switch tmp := val.(type) {
 	case *string:
 		d.data[key] = *tmp
+	case **string:
+		d.data[key] = *tmp
 	case *int:
+		d.data[key] = *tmp
+	case **int:
 		d.data[key] = *tmp
 	case *int8:
 		d.data[key] = *tmp
+	case **int8:
+		d.data[key] = *tmp
 	case *int16:
+		d.data[key] = *tmp
+	case **int16:
 		d.data[key] = *tmp
 	case *int32:
 		d.data[key] = *tmp
+	case **int32:
+		d.data[key] = *tmp
 	case *int64:
+		d.data[key] = *tmp
+	case **int64:
 		d.data[key] = *tmp
 	case *uint:
 		d.data[key] = *tmp
+	case **uint:
+		d.data[key] = *tmp
 	case *uint8:
+		d.data[key] = *tmp
+	case **uint8:
 		d.data[key] = *tmp
 	case *uint16:
 		d.data[key] = *tmp
+	case **uint16:
+		d.data[key] = *tmp
 	case *uint32:
+		d.data[key] = *tmp
+	case **uint32:
 		d.data[key] = *tmp
 	case *uint64:
 		d.data[key] = *tmp
+	case **uint64:
+		d.data[key] = *tmp
 	case *bool:
+		d.data[key] = *tmp
+	case **bool:
 		d.data[key] = *tmp
 	case *float32:
 		d.data[key] = *tmp
+	case **float32:
+		d.data[key] = *tmp
 	case *float64:
 		d.data[key] = *tmp
+	case **float64:
+		d.data[key] = *tmp
 	case *time.Time:
+		d.data[key] = *tmp
+	case **time.Time:
 		d.data[key] = *tmp
 	default:
 		d.data[key] = val
@@ -79,225 +118,225 @@ func (d *Data) Changed(key string, val any) bool {
 		return true
 	}
 
-	switch tmp := old.(type) {
-	case string:
-		v, ok := val.(string)
+	switch tmp := val.(type) {
+	case **string:
+		v, ok := old.(*string)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case int:
-		v, ok := val.(int)
+		return v != *tmp
+	case **int:
+		v, ok := old.(*int)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case int8:
-		v, ok := val.(int8)
+		return v != *tmp
+	case **int8:
+		v, ok := old.(*int8)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case int16:
-		v, ok := val.(int16)
+		return v != *tmp
+	case **int16:
+		v, ok := old.(*int16)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case int32:
-		v, ok := val.(int32)
+		return v != *tmp
+	case **int32:
+		v, ok := old.(*int32)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case int64:
-		v, ok := val.(int64)
+		return v != *tmp
+	case **int64:
+		v, ok := old.(*int64)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case uint:
-		v, ok := val.(uint)
+		return v != *tmp
+	case **uint:
+		v, ok := old.(*uint)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case uint8:
-		v, ok := val.(uint8)
+		return v != *tmp
+	case **uint8:
+		v, ok := old.(*uint8)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case uint16:
-		v, ok := val.(uint16)
+		return v != *tmp
+	case **uint16:
+		v, ok := old.(*uint16)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case uint32:
-		v, ok := val.(uint32)
+		return v != *tmp
+	case **uint32:
+		v, ok := old.(*uint32)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case uint64:
-		v, ok := val.(uint64)
+		return v != *tmp
+	case **uint64:
+		v, ok := old.(*uint64)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case bool:
-		v, ok := val.(bool)
+		return v != *tmp
+	case **bool:
+		v, ok := old.(*bool)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case float32:
-		v, ok := val.(float32)
+		return v != *tmp
+	case **float32:
+		v, ok := old.(*float32)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case float64:
-		v, ok := val.(float64)
+		return v != *tmp
+	case **float64:
+		v, ok := old.(*float64)
 		if !ok {
 			return true
 		}
-		return v != tmp
-	case time.Time:
-		v, ok := val.(time.Time)
+		return v != *tmp
+	case **time.Time:
+		v, ok := old.(*time.Time)
 		if !ok {
 			return true
 		}
-		return !v.Equal(tmp)
+		return !v.Equal(**tmp)
 	case *string:
-		v, ok := val.(*string)
+		v, ok := old.(string)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *int:
-		v, ok := val.(*int)
+		v, ok := old.(int)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *int8:
-		v, ok := val.(*int8)
+		v, ok := old.(int8)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *int16:
-		v, ok := val.(*int16)
+		v, ok := old.(int16)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *int32:
-		v, ok := val.(*int32)
+		v, ok := old.(int32)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *int64:
-		v, ok := val.(*int64)
+		v, ok := old.(int64)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *uint:
-		v, ok := val.(*uint)
+		v, ok := old.(uint)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *uint8:
-		v, ok := val.(*uint8)
+		v, ok := old.(uint8)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *uint16:
-		v, ok := val.(*uint16)
+		v, ok := old.(uint16)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *uint32:
-		v, ok := val.(*uint32)
+		v, ok := old.(uint32)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *uint64:
-		v, ok := val.(*uint64)
+		v, ok := old.(uint64)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *bool:
-		v, ok := val.(bool)
+		v, ok := old.(bool)
 		if !ok {
 			return true
 		}
 		return v != *tmp
 	case *float32:
-		v, ok := val.(*float32)
+		v, ok := old.(float32)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *float64:
-		v, ok := val.(*float64)
+		v, ok := old.(float64)
 		if !ok {
 			return true
 		}
-		return v != tmp
+		return v != *tmp
 	case *time.Time:
-		v, ok := val.(*time.Time)
+		v, ok := old.(time.Time)
 		if !ok {
 			return true
 		}
 		return !v.Equal(*tmp)
-	case sql.NullBool:
-		v, ok := val.(sql.NullBool)
+	case *sql.NullBool:
+		v, ok := old.(sql.NullBool)
 		if !ok {
 			return true
 		}
 		return v.Bool != tmp.Bool
-	case sql.NullByte:
-		v, ok := val.(sql.NullByte)
+	case *sql.NullByte:
+		v, ok := old.(sql.NullByte)
 		if !ok {
 			return true
 		}
 		return v.Byte != tmp.Byte
-	case sql.NullFloat64:
-		v, ok := val.(sql.NullFloat64)
+	case *sql.NullFloat64:
+		v, ok := old.(sql.NullFloat64)
 		if !ok {
 			return true
 		}
 		return v.Float64 != tmp.Float64
-	case sql.NullInt16:
-		v, ok := val.(sql.NullInt16)
+	case *sql.NullInt16:
+		v, ok := old.(sql.NullInt16)
 		if !ok {
 			return true
 		}
 		return v.Int16 != tmp.Int16
-	case sql.NullInt32:
-		v, ok := val.(sql.NullInt32)
+	case *sql.NullInt32:
+		v, ok := old.(sql.NullInt32)
 		if !ok {
 			return true
 		}
 		return v.Int32 != tmp.Int32
-	case sql.NullInt64:
-		v, ok := val.(sql.NullInt64)
+	case *sql.NullInt64:
+		v, ok := old.(sql.NullInt64)
 		if !ok {
 			return true
 		}
 		return v.Int64 != tmp.Int64
-	case sql.NullTime:
-		v, ok := val.(sql.NullTime)
+	case *sql.NullTime:
+		v, ok := old.(sql.NullTime)
 		if !ok {
 			return true
 		}

@@ -124,7 +124,7 @@ func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.Connectio
 	cc.RawSqlLogStart(raw)
 	defer cc.SqlLogEnd()
 
-	stmt, err := database.PrepareRaw(cc, raw)
+	stmt, err := conn.PrepareRaw(cc, raw)
 	if err != nil {
 		return err
 	}

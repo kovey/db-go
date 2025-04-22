@@ -82,4 +82,5 @@ type TableInterface interface {
 	WithConn(conn ConnectionInterface) TableInterface
 	From(query QueryInterface) TableInterface
 	Like(table string) TableInterface
+	IfNotExists() TableInterface
 }

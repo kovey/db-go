@@ -491,3 +491,11 @@ func (t *TableBuilder) Like(table string) ksql.TableInterface {
 
 	return t
 }
+
+func (t *TableBuilder) IfNotExists() ksql.TableInterface {
+	if t.createMode {
+		t.create.IfNotExists()
+	}
+
+	return t
+}

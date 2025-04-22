@@ -21,5 +21,5 @@ func (m *Model) Key() any {
 
 func (m *Model) WithKey(key any) {
 	m.key = key
-	m.SetTable(fmt.Sprintf("%s_%d", m.Model.Table(), node(m.key, connsCount)))
+	m.SetTable(fmt.Sprintf("%s_%d", m.Model.Table(), database.node(m.key)))
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func TestConnectionAttr(t *testing.T) {
-	testDb, _, err := sqlmock.New()
+	testDb, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -24,7 +24,7 @@ func TestConnectionAttr(t *testing.T) {
 }
 
 func TestConnectionCommit(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -38,9 +38,9 @@ func TestConnectionCommit(t *testing.T) {
 	del := NewDelete()
 	del.Table("email").Where(NewWhere().Where("id", ksql.Eq, 1))
 	mock.ExpectBegin()
-	mock.ExpectPrepare("INSERT INTO `user` \\(`name`, `age`\\) VALUES \\(\\?, \\?\\)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("INSERT INTO `user` (`name`, `age`) VALUES (?, ?)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectPrepare(del.Prepare()).ExpectExec().WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = \\? WHERE `id` = \\?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = ? WHERE `id` = ?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	ctx := context.Background()
@@ -64,7 +64,7 @@ func TestConnectionCommit(t *testing.T) {
 }
 
 func TestConnectionRollback(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -77,8 +77,8 @@ func TestConnectionRollback(t *testing.T) {
 	up.Table("user_ext").Set("last_time", now).Where(NewWhere().Where("id", ksql.Eq, 1))
 	expErr := errors.New("update error")
 	mock.ExpectBegin()
-	mock.ExpectPrepare("INSERT INTO `user` \\(`name`, `age`\\) VALUES \\(\\?, \\?\\)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = \\? WHERE `id` = \\?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewErrorResult(expErr))
+	mock.ExpectPrepare("INSERT INTO `user` (`name`, `age`) VALUES (?, ?)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = ? WHERE `id` = ?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewErrorResult(expErr))
 	mock.ExpectRollback()
 
 	ctx := context.Background()
@@ -94,7 +94,7 @@ func TestConnectionRollback(t *testing.T) {
 }
 
 func TestConnectionCommitMulti(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -109,10 +109,10 @@ func TestConnectionCommitMulti(t *testing.T) {
 	del.Table("email").Where(NewWhere().Where("id", ksql.Eq, 1))
 	expErr := errors.New("update error")
 	mock.ExpectBegin()
-	mock.ExpectPrepare("INSERT INTO `user` \\(`name`, `age`\\) VALUES \\(\\?, \\?\\)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("INSERT INTO `user` (`name`, `age`) VALUES (?, ?)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectPrepare(del.Prepare()).ExpectExec().WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectPrepare("SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = \\? WHERE `id` = \\?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = ? WHERE `id` = ?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectPrepare("RELEASE SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewErrorResult(expErr))
 	mock.ExpectCommit()
 
@@ -139,7 +139,7 @@ func TestConnectionCommitMulti(t *testing.T) {
 }
 
 func TestConnectionRollbackMulti(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -154,11 +154,11 @@ func TestConnectionRollbackMulti(t *testing.T) {
 	del.Table("email").Where(NewWhere().Where("id", ksql.Eq, 1))
 	expErr := errors.New("update error")
 	mock.ExpectBegin()
-	mock.ExpectPrepare("INSERT INTO `user` \\(`name`, `age`\\) VALUES \\(\\?, \\?\\)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("INSERT INTO `user` (`name`, `age`) VALUES (?, ?)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectPrepare(del.Prepare()).ExpectExec().WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectPrepare("SAVEPOINT \\?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = \\? WHERE `id` = \\?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewErrorResult(expErr))
-	mock.ExpectPrepare("ROLLBACK TO SAVEPOINT \\?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("UPDATE `user_ext` SET `last_time` = ? WHERE `id` = ?").ExpectExec().WithArgs(now, 1).WillReturnResult(sqlmock.NewErrorResult(expErr))
+	mock.ExpectPrepare("ROLLBACK TO SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectRollback()
 
 	ctx := context.Background()
@@ -181,7 +181,7 @@ func TestConnectionRollbackMulti(t *testing.T) {
 }
 
 func TestConnectionQuery(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -191,7 +191,7 @@ func TestConnectionQuery(t *testing.T) {
 	tu := newTestUser()
 	query := NewQuery()
 	query.Table("user").Columns(columns...).Where("id", ksql.Eq, 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	err = conn.QueryRow(context.Background(), query, tu)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), tu.Id)
@@ -202,7 +202,8 @@ func TestConnectionQuery(t *testing.T) {
 }
 
 func TestConnectionQueryRaw(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -211,7 +212,7 @@ func TestConnectionQueryRaw(t *testing.T) {
 	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
 	tu := newTestUser()
 	query := Raw("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?", 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	err = conn.QueryRowRaw(context.Background(), query, tu)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), tu.Id)
@@ -222,7 +223,7 @@ func TestConnectionQueryRaw(t *testing.T) {
 }
 
 func TestConnectionScan(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -232,7 +233,7 @@ func TestConnectionScan(t *testing.T) {
 	tu := newTestUser()
 	query := NewQuery()
 	query.Table("user").Columns(columns...).Where("id", ksql.Eq, 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	err = conn.Scan(context.Background(), query, tu.Values()...)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), tu.Id)
@@ -243,7 +244,7 @@ func TestConnectionScan(t *testing.T) {
 }
 
 func TestConnectionScanRaw(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -252,7 +253,7 @@ func TestConnectionScanRaw(t *testing.T) {
 	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
 	tu := newTestUser()
 	query := Raw("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?", 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	err = conn.ScanRaw(context.Background(), query, tu.Values()...)
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), tu.Id)

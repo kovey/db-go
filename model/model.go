@@ -103,25 +103,56 @@ func (m *Model) setPrimary(model ksql.ModelInterface, id int64) {
 			switch tmp := val.(type) {
 			case *int:
 				*tmp = int(id)
+			case **int:
+				tmpId := int(id)
+				*tmp = &tmpId
 			case *int8:
 				*tmp = int8(id)
+			case **int8:
+				tmpId := int8(id)
+				*tmp = &tmpId
 			case *int16:
 				*tmp = int16(id)
+			case **int16:
+				tmpId := int16(id)
+				*tmp = &tmpId
 			case *int32:
 				*tmp = int32(id)
+			case **int32:
+				tmpId := int32(id)
+				*tmp = &tmpId
 			case *int64:
 				*tmp = int64(id)
+			case **int64:
+				tmpId := int64(id)
+				*tmp = &tmpId
 			case *uint:
 				*tmp = uint(id)
+			case **uint:
+				tmpId := uint(id)
+				*tmp = &tmpId
 			case *uint8:
 				*tmp = uint8(id)
+			case **uint8:
+				tmpId := uint8(id)
+				*tmp = &tmpId
 			case *uint16:
 				*tmp = uint16(id)
+			case **uint16:
+				tmpId := uint16(id)
+				*tmp = &tmpId
 			case *uint32:
 				*tmp = uint32(id)
+			case **uint32:
+				tmpId := uint32(id)
+				*tmp = &tmpId
 			case *uint64:
 				*tmp = uint64(id)
+			case **uint64:
+				tmpId := uint64(id)
+				*tmp = &tmpId
 			}
+			m.data.Set(m.primaryId, val)
 		}
 	}
 }
@@ -161,6 +192,10 @@ func (m *Model) insert(ctx context.Context, data *db.Data) (int64, error) {
 	op := db.NewInsert()
 	op.Table(m.table)
 	data.Range(func(key string, val any) {
+		if m.isAutoInc && key == m.primaryId {
+			return
+		}
+
 		op.Add(key, val)
 	})
 
@@ -169,7 +204,7 @@ func (m *Model) insert(ctx context.Context, data *db.Data) (int64, error) {
 
 func (m *Model) update(ctx context.Context, data *db.Data) (int64, error) {
 	w := db.NewWhere()
-	w.Where(m.primaryId, "=", data.Get(m.primaryId))
+	w.Where(m.primaryId, "=", m.data.Get(m.primaryId))
 	if m.conn == nil {
 		return db.Update(ctx, m.table, data, w)
 	}
@@ -218,7 +253,10 @@ func (m *Model) Save(ctx context.Context, model ksql.ModelInterface) error {
 			return err
 		}
 
+		m.data.From(data)
 		m.setPrimary(model, id)
+		m.fromFecth = true
+		m.isInitialized = true
 		return m.OnCreateAfter(m._conn())
 	}
 
@@ -231,6 +269,7 @@ func (m *Model) Save(ctx context.Context, model ksql.ModelInterface) error {
 		return Err_Affect_No_Rows
 	}
 
+	m.data.From(data)
 	return m.OnUpdateAfter(m._conn())
 }
 

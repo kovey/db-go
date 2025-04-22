@@ -7,7 +7,6 @@ import (
 
 	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
-	"github.com/kovey/db-go/v3/sql"
 )
 
 type Template struct {
@@ -48,7 +47,10 @@ func (t *TableManager) createMonth(ctx context.Context, temp *Template) {
 			continue
 		}
 
-		if _, err := db.ExecRaw(ctx, sql.Raw("CREATE TABLE ? LIKE ?", tableName, temp.TemplateTable)); err != nil {
+		err := db.Create(ctx, tableName, func(table ksql.TableInterface) {
+			table.Like(temp.TemplateTable)
+		})
+		if err != nil {
 			fmt.Println(err)
 		}
 	}
@@ -61,7 +63,10 @@ func (t *TableManager) createDay(ctx context.Context, temp *Template) {
 			continue
 		}
 
-		if _, err := db.ExecRaw(ctx, sql.Raw("CREATE TABLE ? LIKE ?", tableName, temp.TemplateTable)); err != nil {
+		err := db.Create(ctx, tableName, func(table ksql.TableInterface) {
+			table.Like(temp.TemplateTable)
+		})
+		if err != nil {
 			fmt.Println(err)
 		}
 	}
@@ -93,7 +98,7 @@ func (t *TableManager) delMonth(ctx context.Context, temp *Template) {
 	}
 }
 
-func (t *TableManager) Delete(ctx context.Context, temp *Template) {
+func (t *TableManager) Delete(ctx context.Context) {
 	for _, temp := range t.templates {
 		switch temp.Type {
 		case ksql.Sharding_Day:

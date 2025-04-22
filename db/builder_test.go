@@ -100,7 +100,7 @@ func (t *test_user_count) Values() []any {
 }
 
 func TestBuilderFirst(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -113,7 +113,7 @@ func TestBuilderFirst(t *testing.T) {
 	tu := newTestUser()
 	builder := NewBuilder(tu)
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	err = builder.First(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), tu.Id)
@@ -124,7 +124,7 @@ func TestBuilderFirst(t *testing.T) {
 }
 
 func TestBuilderAll(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -137,7 +137,7 @@ func TestBuilderAll(t *testing.T) {
 	var rows []*test_user
 	builder := Rows(&rows).(*Builder[*test_user])
 	builder.Table("user").Columns(columns...).Order("id").OrderDesc("age").Where("id", ksql.Ge, 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` >= \\? ORDER BY `id` ASC, `age` DESC").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23).AddRow(2, 15, "test", now, 34.13))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` >= ? ORDER BY `id` ASC, `age` DESC").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23).AddRow(2, 15, "test", now, 34.13))
 	err = builder.All(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(rows))
@@ -156,7 +156,7 @@ func TestBuilderAll(t *testing.T) {
 }
 
 func TestBuilderWithSubSelect(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -170,7 +170,7 @@ func TestBuilderWithSubSelect(t *testing.T) {
 	var rows []*test_user_count
 	builder := Rows(&rows).(*Builder[*test_user_count])
 	builder.TableBy(sub, "u").Columns(columns...).Where("us.id", ksql.Ge, 1).LeftJoin("user").As("us").On("us.id", "=", "u.id")
-	mock.ExpectPrepare("SELECT `u`.`id`, `us`.`age`, `us`.`name`, `us`.`create_time`, `us`.`balance`, `u`.`count` FROM \\(SELECT `id`, COUNT\\(`1`\\) AS `count` FROM `users` WHERE `create_time` BETWEEN \\? AND \\? GROUP BY `id`\\) LEFT JOIN `user` AS `us` ON \\(`us`.`id` = `u`.`id`\\) WHERE `us`.`id` >= \\?").ExpectQuery().WithArgs(100, 200, 1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
+	mock.ExpectPrepare("SELECT `u`.`id`, `us`.`age`, `us`.`name`, `us`.`create_time`, `us`.`balance`, `u`.`count` FROM (SELECT `id`, COUNT(`1`) AS `count` FROM `users` WHERE `create_time` BETWEEN ? AND ? GROUP BY `id`) LEFT JOIN `user` AS `us` ON (`us`.`id` = `u`.`id`) WHERE `us`.`id` >= ?").ExpectQuery().WithArgs(100, 200, 1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
 	err = builder.All(context.Background())
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())
@@ -195,7 +195,7 @@ func TestBuilderWithSubSelect(t *testing.T) {
 }
 
 func TestBuilderColumnFunc(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -212,7 +212,7 @@ func TestBuilderColumnFunc(t *testing.T) {
 		wi.Between("create_time", "2025-04-03 01:11:11", "2025-04-03 11:15:11")
 	})
 	builder.WhereIsNull("update_time").WhereIsNotNull("age").WhereIn("id", []any{1, 3, 5}).WhereNotIn("id", []any{2, 4, 6})
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time` AS `ct`, SUM\\(`balance`\\) AS `balance`, \\(COUNT\\(1\\) as count\\) FROM `user` AS `u` WHERE `id` >= \\? AND name LIKE \\? AND `update_time` IS NULL AND `age` IS NULL AND `id` IN \\(\\?, \\?, \\?\\) AND `id` NOT IN \\(\\?, \\?, \\?\\) OR \\(`create_time` BETWEEN \\? AND \\?\\)").ExpectQuery().WithArgs(1, "%kovey%", 1, 3, 5, 2, 4, 6, "2025-04-03 01:11:11", "2025-04-03 11:15:11").WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "ct", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time` AS `ct`, SUM(`balance`) AS `balance`, (COUNT(1) as count) FROM `user` AS `u` WHERE `id` >= ? AND name LIKE ? AND `update_time` IS NULL AND `age` IS NULL AND `id` IN (?, ?, ?) AND `id` NOT IN (?, ?, ?) OR (`create_time` BETWEEN ? AND ?)").ExpectQuery().WithArgs(1, "%kovey%", 1, 3, 5, 2, 4, 6, "2025-04-03 01:11:11", "2025-04-03 11:15:11").WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "ct", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
 	err = builder.All(context.Background())
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())
@@ -237,7 +237,7 @@ func TestBuilderColumnFunc(t *testing.T) {
 }
 
 func TestBuilderWhereSubSelect(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -255,7 +255,7 @@ func TestBuilderWhereSubSelect(t *testing.T) {
 	builder.AndWhere(func(w ksql.WhereInterface) {
 		w.Where("us.age", ">=", 1).Where("us.age", "<=", 18)
 	})
-	mock.ExpectPrepare("SELECT `u`.`id`, `us`.`age`, `us`.`name`, `us`.`create_time`, `us`.`balance`, `u`.`count` FROM `user_ext` AS `us` LEFT JOIN `user` AS `us` ON \\(`us`.`id` = `u`.`id`\\) WHERE `us`.`id` >= \\? AND `us`.`id` IN \\(SELECT `id` FROM `users` WHERE `create_time` BETWEEN \\? AND \\?\\) AND `u`.`id` NOT IN \\(SELECT `id` FROM `users` WHERE `create_time` BETWEEN \\? AND \\?\\) AND \\(`us`.`age` >= \\? AND `us`.`age` <= \\?\\)").ExpectQuery().WithArgs(1, 100, 200, 100, 200, 1, 18).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
+	mock.ExpectPrepare("SELECT `u`.`id`, `us`.`age`, `us`.`name`, `us`.`create_time`, `us`.`balance`, `u`.`count` FROM `user_ext` AS `us` LEFT JOIN `user` AS `us` ON (`us`.`id` = `u`.`id`) WHERE `us`.`id` >= ? AND `us`.`id` IN (SELECT `id` FROM `users` WHERE `create_time` BETWEEN ? AND ?) AND `u`.`id` NOT IN (SELECT `id` FROM `users` WHERE `create_time` BETWEEN ? AND ?) AND (`us`.`age` >= ? AND `us`.`age` <= ?)").ExpectQuery().WithArgs(1, 100, 200, 100, 200, 1, 18).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
 	err = builder.All(context.Background())
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())
@@ -280,7 +280,7 @@ func TestBuilderWhereSubSelect(t *testing.T) {
 }
 
 func TestBuilderHavingSubSelect(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -302,7 +302,7 @@ func TestBuilderHavingSubSelect(t *testing.T) {
 	builder.OrHaving(func(w ksql.HavingInterface) {
 		w.Having("u.count", ">=", 1).Having("u.count", "<=", 18)
 	})
-	mock.ExpectPrepare("SELECT `u`.`id`, `us`.`age`, `us`.`name`, `us`.`create_time`, `us`.`balance`, `u`.`count` FROM `user_ext` AS `us` LEFT JOIN `user` AS `us` ON \\(`us`.`id` = `u`.`id`\\) WHERE `u`.`id` BETWEEN \\? AND \\? AND `u`.`id` NOT BETWEEN \\? AND \\? AND `us`.`id` >= \\? HAVING `name` LIKE \\? AND `us`.`id` IN \\(SELECT `id` FROM `users` WHERE `create_time` BETWEEN \\? AND \\?\\) AND `u`.`id` NOT IN \\(SELECT `id` FROM `users` WHERE `create_time` BETWEEN \\? AND \\?\\) AND \\(`us`.`age` >= \\? AND `us`.`age` <= \\?\\) OR \\(`u`.`count` >= \\? AND `u`.`count` <= \\?\\)").ExpectQuery().WithArgs(1, 1000, 1001, 2000, 1, "%kovey%", 100, 200, 100, 200, 1, 18, 1, 18).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
+	mock.ExpectPrepare("SELECT `u`.`id`, `us`.`age`, `us`.`name`, `us`.`create_time`, `us`.`balance`, `u`.`count` FROM `user_ext` AS `us` LEFT JOIN `user` AS `us` ON (`us`.`id` = `u`.`id`) WHERE `u`.`id` BETWEEN ? AND ? AND `u`.`id` NOT BETWEEN ? AND ? AND `us`.`id` >= ? HAVING `name` LIKE ? AND `us`.`id` IN (SELECT `id` FROM `users` WHERE `create_time` BETWEEN ? AND ?) AND `u`.`id` NOT IN (SELECT `id` FROM `users` WHERE `create_time` BETWEEN ? AND ?) AND (`us`.`age` >= ? AND `us`.`age` <= ?) OR (`u`.`count` >= ? AND `u`.`count` <= ?)").ExpectQuery().WithArgs(1, 1000, 1001, 2000, 1, "%kovey%", 100, 200, 100, 200, 1, 18, 1, 18).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
 	err = builder.All(context.Background())
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())
@@ -327,7 +327,7 @@ func TestBuilderHavingSubSelect(t *testing.T) {
 }
 
 func TestBuilderHaving(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -341,7 +341,7 @@ func TestBuilderHaving(t *testing.T) {
 	builder := NewBuilder(tu)
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1).HavingExpress(Raw("name LIKE ?", "%kovey%")).HavingIsNull("age").HavingIsNotNull("name").HavingIn("balance", []any{1, 3, 5})
 	builder.HavingNotIn("count", []any{1, 3, 5}).HavingBetween("cc", 100, 200).HavingNotBetween("aa", 200, 300)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\? HAVING name LIKE \\? AND `age` IS NULL AND `name` IS NULL AND `balance` IN \\(\\?, \\?, \\?\\) AND `count` NOT IN \\(\\?, \\?, \\?\\) AND `cc` BETWEEN \\? AND \\? AND `aa` NOT BETWEEN \\? AND \\?").ExpectQuery().WithArgs(1, "%kovey%", 1, 3, 5, 1, 3, 5, 100, 200, 200, 300).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? HAVING name LIKE ? AND `age` IS NULL AND `name` IS NULL AND `balance` IN (?, ?, ?) AND `count` NOT IN (?, ?, ?) AND `cc` BETWEEN ? AND ? AND `aa` NOT BETWEEN ? AND ?").ExpectQuery().WithArgs(1, "%kovey%", 1, 3, 5, 1, 3, 5, 100, 200, 200, 300).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	err = builder.First(context.Background())
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())
@@ -355,7 +355,7 @@ func TestBuilderHaving(t *testing.T) {
 }
 
 func TestBuilderPage(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -367,8 +367,8 @@ func TestBuilderPage(t *testing.T) {
 	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
 	builder := Rows(&[]*test_user{}).(*Builder[*test_user])
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1).Distinct()
-	mock.ExpectPrepare("SELECT DISTINCT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\? LIMIT \\? OFFSET \\?").ExpectQuery().WithArgs(1, 2, 0).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23).AddRow(2, 15, "test", now, 34.13))
-	mock.ExpectPrepare("SELECT DISTINCT \\(COUNT\\(1\\) as count\\) FROM `user` WHERE `id` = \\? LIMIT \\? OFFSET \\?").ExpectQuery().WithArgs(1, 1, 0).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(9))
+	mock.ExpectPrepare("SELECT DISTINCT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? LIMIT ? OFFSET ?").ExpectQuery().WithArgs(1, 2, 0).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23).AddRow(2, 15, "test", now, 34.13))
+	mock.ExpectPrepare("SELECT DISTINCT (COUNT(1) as count) FROM `user` WHERE `id` = ? LIMIT ? OFFSET ?").ExpectQuery().WithArgs(1, 1, 0).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(9))
 	pageInfo, err := builder.Pagination(context.Background(), 1, 2)
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())
@@ -392,7 +392,7 @@ func TestBuilderPage(t *testing.T) {
 }
 
 func TestBuilderAllGroup(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -405,7 +405,7 @@ func TestBuilderAllGroup(t *testing.T) {
 	var rows []*test_user_count
 	builder := Rows(&rows).(*Builder[*test_user_count])
 	builder.Table("user").Columns(columns...).FuncDistinct("COUNT", "id", "count").Where("id", ksql.Ge, 1).Group("id", "age", "name", "create_time", "balance")
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance`, DISTINCT `id` AS `count` FROM `user` WHERE `id` >= \\? GROUP BY `id`, `age`, `name`, `create_time`, `balance`").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12).AddRow(2, 15, "test", now, 34.13, 13))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance`, DISTINCT `id` AS `count` FROM `user` WHERE `id` >= ? GROUP BY `id`, `age`, `name`, `create_time`, `balance`").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12).AddRow(2, 15, "test", now, 34.13, 13))
 	err = builder.All(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(rows))
@@ -426,7 +426,7 @@ func TestBuilderAllGroup(t *testing.T) {
 }
 
 func TestBuilderAllWithJoin(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -443,7 +443,7 @@ func TestBuilderAllWithJoin(t *testing.T) {
 	builder.RightJoin("balance").As("b").On("b.id", "=", "u.id")
 	builder.JoinExpress(Raw("LEFT JOIN user_sys as us ON us.id = u.id"))
 	builder.Where("u.id", ">=", 1)
-	mock.ExpectPrepare("SELECT `u`.`id`, `u`.`age`, `ue`.`name`, `us`.`create_time`, `b`.`balance` FROM `user` AS `u` INNER JOIN `user_ext` AS `ue` ON \\(`ue`.`id` = `u`.`id`\\) RIGHT JOIN `balance` AS `b` ON \\(`b`.`id` = `u`.`id`\\) LEFT JOIN user_sys as us ON us.id = u.id WHERE `u`.`id` >= \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12).AddRow(2, 15, "test", now, 34.13, 13))
+	mock.ExpectPrepare("SELECT `u`.`id`, `u`.`age`, `ue`.`name`, `us`.`create_time`, `b`.`balance` FROM `user` AS `u` INNER JOIN `user_ext` AS `ue` ON (`ue`.`id` = `u`.`id`) RIGHT JOIN `balance` AS `b` ON (`b`.`id` = `u`.`id`) LEFT JOIN user_sys as us ON us.id = u.id WHERE `u`.`id` >= ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12).AddRow(2, 15, "test", now, 34.13, 13))
 	err = builder.All(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(rows))
@@ -464,7 +464,7 @@ func TestBuilderAllWithJoin(t *testing.T) {
 }
 
 func TestBuilderExist(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -475,14 +475,14 @@ func TestBuilderExist(t *testing.T) {
 	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
 	builder := NewBuilder(newTestUser()).WithConn(conn)
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1).ForUpdate()
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\? FOR UPDATE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? FOR UPDATE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	ok, err := builder.Exist(context.Background())
 	assert.Nil(t, err)
 	assert.True(t, ok)
 }
 
 func TestBuilderFirstWithConn(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -494,7 +494,7 @@ func TestBuilderFirstWithConn(t *testing.T) {
 	tu := newTestUser()
 	builder := NewBuilder(tu).WithConn(conn)
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1).For().Share()
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = \\? FOR SHARE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? FOR SHARE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	err = builder.First(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), tu.Id)
@@ -505,7 +505,7 @@ func TestBuilderFirstWithConn(t *testing.T) {
 }
 
 func TestBuilderMax(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -517,7 +517,7 @@ func TestBuilderMax(t *testing.T) {
 	tu := newTestUserCount()
 	builder := Build(tu).WithConn(conn)
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance`, MAX\\(`count`\\) AS `count` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance`, MAX(`count`) AS `count` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12))
 	err = builder.Max(context.Background(), "count")
 	if err != nil {
 		t.Fatal(err)
@@ -532,7 +532,7 @@ func TestBuilderMax(t *testing.T) {
 }
 
 func TestBuilderMin(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -544,7 +544,7 @@ func TestBuilderMin(t *testing.T) {
 	tu := newTestUserCount()
 	builder := NewBuilder(tu).WithConn(conn)
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1)
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance`, MIN\\(`count`\\) AS `count` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance`, MIN(`count`) AS `count` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "create_time", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 12))
 	err = builder.Min(context.Background(), "count")
 	if err != nil {
 		t.Fatal(err)
@@ -559,7 +559,7 @@ func TestBuilderMin(t *testing.T) {
 }
 
 func TestBuilderSumFloat(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -568,7 +568,7 @@ func TestBuilderSumFloat(t *testing.T) {
 
 	builder := NewBuilder(newTestUserCount()).WithConn(conn)
 	builder.Table("user").Where("id", ksql.Eq, 1)
-	mock.ExpectPrepare("SELECT SUM\\(`balance`\\) AS `balance` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(30.23))
+	mock.ExpectPrepare("SELECT SUM(`balance`) AS `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(30.23))
 	ba, err := builder.SumFloat(context.Background(), "balance")
 	if err != nil {
 		t.Fatal(err)
@@ -578,7 +578,7 @@ func TestBuilderSumFloat(t *testing.T) {
 }
 
 func TestBuilderSum(t *testing.T) {
-	testDb, mock, err := sqlmock.New()
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
 
@@ -587,7 +587,7 @@ func TestBuilderSum(t *testing.T) {
 
 	builder := NewBuilder(newTestUserCount()).WithConn(conn)
 	builder.Table("user").Where("id", ksql.Eq, 1)
-	mock.ExpectPrepare("SELECT SUM\\(`balance`\\) AS `balance` FROM `user` WHERE `id` = \\?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(30))
+	mock.ExpectPrepare("SELECT SUM(`balance`) AS `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(30))
 	ba, err := builder.SumInt(context.Background(), "balance")
 	if err != nil {
 		t.Fatal(err)
