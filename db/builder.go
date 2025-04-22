@@ -349,6 +349,10 @@ func (b *Builder[T]) Pagination(ctx context.Context, page, pageSize int64) (ksql
 }
 
 func (b *Builder[T]) WithConn(conn ksql.ConnectionInterface) ksql.BuilderInterface[T] {
+	if b.conn != nil {
+		return b
+	}
+
 	b.conn = conn
 	return b
 }
@@ -381,5 +385,12 @@ func Models[T ksql.ModelInterface](models *[]T) ksql.BuilderInterface[T] {
 	tmp := m.Clone().(T)
 	builder := &Builder[T]{query: NewQuery(), models: models}
 	builder.Table(tmp.Table()).Columns(tmp.Columns()...)
+	return builder
+}
+
+func ShardingModels[T ksql.ModelInterface](table string, models *[]T) ksql.BuilderInterface[T] {
+	var m T
+	builder := &Builder[T]{query: NewQuery(), models: models}
+	builder.Columns(m.Columns()...).Table(table)
 	return builder
 }

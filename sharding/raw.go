@@ -9,19 +9,39 @@ import (
 )
 
 func InsertRaw(key any, ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
-	return db.InsertRawBy(ctx, database.conn(key), raw)
+	return InsertRawBy(key, ctx, database, raw)
 }
 
 func UpdateRaw(key any, ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
-	return db.UpdateRawBy(ctx, database.conn(key), raw)
+	return UpdateRawBy(key, ctx, database, raw)
 }
 
 func DeleteRaw(key any, ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
-	return db.DeleteRawBy(ctx, database.conn(key), raw)
+	return DeleteRawBy(key, ctx, database, raw)
 }
 
 func QueryRaw[T ksql.RowInterface](key any, ctx context.Context, raw ksql.ExpressInterface, models *[]T) error {
-	if err := db.QueryRawBy(ctx, database.conn(key), raw, models); err != nil {
+	return QueryRawBy(key, ctx, database, raw, models)
+}
+
+func QueryRowRaw[T ksql.RowInterface](key any, ctx context.Context, raw ksql.ExpressInterface, model T) error {
+	return QueryRowRawBy(key, ctx, database, raw, model)
+}
+
+func InsertRawBy(key any, ctx context.Context, conn ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
+	return db.InsertRawBy(ctx, conn.Get(key), raw)
+}
+
+func UpdateRawBy(key any, ctx context.Context, conn ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
+	return db.UpdateRawBy(ctx, conn.Get(key), raw)
+}
+
+func DeleteRawBy(key any, ctx context.Context, conn ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
+	return db.DeleteRawBy(ctx, conn.Get(key), raw)
+}
+
+func QueryRawBy[T ksql.RowInterface](key any, ctx context.Context, conn ConnectionInterface, raw ksql.ExpressInterface, models *[]T) error {
+	if err := db.QueryRawBy(ctx, conn.Get(key), raw, models); err != nil {
 		return err
 	}
 
@@ -35,13 +55,13 @@ func QueryRaw[T ksql.RowInterface](key any, ctx context.Context, raw ksql.Expres
 	return nil
 }
 
-func QueryRowRaw[T ksql.RowInterface](key any, ctx context.Context, raw ksql.ExpressInterface, model T) error {
+func QueryRowRawBy[T ksql.RowInterface](key any, ctx context.Context, conn ConnectionInterface, raw ksql.ExpressInterface, model T) error {
 	var tmp any = model
 	if t, ok := tmp.(ShardingInterface); ok {
 		t.WithKey(key)
 	}
 
-	return db.QueryRowRawBy(ctx, database.conn(key), raw, model)
+	return db.QueryRowRawBy(ctx, conn.Get(key), raw, model)
 }
 
 func HasTable(ctx context.Context, table string) (bool, error) {
