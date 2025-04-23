@@ -261,3 +261,257 @@ func TestDbLock(t *testing.T) {
 
 	assert.Nil(t, err)
 }
+
+func TestDbTable(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	mock.ExpectPrepare("ALTER TABLE `user` DROP COLUMN `user_name`, ADD COLUMN `level` BIGINT(20) DEFAULT '0' KEY COMMENT '等级', ADD FOREIGN KEY `idx_user_id` (`user_id`), DROP INDEX `idx_level`").ExpectExec().WithoutArgs().WillReturnResult(sqlmock.NewResult(0, 1))
+	err = Table(context.Background(), "user", func(table ksql.TableInterface) {
+		table.DropColumn("user_name")
+		table.AddBigInt("level").Index().Default("0").Comment("等级")
+		table.AddIndex("idx_user_id").Foreign().Algorithm(ksql.Index_Alg_BTree).Comment("索引").Columns("user_id")
+		table.DropIndex("idx_level")
+	})
+	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestDbCreate(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	mock.ExpectPrepare("CREATE TABLE `user` (`level` BIGINT(20) DEFAULT '0' KEY COMMENT '等级', FOREIGN KEY `idx_user_id` (`user_id`))").ExpectExec().WithoutArgs().WillReturnResult(sqlmock.NewResult(0, 1))
+	err = Create(context.Background(), "user", func(table ksql.TableInterface) {
+		table.DropColumn("user_name")
+		table.AddBigInt("level").Index().Default("0").Comment("等级")
+		table.AddIndex("idx_user_id").Foreign().Algorithm(ksql.Index_Alg_BTree).Comment("索引").Columns("user_id")
+		table.DropIndex("idx_level")
+	})
+	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestDbDropTable(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	mock.ExpectPrepare("DROP TABLE `user`").ExpectExec().WithoutArgs().WillReturnResult(sqlmock.NewResult(0, 1))
+	err = DropTable(context.Background(), "user")
+	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestDbDropTableIfExists(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	mock.ExpectPrepare("DROP TABLE IF EXISTS `user`").ExpectExec().WithoutArgs().WillReturnResult(sqlmock.NewResult(0, 1))
+	err = DropTableIfExists(context.Background(), "user")
+	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestDbShowDLL(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	mock.ExpectPrepare("SHOW CREATE TABLE `user`").ExpectQuery().WithoutArgs().WillReturnRows(sqlmock.NewRows([]string{"table", "ddl"}).AddRow("user", "ddl"))
+	ddl, err := ShowDDL(context.Background(), "user")
+	assert.Nil(t, err)
+	assert.Equal(t, "ddl", ddl)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestDbScan(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	query := NewQuery().Table("user").Columns("id", "name").Where("id", "=", 1)
+	mock.ExpectPrepare("SELECT `id`, `name` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(1, "kovey"))
+	var id int
+	var name string
+	err = Scan(context.Background(), query, &id, &name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, 1, id)
+	assert.Equal(t, "kovey", name)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestDbFindBy(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	columns := []string{"id", "age", "name", "create_time", "balance"}
+	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
+	tu := newTestUser()
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ?").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	err = FindBy(context.Background(), tu, func(query ksql.QueryInterface) {
+		query.Where("id", ksql.Eq, 1)
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, int64(1), tu.Id)
+	assert.Equal(t, 18, tu.Age)
+	assert.Equal(t, "kovey", tu.Name)
+	assert.Equal(t, now.Format(time.DateTime), tu.CreateTime.Format(time.DateTime))
+	assert.Equal(t, float64(30.23), tu.Balance)
+}
+
+func TestDbLockShare(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	columns := []string{"id", "age", "name", "create_time", "balance"}
+	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
+	mock.ExpectBegin()
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? FOR SHARE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("INSERT INTO `user` (`name`, `age`) VALUES (?, ?)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("UPDATE `user` SET `balance` = `balance` + ? WHERE `id` = ?").ExpectExec().WithArgs(100, 1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	up := NewUpdate()
+	up.Table("user").IncColumn("balance", 100).Where(NewWhere().Where("id", ksql.Eq, 1))
+	in := NewInsert()
+	in.Table("user").Add("name", "kovey").Add("age", 18)
+	err = Transaction(context.Background(), func(ctx context.Context, db ksql.ConnectionInterface) error {
+		tu := newTestUser()
+		if err := LockShare(ctx, db, tu, 1); err != nil {
+			return err
+		}
+
+		if _, err := db.Insert(ctx, in); err != nil {
+			return err
+		}
+
+		_, err := db.Update(ctx, up)
+		return err
+	})
+
+	if err != nil {
+		t.Fatal(err.(*TxErr).callErr)
+	}
+
+	assert.Nil(t, err)
+}
+
+func TestDbLockShareBy(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	columns := []string{"id", "age", "name", "create_time", "balance"}
+	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
+	mock.ExpectBegin()
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? FOR SHARE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("INSERT INTO `user` (`name`, `age`) VALUES (?, ?)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("UPDATE `user` SET `balance` = `balance` + ? WHERE `id` = ?").ExpectExec().WithArgs(100, 1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	up := NewUpdate()
+	up.Table("user").IncColumn("balance", 100).Where(NewWhere().Where("id", ksql.Eq, 1))
+	in := NewInsert()
+	in.Table("user").Add("name", "kovey").Add("age", 18)
+	err = Transaction(context.Background(), func(ctx context.Context, db ksql.ConnectionInterface) error {
+		tu := newTestUser()
+		if err := LockByShare(ctx, db, tu, func(query ksql.QueryInterface) {
+			query.Where("id", ksql.Eq, 1)
+		}); err != nil {
+			return err
+		}
+
+		if _, err := db.Insert(ctx, in); err != nil {
+			return err
+		}
+
+		_, err := db.Update(ctx, up)
+		return err
+	})
+
+	if err != nil {
+		t.Fatal(err.(*TxErr).callErr)
+	}
+
+	assert.Nil(t, err)
+}
+
+func TestDbLockBy(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	columns := []string{"id", "age", "name", "create_time", "balance"}
+	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
+	mock.ExpectBegin()
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? FOR UPDATE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("INSERT INTO `user` (`name`, `age`) VALUES (?, ?)").ExpectExec().WithArgs("kovey", 18).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectPrepare("UPDATE `user` SET `balance` = `balance` + ? WHERE `id` = ?").ExpectExec().WithArgs(100, 1).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	up := NewUpdate()
+	up.Table("user").IncColumn("balance", 100).Where(NewWhere().Where("id", ksql.Eq, 1))
+	in := NewInsert()
+	in.Table("user").Add("name", "kovey").Add("age", 18)
+	err = Transaction(context.Background(), func(ctx context.Context, db ksql.ConnectionInterface) error {
+		tu := newTestUser()
+		if err := LockBy(ctx, db, tu, func(query ksql.QueryInterface) {
+			query.Where("id", ksql.Eq, 1)
+		}); err != nil {
+			return err
+		}
+
+		if _, err := db.Insert(ctx, in); err != nil {
+			return err
+		}
+
+		_, err := db.Update(ctx, up)
+		return err
+	})
+
+	if err != nil {
+		t.Fatal(err.(*TxErr).callErr)
+	}
+
+	assert.Nil(t, err)
+}

@@ -70,7 +70,7 @@ func (ta *Table) _columns(builder *strings.Builder) {
 
 	for _, i := range ta.indexes {
 		if index > 0 {
-			builder.WriteString(", ")
+			builder.WriteString(",")
 		}
 
 		i.Build(builder)
@@ -184,11 +184,11 @@ func (ta *Table) AddDate(column string) ksql.ColumnInterface {
 }
 
 func (ta *Table) AddDateTime(column string) ksql.ColumnInterface {
-	return ta.AddColumn(column, table.Type_DateTime, 0, 0)
+	return ta.AddColumn(column, table.Type_DateTime, 19, 0)
 }
 
 func (ta *Table) AddTimestamp(column string) ksql.ColumnInterface {
-	return ta.AddColumn(column, table.Type_Timestamp, 0, 0)
+	return ta.AddColumn(column, table.Type_Timestamp, 19, 0)
 }
 
 func (ta *Table) AddSmallInt(column string) ksql.ColumnInterface {

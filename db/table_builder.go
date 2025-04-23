@@ -367,7 +367,7 @@ func (ta *TableBuilder) ChangeColumn(oldColumn, newColumn, t string, length, sca
 		return nil
 	}
 
-	return ta.ChangeColumn(oldColumn, newColumn, t, length, scale, sets...)
+	return ta.alter.ChangeColumn(oldColumn).New(newColumn, t, length, scale, sets...)
 }
 
 func (t *TableBuilder) Exec(ctx context.Context) error {

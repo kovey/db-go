@@ -209,11 +209,11 @@ func (a *Alter) AddDate(column string) ksql.ColumnInterface {
 }
 
 func (a *Alter) AddDateTime(column string) ksql.ColumnInterface {
-	return a.AddColumn(column, table.Type_DateTime, 0, 0)
+	return a.AddColumn(column, table.Type_DateTime, 19, 0)
 }
 
 func (a *Alter) AddTimestamp(column string) ksql.ColumnInterface {
-	return a.AddColumn(column, table.Type_Timestamp, 0, 0)
+	return a.AddColumn(column, table.Type_Timestamp, 19, 0)
 }
 
 func (a *Alter) AddSmallInt(column string) ksql.ColumnInterface {

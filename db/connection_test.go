@@ -61,6 +61,7 @@ func TestConnectionCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestConnectionRollback(t *testing.T) {
@@ -91,6 +92,7 @@ func TestConnectionRollback(t *testing.T) {
 		return err
 	})
 	assert.Equal(t, expErr, err.(*TxErr).callErr.(*SqlErr).Err)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestConnectionCommitMulti(t *testing.T) {
@@ -136,6 +138,7 @@ func TestConnectionCommitMulti(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Nil(t, err)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestConnectionRollbackMulti(t *testing.T) {
@@ -178,6 +181,7 @@ func TestConnectionRollbackMulti(t *testing.T) {
 	})
 
 	assert.Equal(t, expErr, err.(*TxErr).callErr.(*TxErr).callErr.(*SqlErr).Err)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestConnectionQuery(t *testing.T) {
@@ -199,6 +203,7 @@ func TestConnectionQuery(t *testing.T) {
 	assert.Equal(t, "kovey", tu.Name)
 	assert.Equal(t, now.Format(time.DateTime), tu.CreateTime.Format(time.DateTime))
 	assert.Equal(t, float64(30.23), tu.Balance)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestConnectionQueryRaw(t *testing.T) {
@@ -220,6 +225,7 @@ func TestConnectionQueryRaw(t *testing.T) {
 	assert.Equal(t, "kovey", tu.Name)
 	assert.Equal(t, now.Format(time.DateTime), tu.CreateTime.Format(time.DateTime))
 	assert.Equal(t, float64(30.23), tu.Balance)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestConnectionScan(t *testing.T) {
@@ -241,6 +247,7 @@ func TestConnectionScan(t *testing.T) {
 	assert.Equal(t, "kovey", tu.Name)
 	assert.Equal(t, now.Format(time.DateTime), tu.CreateTime.Format(time.DateTime))
 	assert.Equal(t, float64(30.23), tu.Balance)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestConnectionScanRaw(t *testing.T) {
@@ -261,4 +268,131 @@ func TestConnectionScanRaw(t *testing.T) {
 	assert.Equal(t, "kovey", tu.Name)
 	assert.Equal(t, now.Format(time.DateTime), tu.CreateTime.Format(time.DateTime))
 	assert.Equal(t, float64(30.23), tu.Balance)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestConnectionOnlyBeginErr(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	mock.ExpectBegin().WillReturnError(sqlmock.ErrCancelled)
+	err = conn.Transaction(context.Background(), func(ctx context.Context, conn ksql.ConnectionInterface) error {
+		return conn.Transaction(ctx, func(ctx context.Context, conn ksql.ConnectionInterface) error {
+			return nil
+		})
+	})
+
+	assert.Equal(t, sqlmock.ErrCancelled, err.(*TxErr).Begin())
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestConnectionBeginErr(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	mock.ExpectBegin()
+	mock.ExpectPrepare("SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnError(sqlmock.ErrCancelled)
+	mock.ExpectRollback()
+
+	conn.(*Connection).driverName = "other"
+	err = conn.BeginTo(context.Background(), "point")
+	assert.Equal(t, Err_Un_Support_Save_Point, err)
+
+	conn.(*Connection).driverName = "mysql"
+	err = conn.Transaction(context.Background(), func(ctx context.Context, conn ksql.ConnectionInterface) error {
+		return conn.Transaction(ctx, func(ctx context.Context, conn ksql.ConnectionInterface) error {
+			return nil
+		})
+	})
+
+	assert.Equal(t, sqlmock.ErrCancelled, err.(*TxErr).Call().(*TxErr).Begin().(*SqlErr).Err)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestConnectionOnlyRollbackErr(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	mock.ExpectBegin()
+	mock.ExpectRollback().WillReturnError(sqlmock.ErrCancelled)
+	err = conn.Transaction(context.Background(), func(ctx context.Context, conn ksql.ConnectionInterface) error {
+		return errors.New("business err")
+	})
+
+	assert.Equal(t, sqlmock.ErrCancelled, err.(*TxErr).Rollback())
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestConnectionRollbackErr(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	mock.ExpectBegin()
+	mock.ExpectPrepare("SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectPrepare("ROLLBACK TO SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnError(sqlmock.ErrCancelled)
+	mock.ExpectRollback()
+
+	conn.(*Connection).driverName = "other"
+	err = conn.RollbackTo(context.Background(), "point")
+	assert.Equal(t, Err_Un_Support_Save_Point, err)
+
+	conn.(*Connection).driverName = "mysql"
+	err = conn.Transaction(context.Background(), func(ctx context.Context, conn ksql.ConnectionInterface) error {
+		return conn.Transaction(ctx, func(ctx context.Context, conn ksql.ConnectionInterface) error {
+			return errors.New("business error")
+		})
+	})
+
+	assert.Equal(t, sqlmock.ErrCancelled, err.(*TxErr).Call().(*TxErr).Rollback().(*SqlErr).Err)
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestConnectionOnlyCommitErr(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	mock.ExpectBegin()
+	mock.ExpectCommit().WillReturnError(sqlmock.ErrCancelled)
+	err = conn.Transaction(context.Background(), func(ctx context.Context, conn ksql.ConnectionInterface) error {
+		return nil
+	})
+
+	assert.Equal(t, sqlmock.ErrCancelled, err.(*TxErr).Commit())
+	assert.Nil(t, mock.ExpectationsWereMet())
+}
+
+func TestConnectionCommitErr(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	mock.ExpectBegin()
+	mock.ExpectPrepare("SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectPrepare("RELEASE SAVEPOINT ?").ExpectExec().WithArgs("trans_1").WillReturnError(sqlmock.ErrCancelled)
+	mock.ExpectRollback()
+
+	conn.(*Connection).driverName = "other"
+	err = conn.CommitTo(context.Background(), "point")
+	assert.Equal(t, Err_Un_Support_Save_Point, err)
+
+	conn.(*Connection).driverName = "mysql"
+	err = conn.Transaction(context.Background(), func(ctx context.Context, conn ksql.ConnectionInterface) error {
+		return conn.Transaction(ctx, func(ctx context.Context, conn ksql.ConnectionInterface) error {
+			return nil
+		})
+	})
+
+	assert.Equal(t, sqlmock.ErrCancelled, err.(*TxErr).Call().(*TxErr).Commit().(*SqlErr).Err)
+	assert.Nil(t, mock.ExpectationsWereMet())
 }

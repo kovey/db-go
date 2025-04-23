@@ -24,6 +24,10 @@ func NewIndexOption() *IndexOption {
 	return i
 }
 
+func (i *IndexOption) Empty() bool {
+	return i.blockSize == "" && i.alg == "" && i.parserName == "" && i.comment == "" && i.visible == "" && i.engineAttr == "" && i.secEngineAttr == ""
+}
+
 func (i *IndexOption) _blockSize(builder *strings.Builder) {
 	if i.blockSize == "" {
 		return

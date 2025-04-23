@@ -63,9 +63,7 @@ func (c *Connection) RollbackTo(ctx context.Context, point string) error {
 
 func (c *Connection) rollbackTo(ctx context.Context) error {
 	if err := c.RollbackTo(ctx, fmt.Sprintf("trans_%d", c.transCount)); err != nil {
-		if err == Err_Un_Support_Save_Point {
-			c.transCount--
-		}
+		c.transCount--
 		return err
 	}
 
@@ -84,9 +82,7 @@ func (c *Connection) CommitTo(ctx context.Context, point string) error {
 
 func (c *Connection) commitTo(ctx context.Context) error {
 	if err := c.CommitTo(ctx, fmt.Sprintf("trans_%d", c.transCount)); err != nil {
-		if err == Err_Un_Support_Save_Point {
-			c.transCount--
-		}
+		c.transCount--
 		return err
 	}
 
@@ -260,7 +256,7 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 
 func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface, model ksql.RowInterface) error {
 	if raw.IsExec() {
-		return Err_Sql_Not_Query
+		return _errRaw(Err_Sql_Not_Query, raw)
 	}
 
 	cc := NewContext(ctx)
@@ -303,7 +299,7 @@ func (c *Connection) PrepareRaw(ctx context.Context, raw ksql.ExpressInterface) 
 
 func (c *Connection) ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sql.Result, error) {
 	if !raw.IsExec() {
-		return nil, Err_Sql_Not_Exec
+		return nil, _errRaw(Err_Sql_Not_Exec, raw)
 	}
 
 	cc := NewContext(ctx)
@@ -326,7 +322,7 @@ func (c *Connection) InTransaction() bool {
 
 func (c *Connection) ScanRaw(ctx context.Context, raw ksql.ExpressInterface, data ...any) error {
 	if raw.IsExec() {
-		return Err_Sql_Not_Query
+		return _errRaw(Err_Sql_Not_Query, raw)
 	}
 
 	cc := NewContext(ctx)

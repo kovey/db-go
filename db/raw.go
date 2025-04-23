@@ -18,15 +18,16 @@ var (
 
 func InsertRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
 	if raw.Type() != ksql.Sql_Type_Insert {
-		return 0, Err_Sql_Not_Insert
+		return 0, _errRaw(Err_Sql_Not_Insert, raw)
 	}
 
 	result, err := conn.ExecRaw(ctx, raw)
 	if err != nil {
-		return 0, err
+		return 0, _errRaw(err, raw)
 	}
 
-	return result.LastInsertId()
+	id, err := result.LastInsertId()
+	return id, _errRaw(err, raw)
 }
 
 func InsertRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
@@ -35,15 +36,16 @@ func InsertRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
 
 func UpdateRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
 	if raw.Type() != ksql.Sql_Type_Update {
-		return 0, Err_Sql_Not_Update
+		return 0, _errRaw(Err_Sql_Not_Update, raw)
 	}
 
 	result, err := conn.ExecRaw(ctx, raw)
 	if err != nil {
-		return 0, err
+		return 0, _errRaw(err, raw)
 	}
 
-	return result.RowsAffected()
+	id, err := result.RowsAffected()
+	return id, _errRaw(err, raw)
 }
 
 func UpdateRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
@@ -52,15 +54,16 @@ func UpdateRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
 
 func DeleteRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (int64, error) {
 	if raw.Type() != ksql.Sql_Type_Delete {
-		return 0, Err_Sql_Not_Delete
+		return 0, _errRaw(Err_Sql_Not_Delete, raw)
 	}
 
 	result, err := conn.ExecRaw(ctx, raw)
 	if err != nil {
-		return 0, err
+		return 0, _errRaw(err, raw)
 	}
 
-	return result.RowsAffected()
+	id, err := result.RowsAffected()
+	return id, _errRaw(err, raw)
 }
 
 func DeleteRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
@@ -69,7 +72,7 @@ func DeleteRaw(ctx context.Context, raw ksql.ExpressInterface) (int64, error) {
 
 func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface, models *[]T) error {
 	if raw.IsExec() {
-		return Err_Sql_Not_Query
+		return _errRaw(Err_Sql_Not_Query, raw)
 	}
 
 	cc := NewContext(ctx)
@@ -96,7 +99,7 @@ func QueryRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 	for rows.Next() {
 		tmp := m.Clone()
 		if err := tmp.Scan(rows, tmp); err != nil {
-			return err
+			return _errRaw(err, raw)
 		}
 
 		model, ok := tmp.(T)
@@ -117,7 +120,7 @@ func QueryRaw[T ksql.RowInterface](ctx context.Context, raw ksql.ExpressInterfac
 
 func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface, model T) error {
 	if raw.IsExec() {
-		return Err_Sql_Not_Query
+		return _errRaw(Err_Sql_Not_Query, raw)
 	}
 
 	cc := NewContext(ctx)
@@ -132,7 +135,7 @@ func QueryRowRawBy[T ksql.RowInterface](ctx context.Context, conn ksql.Connectio
 
 	row := stmt.QueryRowContext(cc, raw.Binds()...)
 	if row.Err() != nil {
-		return _errRaw(err, raw)
+		return _errRaw(row.Err(), raw)
 	}
 
 	if err := model.Scan(row, model); err != nil {
@@ -167,11 +170,8 @@ func _hasRaw(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.Expres
 	if err != nil {
 		return false, _errRaw(err, raw)
 	}
-	defer rows.Close()
-	if rows.Err() != nil {
-		return false, _errRaw(rows.Err(), raw)
-	}
 
+	defer rows.Close()
 	return rows.Next(), nil
 }
 

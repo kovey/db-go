@@ -315,13 +315,6 @@ func Create(ctx context.Context, table string, call func(table ksql.TableInterfa
 	return ta.Exec(ctx)
 }
 
-func Schema(ctx context.Context, schema string, call func(schema ksql.SchemaInterface)) error {
-	sc := NewSchema().Schema(schema)
-	call(sc)
-	_, err := Exec(ctx, sc)
-	return err
-}
-
 func DropTableBy(ctx context.Context, conn ksql.ConnectionInterface, table string) error {
 	op := NewDropTable().Table(table)
 	_, err := conn.Exec(ctx, op)
@@ -345,7 +338,7 @@ func DropTableIfExists(ctx context.Context, table string) error {
 func ShowDDLBy(ctx context.Context, conn ksql.ConnectionInterface, table string) (string, error) {
 	var tableName *string
 	var ddl *string
-	if err := conn.ScanRaw(ctx, Raw("SHOW CREATE TABLE "+table), &tableName, &ddl); err != nil {
+	if err := conn.ScanRaw(ctx, Raw("SHOW CREATE TABLE `"+table+"`"), &tableName, &ddl); err != nil {
 		return "", err
 	}
 
@@ -361,5 +354,5 @@ func ScanBy(ctx context.Context, conn ksql.ConnectionInterface, query ksql.Query
 }
 
 func Scan(ctx context.Context, query ksql.QueryInterface, vals ...any) error {
-	return ScanBy(ctx, database, query)
+	return ScanBy(ctx, database, query, vals...)
 }

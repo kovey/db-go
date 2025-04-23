@@ -18,11 +18,15 @@ func NewData() *Data {
 
 func (d *Data) From(o *Data) {
 	o.Range(func(key string, val any) {
-		if _, ok := d.data[key]; !ok {
-			d.keys = append(d.keys, key)
-		}
-		d.data[key] = val
+		d._set(key, val)
 	})
+}
+
+func (d *Data) _set(key string, val any) {
+	if _, ok := d.data[key]; !ok {
+		d.keys = append(d.keys, key)
+	}
+	d.data[key] = val
 }
 
 func (d *Data) Set(key string, val any) *Data {
@@ -90,6 +94,22 @@ func (d *Data) Set(key string, val any) *Data {
 	case *time.Time:
 		d.data[key] = *tmp
 	case **time.Time:
+		d.data[key] = *tmp
+	case *sql.NullBool:
+		d.data[key] = *tmp
+	case *sql.NullByte:
+		d.data[key] = *tmp
+	case *sql.NullFloat64:
+		d.data[key] = *tmp
+	case *sql.NullInt16:
+		d.data[key] = *tmp
+	case *sql.NullInt32:
+		d.data[key] = *tmp
+	case *sql.NullInt64:
+		d.data[key] = *tmp
+	case *sql.NullString:
+		d.data[key] = *tmp
+	case *sql.NullTime:
 		d.data[key] = *tmp
 	default:
 		d.data[key] = val
@@ -335,12 +355,18 @@ func (d *Data) Changed(key string, val any) bool {
 			return true
 		}
 		return v.Int64 != tmp.Int64
+	case *sql.NullString:
+		v, ok := old.(sql.NullString)
+		if !ok {
+			return true
+		}
+		return v.String != tmp.String
 	case *sql.NullTime:
 		v, ok := old.(sql.NullTime)
 		if !ok {
 			return true
 		}
-		return v.Time.Equal(tmp.Time)
+		return !v.Time.Equal(tmp.Time)
 	default:
 		return old != val
 	}

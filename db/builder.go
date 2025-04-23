@@ -264,7 +264,7 @@ func _scanNum[T uint64 | float64](ctx context.Context, conn ksql.ConnectionInter
 
 	stmt, err := conn.Prepare(ctx, query)
 	if err != nil {
-		return 0, _err(err, query)
+		return 0, err
 	}
 	defer stmt.Close()
 
@@ -301,13 +301,14 @@ func (b *Builder[T]) Count(ctx context.Context) (uint64, error) {
 }
 
 func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
+	b.query.Limit(1)
 	cc := NewContext(ctx)
 	cc.SqlLogStart(b.query)
 	defer cc.SqlLogEnd()
 
 	stmt, err := b._conn().Prepare(ctx, b.query)
 	if err != nil {
-		return false, _err(err, b.query)
+		return false, err
 	}
 	defer stmt.Close()
 
@@ -315,16 +316,9 @@ func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, _err(err, b.query)
 	}
+
 	defer rows.Close()
-	if rows.Err() != nil {
-		return false, _err(rows.Err(), b.query)
-	}
-
-	if rows.Next() {
-		return true, nil
-	}
-
-	return false, _err(rows.Err(), b.query)
+	return rows.Next(), nil
 }
 
 func offset(page, pageSize int64) int {

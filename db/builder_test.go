@@ -463,7 +463,7 @@ func TestBuilderAllWithJoin(t *testing.T) {
 	assert.Equal(t, 13, tu.Count)
 }
 
-func TestBuilderExist(t *testing.T) {
+func TestBuilderExists(t *testing.T) {
 	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.Nil(t, err)
 	defer testDb.Close()
@@ -475,7 +475,7 @@ func TestBuilderExist(t *testing.T) {
 	now, _ := time.Parse(time.DateTime, "2025-04-03 11:11:11")
 	builder := NewBuilder(newTestUser()).WithConn(conn)
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1).ForUpdate()
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? FOR UPDATE").ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? LIMIT ? FOR UPDATE").ExpectQuery().WithArgs(1, 1).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23))
 	ok, err := builder.Exist(context.Background())
 	assert.Nil(t, err)
 	assert.True(t, ok)

@@ -24,7 +24,7 @@ type Index struct {
 }
 
 func NewIndex(name string) *Index {
-	i := &Index{name: name, opChain: operator.NewChain(), typ: ksql.Index_Type_Normal, subType: ksql.Index_Sub_Type_Index, columns: &IndexColumns{}}
+	i := &Index{name: name, opChain: operator.NewChain(), typ: ksql.Index_Type_Normal, subType: ksql.Index_Sub_Type_Index, columns: &IndexColumns{}, option: NewIndexOption()}
 	i.opChain.Append(i._keyword, i._key, i._name, i._keyType, i.columns.Build, i._indexOption, i._reference)
 	return i
 }
@@ -91,7 +91,7 @@ func (i *Index) _keyType(builder *strings.Builder) {
 }
 
 func (i *Index) _indexOption(builder *strings.Builder) {
-	if i.option == nil || i.foreign != "" {
+	if i.option.Empty() || i.foreign != "" {
 		return
 	}
 
