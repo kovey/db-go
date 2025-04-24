@@ -74,9 +74,15 @@ func DiffTable(ctx context.Context, fromTable, toTable schema.TableInfoInterface
 			if index.Type() == ksql.Index_Type_Primary {
 				op.AddPrimary(index.Columns()[0])
 				continue
+			} else if index.Type() == ksql.Index_Type_Unique {
+				op.AddUnique(index.Name(), index.Columns()...)
+				continue
+			} else if index.Type() == ksql.Index_Type_Foreign {
+				op.AddIndex(index.Name()).Type(index.Type()).Columns(index.Columns()...).Foreign()
+				continue
 			}
 
-			op.AddIndex(index.Name(), index.Type(), index.Columns()...)
+			op.AddIndex(index.Name()).Type(index.Type()).Columns(index.Columns()...)
 		}
 
 		return op
@@ -110,9 +116,15 @@ func DiffTable(ctx context.Context, fromTable, toTable schema.TableInfoInterface
 			if index.Type() == ksql.Index_Type_Primary {
 				op.AddPrimary(index.Columns()[0])
 				continue
+			} else if index.Type() == ksql.Index_Type_Unique {
+				op.AddUnique(index.Name(), index.Columns()...)
+				continue
+			} else if index.Type() == ksql.Index_Type_Foreign {
+				op.AddIndex(index.Name()).Type(index.Type()).Columns(index.Columns()...).Foreign()
+				continue
 			}
 
-			op.AddIndex(index.Name(), index.Type(), index.Columns()...)
+			op.AddIndex(index.Name()).Type(index.Type()).Columns(index.Columns()...)
 		}
 
 		for _, index := range changes.Index().Deletes() {
@@ -135,7 +147,7 @@ func DiffTable(ctx context.Context, fromTable, toTable schema.TableInfoInterface
 		}
 		for _, change := range changes.Column().Changes() {
 			column := change.New()
-			c := op.ChangeColumn(change.Old().Name(), column.Name(), column.Type(), column.Length(), column.Scale()).Comment(column.Comment())
+			c := op.ChangeColumn(change.Old().Name()).New(column.Name(), column.Type(), column.Length(), column.Scale()).Comment(column.Comment())
 			if column.AutoIncrement() {
 				c.AutoIncrement()
 			}
