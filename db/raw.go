@@ -209,3 +209,16 @@ func ExecRaw(ctx context.Context, raw ksql.ExpressInterface) (sql.Result, error)
 func ExecRawBy(ctx context.Context, conn ksql.ConnectionInterface, raw ksql.ExpressInterface) (sql.Result, error) {
 	return conn.ExecRaw(ctx, raw)
 }
+
+func DoBy(ctx context.Context, conn ksql.ConnectionInterface, raws ...ksql.ExpressInterface) (int64, error) {
+	do := NewDo()
+	for _, raw := range raws {
+		do.Do(raw)
+	}
+
+	return conn.Exec(ctx, do)
+}
+
+func Do(ctx context.Context, raws ...ksql.ExpressInterface) (int64, error) {
+	return DoBy(ctx, database, raws...)
+}

@@ -515,3 +515,18 @@ func TestDbLockBy(t *testing.T) {
 
 	assert.Nil(t, err)
 }
+
+func TestDo(t *testing.T) {
+	testDb, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.Nil(t, err)
+	defer testDb.Close()
+
+	conn, err := Open(testDb, "mysql")
+	assert.Nil(t, err)
+	database = conn
+
+	mock.ExpectPrepare("DO SLEEP 5, CONTRACT('a', 'b')").ExpectExec().WithoutArgs().WillReturnResult(sqlmock.NewResult(0, 0))
+	n, err := Do(context.Background(), Raw("SLEEP 5"), Raw("CONTRACT('a', 'b')"))
+	assert.Equal(t, int64(0), n)
+	assert.Nil(t, err)
+}

@@ -16,6 +16,7 @@ type NewCreateTableFun func() ksql.CreateTableInterface
 type NewAlterTableFun func() ksql.AlterInterface
 type NewTableFun func() ksql.TableInterface
 type NewWhereFun func() ksql.WhereInterface
+type NewDoFun func() ksql.DoInterface
 
 var NewWhere NewWhereFun = func() ksql.WhereInterface {
 	return sql.NewWhere()
@@ -47,6 +48,9 @@ var NewAlterTable NewAlterTableFun = func() ksql.AlterInterface {
 }
 var NewTable NewTableFun = func() ksql.TableInterface {
 	return NewTableBuilder()
+}
+var NewDo NewDoFun = func() ksql.DoInterface {
+	return sql.NewDo()
 }
 
 func ToList[T any](data []T) []any {
