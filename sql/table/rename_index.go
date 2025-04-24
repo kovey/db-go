@@ -13,13 +13,13 @@ type RenameIndex struct {
 	typ      ksql.IndexSubType
 }
 
-func (r *RenameIndex) Old(column string) ksql.RenameIndexInterface {
-	r.oldIndex = column
+func (r *RenameIndex) Old(index string) ksql.RenameIndexInterface {
+	r.oldIndex = index
 	return r
 }
 
-func (r *RenameIndex) New(column string) ksql.RenameIndexInterface {
-	r.newIndex = column
+func (r *RenameIndex) New(index string) ksql.RenameIndexInterface {
+	r.newIndex = index
 	return r
 }
 

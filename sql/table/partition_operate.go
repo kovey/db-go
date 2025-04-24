@@ -134,7 +134,7 @@ func (p *PartitionOperate) Build(builder *strings.Builder) {
 
 	switch p.method {
 	case "ADD":
-		builder.WriteString("(")
+		builder.WriteString(" (")
 		p.define.Build(builder)
 		builder.WriteString(")")
 	case "DISCARD PARTITION", "IMPORT PARTITION":

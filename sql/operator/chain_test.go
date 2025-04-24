@@ -26,4 +26,7 @@ func TestChain(t *testing.T) {
 	assert.Equal(t, "SELECT * FROM", builder.String())
 	chain.Call(&builder)
 	assert.Equal(t, "SELECT * FROM", builder.String())
+	chain.Reset()
+	chain.Call(&builder)
+	assert.Equal(t, "SELECT * FROMSELECT * FROM", builder.String())
 }

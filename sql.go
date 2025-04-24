@@ -484,6 +484,7 @@ type AlterInterface interface {
 	AddPartition(name string) PartitionDefinitionInterface
 	CoalescePartition(number int) AlterInterface
 	PartitionOperate(partitionNames ...string) PartitionOperateInterface
+	AddColumnBy(column, t string, length, scale int, sets ...string) TableAddColumnInterface
 }
 
 type DeleteInterface interface {
