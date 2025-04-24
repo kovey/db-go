@@ -7,13 +7,18 @@ import (
 	"github.com/kovey/db-go/v3/sql/operator"
 )
 
+type tableAs struct {
+	table string
+	as    string
+}
+
 type DeleteMulti struct {
 	*base
 	where       ksql.WhereInterface
 	lowPriority string
 	quick       string
 	ignore      string
-	tables      []string
+	tables      []*tableAs
 	joins       []ksql.JoinInterface
 }
 
@@ -36,17 +41,18 @@ func (d *DeleteMulti) _name(builder *strings.Builder) {
 			builder.WriteString(",")
 		}
 
-		operator.BuildColumnString(table, builder)
+		operator.BuildColumnString(table.table, builder)
+		if table.as != "" {
+			builder.WriteString(" AS")
+			operator.BuildColumnString(table.as, builder)
+		}
 	}
 }
 
 func (d *DeleteMulti) _reference(builder *strings.Builder) {
 	builder.WriteString(" FROM")
-	for index, join := range d.joins {
-		if index > 0 {
-			builder.WriteString(" ")
-		}
-
+	for _, join := range d.joins {
+		builder.WriteString(" ")
 		join.Build(builder)
 		d.binds = append(d.binds, join.Binds()...)
 	}
@@ -68,7 +74,12 @@ func (d *DeleteMulti) Where(where ksql.WhereInterface) ksql.DeleteMultiInterface
 }
 
 func (d *DeleteMulti) Table(table string) ksql.DeleteMultiInterface {
-	d.tables = append(d.tables, table)
+	d.tables = append(d.tables, &tableAs{table: table})
+	return d
+}
+
+func (d *DeleteMulti) TableAs(table, as string) ksql.DeleteMultiInterface {
+	d.tables = append(d.tables, &tableAs{table: table, as: as})
 	return d
 }
 

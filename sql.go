@@ -507,6 +507,7 @@ type DeleteMultiInterface interface {
 	Quick() DeleteMultiInterface
 	Ignore() DeleteMultiInterface
 	Table(table string) DeleteMultiInterface
+	TableAs(table, as string) DeleteMultiInterface
 	Join(table string) JoinInterface
 	JoinExpress(express ExpressInterface) JoinInterface
 	LeftJoin(table string) JoinInterface

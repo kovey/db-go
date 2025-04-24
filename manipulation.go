@@ -8,6 +8,5 @@ type CallInterface interface {
 
 type DoInterface interface {
 	SqlInterface
-	Do(query QueryInterface) DoInterface
-	DoExpress(express ExpressInterface) DoInterface
+	Do(expr ExpressInterface) DoInterface
 }
