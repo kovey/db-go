@@ -212,7 +212,7 @@ func TestBuilderColumnFunc(t *testing.T) {
 		wi.Between("create_time", "2025-04-03 01:11:11", "2025-04-03 11:15:11")
 	})
 	builder.WhereIsNull("update_time").WhereIsNotNull("age").WhereIn("id", []any{1, 3, 5}).WhereNotIn("id", []any{2, 4, 6})
-	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time` AS `ct`, SUM(`balance`) AS `balance`, (COUNT(1) as count) FROM `user` AS `u` WHERE `id` >= ? AND name LIKE ? AND `update_time` IS NULL AND `age` IS NULL AND `id` IN (?, ?, ?) AND `id` NOT IN (?, ?, ?) OR (`create_time` BETWEEN ? AND ?)").ExpectQuery().WithArgs(1, "%kovey%", 1, 3, 5, 2, 4, 6, "2025-04-03 01:11:11", "2025-04-03 11:15:11").WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "ct", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
+	mock.ExpectPrepare("SELECT `id`, `age`, `name`, `create_time` AS `ct`, SUM(`balance`) AS `balance`, COUNT(1) as count FROM `user` AS `u` WHERE `id` >= ? AND name LIKE ? AND `update_time` IS NULL AND `age` IS NULL AND `id` IN (?, ?, ?) AND `id` NOT IN (?, ?, ?) OR (`create_time` BETWEEN ? AND ?)").ExpectQuery().WithArgs(1, "%kovey%", 1, 3, 5, 2, 4, 6, "2025-04-03 01:11:11", "2025-04-03 11:15:11").WillReturnRows(sqlmock.NewRows([]string{"id", "age", "name", "ct", "balance", "count"}).AddRow(1, 18, "kovey", now, 30.23, 300).AddRow(2, 15, "test", now, 34.13, 100))
 	err = builder.All(context.Background())
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())
@@ -368,7 +368,7 @@ func TestBuilderPage(t *testing.T) {
 	builder := Rows(&[]*test_user{}).(*Builder[*test_user])
 	builder.Table("user").Columns(columns...).Where("id", ksql.Eq, 1).Distinct()
 	mock.ExpectPrepare("SELECT DISTINCT `id`, `age`, `name`, `create_time`, `balance` FROM `user` WHERE `id` = ? LIMIT ? OFFSET ?").ExpectQuery().WithArgs(1, 2, 0).WillReturnRows(sqlmock.NewRows(columns).AddRow(1, 18, "kovey", now, 30.23).AddRow(2, 15, "test", now, 34.13))
-	mock.ExpectPrepare("SELECT DISTINCT (COUNT(1) as count) FROM `user` WHERE `id` = ? LIMIT ? OFFSET ?").ExpectQuery().WithArgs(1, 1, 0).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(9))
+	mock.ExpectPrepare("SELECT DISTINCT COUNT(1) as count FROM `user` WHERE `id` = ? LIMIT ? OFFSET ?").ExpectQuery().WithArgs(1, 1, 0).WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(9))
 	pageInfo, err := builder.Pagination(context.Background(), 1, 2)
 	if err != nil {
 		t.Fatal(err, builder.query.Binds())

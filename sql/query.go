@@ -49,9 +49,7 @@ func (c *columnInfos) Append(column *columnInfo) {
 
 func (c *columnInfo) Build(builder *strings.Builder) {
 	if c.expr != nil {
-		builder.WriteString("(")
 		builder.WriteString(c.expr.Statement())
-		builder.WriteString(")")
 	} else if c.isFunc {
 		builder.WriteString(c.fun)
 		builder.WriteString("(")
