@@ -11,8 +11,8 @@ type VersionType int
 const (
 	NONE  VersionType = -1
 	MAJOR VersionType = 1
-	MINOR VersionType = 0
-	BUILD VersionType = 5
+	MINOR VersionType = 1
+	BUILD VersionType = 0
 )
 
 func Version() string {

@@ -64,51 +64,70 @@ func (s *serv) getToDsn() string {
 }
 
 func (s *serv) Flag(a app.AppInterface) error {
-	a.FlagLong("driver", os.Getenv("DB_DRIVER"), app.TYPE_STRING, "driver: mysql")
-	a.FlagLong("from", s.getFromDsn(), app.TYPE_STRING, "from dsn")
-	a.FlagLong("to", s.getToDsn(), app.TYPE_STRING, "to dsn")
-	a.FlagLong("fromdb", os.Getenv("DB_NAME"), app.TYPE_STRING, "from db name")
-	a.FlagLong("todb", os.Getenv("TO_DB_NAME"), app.TYPE_STRING, "from db name")
-	a.FlagLong("dir", "", app.TYPE_STRING, "migrates dir when diff")
-	a.Flag("n", "", app.TYPE_STRING, "migrate name when make use to migplug")
-	a.Flag("v", "", app.TYPE_STRING, "migrate version when make use to migplug")
-	a.FlagNonValue("c", "create config")
-	a.FlagNonValue("e", "edit config")
-	a.FlagNonValue("l", "cat config")
+	app.GetHelp().Title = "ksql tools to manage sql migrate、create orm model"
+
+	a.FlagArg("migrate", "migrate sql from dev to prodmigrate sql from dev to prod")
+	a.FlagArg("diff", "diff table changed from dev to prod, create changed sql file")
+	a.FlagArg("migplug", "migrate sql from migration plugins")
+	a.FlagArg("orm", "create orm model from database")
+	a.FlagArg("config", "manage config file")
+	a.FlagArg("version", "show ksql version")
+
+	a.FlagLong("dir", ".env.DIFF_SQL_PATH", app.TYPE_STRING, "sql directory", "migrate")
+	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "migrate")
+	a.FlagLong("todb", ".env.TO_DB_NAME", app.TYPE_STRING, "database driver name", "migrate")
+	a.FlagLong("to", ".env.TO_DB_*", app.TYPE_STRING, "to database dsn", "migrate")
+
+	a.FlagLong("dir", ".env.DIFF_SQL_PATH", app.TYPE_STRING, "created sql directory", "diff")
+	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "diff")
+	a.FlagLong("todb", ".env.TO_DB_NAME", app.TYPE_STRING, "database driver name", "diff")
+	a.FlagLong("to", ".env.TO_DB_*", app.TYPE_STRING, "to database dsn", "diff")
+	a.FlagLong("fromdb", ".env.DB_NAME", app.TYPE_STRING, "from database name", "diff")
+	a.FlagLong("from", ".env.DB_*", app.TYPE_STRING, "from database dsn", "diff")
+
+	a.FlagArg("up", "upgrade migrator", "migplug")
+	a.FlagArg("down", "downgrade migrator", "migplug")
+	a.FlagArg("show", "show migrator status", "migplug")
+	a.FlagArg("make", "create upgrade and downgrade file", "migplug")
+	a.FlagArg("build", "build migrator to ksql plugins", "migplug")
+
+	a.FlagLong("dir", ".env.PLUGIN_MIGRATOR_PATH", app.TYPE_STRING, "migrators directory", "migplug", "up")
+	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "migplug", "up")
+	a.FlagLong("from", ".env.DB_*", app.TYPE_STRING, "from database dsn", "migplug", "up")
+	a.Flag("v", nil, app.TYPE_STRING, "migrator version", "migplug", "up")
+
+	a.FlagLong("dir", ".env.PLUGIN_MIGRATOR_PATH", app.TYPE_STRING, "migrators directory", "migplug", "down")
+	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "migplug", "down")
+	a.FlagLong("from", ".env.DB_*", app.TYPE_STRING, "from database dsn", "migplug", "down")
+	a.Flag("v", nil, app.TYPE_STRING, "migrator version", "migplug", "down")
+
+	a.FlagLong("dir", ".env.PLUGIN_MIGRATOR_PATH", app.TYPE_STRING, "migrators directory", "migplug", "show")
+	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "migplug", "show")
+	a.FlagLong("from", ".env.DB_*", app.TYPE_STRING, "from database dsn", "migplug", "show")
+	a.Flag("v", nil, app.TYPE_STRING, "migrator version", "migplug", "show")
+
+	a.FlagLong("dir", ".env.PLUGIN_MIGRATOR_PATH", app.TYPE_STRING, "migrators directory", "migplug", "make")
+	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "migplug", "make")
+	a.FlagLong("from", ".env.DB_*", app.TYPE_STRING, "from database dsn", "migplug", "make")
+	a.FlagLong("fromdb", ".env.DB_NAME", app.TYPE_STRING, "from database name", "migplug", "make")
+	a.Flag("n", nil, app.TYPE_STRING, "migrator name", "migplug", "make")
+	a.Flag("v", nil, app.TYPE_STRING, "migrator version", "migplug", "make")
+
+	a.FlagLong("dir", ".env.PLUGIN_MIGRATOR_PATH", app.TYPE_STRING, "migrators directory", "migplug", "build")
+	a.Flag("v", nil, app.TYPE_STRING, "migrator version", "migplug", "build")
+
+	a.FlagLong("dir", ".env.PLUGIN_MIGRATOR_PATH", app.TYPE_STRING, "migrators directory", "orm")
+	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "orm")
+	a.FlagLong("from", ".env.DB_*", app.TYPE_STRING, "from database dsn", "orm")
+	a.FlagLong("fromdb", ".env.DB_NAME", app.TYPE_STRING, "from database name", "orm")
+
+	a.FlagNonValue("c", "create config", "config")
+	a.FlagNonValue("e", "edit config", "config")
+	a.FlagNonValue("l", "cat config", "config")
 	return nil
-}
-
-func (s *serv) Usage() {
-	fmt.Println(`
-ksql tools to manage sql migrate、create orm model.
-
-Usage:
-	ksql <command> [arguments]
-The commands are:
-	migrate	 migrate sql from dev to prod
-	diff     diff table changed from dev to prod, create changed sql file
-	migplug  migrate sql from migration plugins
-	orm      create orm model from database
-	config   manage config file
-	version  show ksql version
-Use "ksql help <command>" for more information about a command.
-	`)
 }
 
 func (s *serv) Init(app.AppInterface) error {
-	return nil
-}
-
-func (s *serv) checkFlag(a app.AppInterface, flag string) error {
-	val, err := a.Get(flag)
-	if err != nil {
-		return err
-	}
-
-	if val.String() == "" {
-		return fmt.Errorf("%s is empty", flag)
-	}
-
 	return nil
 }
 
@@ -138,20 +157,29 @@ func (s *serv) migplug(a app.AppInterface) error {
 
 	switch method.String() {
 	case "up":
-		for _, flag := range []string{"from", "driver", "v"} {
-			if err := s.checkFlag(a, flag); err != nil {
-				return err
-			}
+		version, _ := a.Get("migplug", "up", "v")
+		if !version.IsInput() {
+			return fmt.Errorf("-v is empty")
 		}
 
-		from, _ := a.Get("from")
-		driver, _ := a.Get("driver")
-		version, _ := a.Get("v")
-		var plugin = ""
-		if p, err := a.Get("dir"); err == nil {
-			plugin = p.String()
+		var fromDsn = ""
+		if from, _ := a.Get("migplug", "up", "from"); from.IsInput() {
+			fromDsn = from.String()
+		} else {
+			fromDsn = s.getFromDsn()
 		}
-		if plugin == "" {
+
+		var driverName = ""
+		if driver, _ := a.Get("migplug", "up", "driver"); driver.IsInput() {
+			driverName = driver.String()
+		} else {
+			driverName = os.Getenv("DB_DRIVER")
+		}
+
+		var plugin = ""
+		if p, _ := a.Get("migplug", "up", "dir"); p.IsInput() {
+			plugin = p.String()
+		} else {
 			plugin = os.Getenv("PLUGIN_MIGRATOR_PATH")
 			if plugin == "" {
 				return fmt.Errorf("plugin is empty")
@@ -163,28 +191,28 @@ func (s *serv) migplug(a app.AppInterface) error {
 			return err
 		}
 
-		return core.LoadPlugin(driver.String(), from.String(), filePath, core.Type_Up)
+		return core.LoadPlugin(driverName, fromDsn, filePath, core.Type_Up)
 	case "down":
-		for _, flag := range []string{"from", "driver", "v"} {
-			if err := s.checkFlag(a, flag); err != nil {
-				return err
-			}
+		version, _ := a.Get("migplug", "down", "v")
+		if !version.IsInput() {
+			return fmt.Errorf("-v is empty")
 		}
-
-		for _, flag := range []string{"from", "driver"} {
-			if err := s.checkFlag(a, flag); err != nil {
-				return err
-			}
+		var fromDsn = ""
+		if from, _ := a.Get("migplug", "down", "from"); from.IsInput() {
+			fromDsn = from.String()
+		} else {
+			fromDsn = s.getFromDsn()
 		}
-
-		from, _ := a.Get("from")
-		driver, _ := a.Get("driver")
-		version, _ := a.Get("v")
+		var driverName = ""
+		if driver, _ := a.Get("migplug", "down", "driver"); driver.IsInput() {
+			driverName = driver.String()
+		} else {
+			driverName = os.Getenv("DB_DRIVER")
+		}
 		var plugin = ""
-		if p, err := a.Get("dir"); err == nil {
+		if p, _ := a.Get("migplug", "up", "dir"); p.IsInput() {
 			plugin = p.String()
-		}
-		if plugin == "" {
+		} else {
 			plugin = os.Getenv("PLUGIN_MIGRATOR_PATH")
 			if plugin == "" {
 				return fmt.Errorf("plugin is empty")
@@ -194,22 +222,28 @@ func (s *serv) migplug(a app.AppInterface) error {
 		if err != nil {
 			return err
 		}
-		return core.LoadPlugin(driver.String(), from.String(), filePath, core.Type_Down)
+		return core.LoadPlugin(driverName, fromDsn, filePath, core.Type_Down)
 	case "show":
-		for _, flag := range []string{"to", "driver", "v"} {
-			if err := s.checkFlag(a, flag); err != nil {
-				return err
-			}
+		version, _ := a.Get("migplug", "show", "v")
+		if !version.IsInput() {
+			return fmt.Errorf("-v is empty")
 		}
-
-		from, _ := a.Get("from")
-		driver, _ := a.Get("driver")
-		version, _ := a.Get("v")
+		var fromDsn = ""
+		if from, _ := a.Get("migplug", "show", "from"); from.IsInput() {
+			fromDsn = from.String()
+		} else {
+			fromDsn = s.getFromDsn()
+		}
+		var driverName = ""
+		if driver, _ := a.Get("migplug", "show", "driver"); driver.IsInput() {
+			driverName = driver.String()
+		} else {
+			driverName = os.Getenv("DB_DRIVER")
+		}
 		var plugin = ""
-		if p, err := a.Get("plugin"); err == nil {
+		if p, _ := a.Get("migplug", "show", "plugin"); p.IsInput() {
 			plugin = p.String()
-		}
-		if plugin == "" {
+		} else {
 			plugin = os.Getenv("PLUGIN_MIGRATOR_PATH")
 			if plugin == "" {
 				return fmt.Errorf("plugin is empty")
@@ -219,75 +253,65 @@ func (s *serv) migplug(a app.AppInterface) error {
 		if err != nil {
 			return err
 		}
-		return core.Show(driver.String(), from.String(), filePath)
+		return core.Show(driverName, fromDsn, filePath)
 	case "make":
 		return s._make(a)
 	case "build":
 		return s.build(a)
-	case "help":
-		return s.helpMigplug(a)
 	default:
-		migplugHelp()
 		return nil
 	}
-}
-
-func (s *serv) helpMigplug(a app.AppInterface) error {
-	method, err := a.Arg(2, app.TYPE_STRING)
-	if err != nil {
-		return err
-	}
-
-	switch method.String() {
-	case "up":
-		upHelp()
-	case "down":
-		downHelp()
-	case "show":
-		showHelp()
-	case "make":
-		makeHelp()
-	case "build":
-		buildHelp()
-	default:
-		migplugHelp()
-		return nil
-	}
-
-	return nil
 }
 
 func (s *serv) diff(a app.AppInterface) error {
-	for _, flag := range []string{"from", "to", "fromdb", "todb", "driver"} {
-		if err := s.checkFlag(a, flag); err != nil {
-			return err
-		}
+	driverName := ""
+	if driver, _ := a.Get("diff", "driver"); driver.IsInput() {
+		driverName = driver.String()
 	}
-
-	driver, _ := a.Get("driver")
-	if driver.String() != "mysql" {
-		return fmt.Errorf("driver[%s] is not mysql", driver)
+	if driverName != "mysql" {
+		return fmt.Errorf("driver[%s] is not mysql", driverName)
 	}
 
 	var dirVal = ""
-	if dir, err := a.Get("dir"); err == nil {
+	if dir, _ := a.Get("diff", "dir"); dir.IsInput() {
 		dirVal = dir.String()
-	}
-	if dirVal == "" {
+	} else {
 		dirVal = os.Getenv("DIFF_SQL_PATH")
 	}
 	if dirVal == "" {
 		return fmt.Errorf("dir is empty")
 	}
-	from, _ := a.Get("from")
-	to, _ := a.Get("to")
-	fromdb, _ := a.Get("fromdb")
-	todb, _ := a.Get("todb")
+	fromDsn := ""
+	toDsn := ""
+	fromDbName := ""
+	toDbName := ""
+	if from, _ := a.Get("diff", "from"); from.IsInput() {
+		fromDsn = from.String()
+	} else {
+		fromDsn = s.getFromDsn()
+	}
+	if to, _ := a.Get("diff", "to"); to.IsInput() {
+		toDsn = to.String()
+	} else {
+		toDsn = s.getToDsn()
+	}
+
+	if fromdb, _ := a.Get("diff", "fromdb"); fromdb.IsInput() {
+		fromDbName = fromdb.String()
+	} else {
+		fromDbName = os.Getenv("DB_NAME")
+	}
+	if todb, _ := a.Get("diff", "todb"); todb.IsInput() {
+		toDbName = todb.String()
+	} else {
+		toDbName = os.Getenv("TO_DB_NAME")
+	}
+
 	if err := s.mkdir(dirVal); err != nil {
 		return err
 	}
 
-	ops, err := diff.Diff(context.Background(), driver.String(), from.String(), to.String(), fromdb.String(), todb.String())
+	ops, err := diff.Diff(context.Background(), driverName, fromDsn, toDsn, fromDbName, toDbName)
 	if err != nil {
 		return err
 	}
@@ -299,8 +323,8 @@ func (s *serv) diff(a app.AppInterface) error {
 
 	defer file.Close()
 	buff := bufio.NewWriter(file)
-	buff.WriteString(fmt.Sprintf("-- from database: %s\n", fromdb))
-	buff.WriteString(fmt.Sprintf("-- to database:   %s\n", todb))
+	buff.WriteString(fmt.Sprintf("-- from database: %s\n", fromDbName))
+	buff.WriteString(fmt.Sprintf("-- to database:   %s\n", toDbName))
 	buff.WriteString(fmt.Sprintf("-- tool version:  %s\n", version.Version()))
 	buff.WriteString(fmt.Sprintf("-- create time:   %s", time.Now().Format(time.DateTime)))
 	for _, op := range ops {
@@ -320,27 +344,26 @@ func (s *serv) diff(a app.AppInterface) error {
 }
 
 func (s *serv) migrate(a app.AppInterface) error {
-	for _, flag := range []string{"to", "todb", "driver"} {
-		if err := s.checkFlag(a, flag); err != nil {
-			return err
-		}
+	driverName := ""
+	if driver, _ := a.Get("migrate", "driver"); driver.IsInput() {
+		driverName = driver.String()
+	} else {
+		driverName = os.Getenv("DB_DRIVER")
 	}
-
-	driver, _ := a.Get("driver")
-	if driver.String() != "mysql" {
-		return fmt.Errorf("driver[%s] is not mysql", driver)
+	if driverName != "mysql" {
+		return fmt.Errorf("driver[%s] is not mysql", driverName)
 	}
 
 	var dirVal = ""
-	if dir, err := a.Get("dir"); err == nil {
+	if dir, _ := a.Get("migrate", "dir"); dir.IsInput() {
 		dirVal = dir.String()
-	}
-	if dirVal == "" {
+	} else {
 		dirVal = os.Getenv("DIFF_SQL_PATH")
 		if dirVal == "" {
 			return fmt.Errorf("dir is empty")
 		}
 	}
+
 	stat, err := os.Stat(dirVal)
 	if err != nil {
 		return err
@@ -350,24 +373,41 @@ func (s *serv) migrate(a app.AppInterface) error {
 		return fmt.Errorf("[%s] not dir", dirVal)
 	}
 
-	to, _ := a.Get("to")
-	todb, _ := a.Get("todb")
+	toDsn := ""
+	toDbName := ""
+	if to, _ := a.Get("migrate", "to"); to.IsInput() {
+		toDsn = to.String()
+	} else {
+		toDsn = s.getToDsn()
+	}
 
-	return diff.Migrate(driver.String(), to.String(), todb.String(), dirVal)
+	if todb, _ := a.Get("migrate", "todb"); todb.IsInput() {
+		toDbName = todb.String()
+	} else {
+		toDbName = os.Getenv("TO_DB_NAME")
+	}
+
+	return diff.Migrate(driverName, toDsn, toDbName, dirVal)
 }
 
 func (s *serv) _make(a app.AppInterface) error {
-	for _, flag := range []string{"n", "v"} {
-		if err := s.checkFlag(a, flag); err != nil {
-			return err
-		}
+	name, _ := a.Get("migplug", "make", "n")
+	if !name.IsInput() {
+		return fmt.Errorf("-n is empty")
 	}
 
-	name, _ := a.Get("n")
-	version, _ := a.Get("v")
-	to, _ := a.Get("from")
+	version, _ := a.Get("migplug", "make", "v")
+	if !version.IsInput() {
+		return fmt.Errorf("-v is empty")
+	}
+	var fromDsn = ""
+	if from, _ := a.Get("migplug", "make", "from"); from.IsInput() {
+		fromDsn = from.String()
+	} else {
+		fromDsn = s.getFromDsn()
+	}
 	var dirVal = ""
-	if dir, err := a.Get("dir"); err == nil {
+	if dir, _ := a.Get("migplug", "make", "dir"); dir.IsInput() {
 		dirVal = dir.String()
 	}
 	if dirVal == "" {
@@ -376,32 +416,45 @@ func (s *serv) _make(a app.AppInterface) error {
 			return fmt.Errorf("dir is empty")
 		}
 	}
-	d, _ := a.Get("driver")
-	return mk.Make(name.String(), version.String(), dirVal, to.String(), d.String())
+	var driverName = ""
+	if driver, _ := a.Get("migplug", "make", "driver"); driver.IsInput() {
+		driverName = driver.String()
+	} else {
+		driverName = os.Getenv("DB_DRIVER")
+	}
+	return mk.Make(name.String(), version.String(), dirVal, fromDsn, driverName)
 }
 
 func (s *serv) orm(a app.AppInterface) error {
-	for _, flag := range []string{"from", "fromdb"} {
-		if err := s.checkFlag(a, flag); err != nil {
-			return err
-		}
+	fromDsn := ""
+	if from, _ := a.Get("orm", "from"); from.IsInput() {
+		fromDsn = from.String()
+	} else {
+		fromDsn = s.getFromDsn()
 	}
-
-	from, _ := a.Get("from")
 	var dirVal = ""
-	if dir, err := a.Get("dir"); err == nil {
+	if dir, _ := a.Get("orm", "dir"); dir.IsInput() {
 		dirVal = dir.String()
-	}
-	if dirVal == "" {
+	} else {
 		dirVal = os.Getenv("MODELS_PATH")
 		if dirVal == "" {
 			return fmt.Errorf("dir is empty")
 		}
 	}
 
-	d, _ := a.Get("driver")
-	db, _ := a.Get("fromdb")
-	return orm.Orm(d.String(), from.String(), dirVal, db.String())
+	driverName := ""
+	if d, _ := a.Get("orm", "driver"); d.IsInput() {
+		driverName = d.String()
+	} else {
+		driverName = os.Getenv("DB_DRIVER")
+	}
+	dbName := ""
+	if db, _ := a.Get("orm", "fromdb"); db.IsInput() {
+		dbName = db.String()
+	} else {
+		dbName = os.Getenv("DB_NAME")
+	}
+	return orm.Orm(driverName, fromDsn, dirVal, dbName)
 }
 
 func (s *serv) ver() {
@@ -435,8 +488,6 @@ func (s *serv) Run(a app.AppInterface) error {
 		return s.orm(a)
 	case "config":
 		return s.config(a)
-	case "help":
-		return s.help(a)
 	default:
 		s.Usage()
 		return nil
@@ -444,7 +495,7 @@ func (s *serv) Run(a app.AppInterface) error {
 }
 
 func (s *serv) config(a app.AppInterface) error {
-	if flag, err := a.Get("c"); err == nil && flag.IsInput() {
+	if flag, err := a.Get("config", "c"); err == nil && flag.IsInput() {
 		_, err := os.Stat(".env")
 		if !os.IsNotExist(err) {
 			return nil
@@ -453,7 +504,7 @@ func (s *serv) config(a app.AppInterface) error {
 		return os.WriteFile(".env", []byte(config_tpl), 0644)
 	}
 
-	if flag, err := a.Get("e"); err == nil && flag.IsInput() {
+	if flag, err := a.Get("config", "e"); err == nil && flag.IsInput() {
 		commands := []string{"vim", "vi", "nvim", "emacs", "gedit"}
 		for _, command := range commands {
 			if _, err := exec.LookPath(command); err == nil {
@@ -467,7 +518,7 @@ func (s *serv) config(a app.AppInterface) error {
 		return fmt.Errorf("editor not install, please install one of [%s]", strings.Join(commands, ","))
 	}
 
-	if flag, err := a.Get("l"); err == nil && flag.IsInput() {
+	if flag, err := a.Get("config", "l"); err == nil && flag.IsInput() {
 		content, err := os.ReadFile(".env")
 		if err != nil {
 			fmt.Println("no configs")
@@ -478,23 +529,19 @@ func (s *serv) config(a app.AppInterface) error {
 		return nil
 	}
 
-	configHelp()
 	return nil
 }
 
 func (s *serv) build(a app.AppInterface) error {
-	for _, flag := range []string{"v"} {
-		if err := s.checkFlag(a, flag); err != nil {
-			return err
-		}
+	version, _ := a.Get("migplug", "build", "v")
+	if !version.IsInput() {
+		return fmt.Errorf("-v is empty")
 	}
 
-	version, _ := a.Get("v")
 	var dirVal = ""
-	if dir, err := a.Get("dir"); err == nil {
+	if dir, err := a.Get("migplug", "build", "dir"); err == nil && dir.IsInput() {
 		dirVal = dir.String()
-	}
-	if dirVal == "" {
+	} else {
 		dirVal = os.Getenv("PLUGIN_MIGRATOR_PATH")
 		if dirVal == "" {
 			return fmt.Errorf("dir is empty")
@@ -518,30 +565,6 @@ func (s *serv) build(a app.AppInterface) error {
 	debug.Info("%s migrator build begin, please wait...", version)
 	defer debug.Info("%s migrator build end.", version)
 	return cmd.Run()
-}
-
-func (s *serv) help(a app.AppInterface) error {
-	method, err := a.Arg(1, app.TYPE_STRING)
-	if err != nil {
-		return err
-	}
-
-	switch method.String() {
-	case "migrate":
-		migrateHelp()
-	case "diff":
-		diffHelp()
-	case "migplug":
-		migplugHelp()
-	case "orm":
-		ormHelp()
-	case "config":
-		configHelp()
-	default:
-		s.Usage()
-	}
-
-	return nil
 }
 
 func (s *serv) mkdir(dir string) error {
