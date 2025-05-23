@@ -6,8 +6,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
-github.com/kovey/cli-go v1.2.8 h1:pvJJUQJSSdajQkCEJYkW9jrQuQeiYyf9BRZZWqFRt70=
-github.com/kovey/cli-go v1.2.8/go.mod h1:ejl9yai6wb6sdUGGytozFHur2Dr7ce1wN339Hm3logs=
+github.com/kovey/cli-go v1.2.9 h1:zQTJz0sHL22lhpoui3StYgqzls624daYYFpuvpeNayg=
+github.com/kovey/cli-go v1.2.9/go.mod h1:ejl9yai6wb6sdUGGytozFHur2Dr7ce1wN339Hm3logs=
 github.com/kovey/db-go/v3 v3.1.7 h1:cdpkOYwXUtkeXFWoFT395YbK4m0P7wDtufMqu39ghBY=
 github.com/kovey/db-go/v3 v3.1.7/go.mod h1:nMxpfIluFzaEor5CgbYoVd4hMfzMpGV1GItJlhOgah0=
 github.com/kovey/debug-go v0.0.6 h1:+G0CFm/EvYcwxHITw9srqxvALbw50giRhT428nfdtl4=

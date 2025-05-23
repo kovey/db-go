@@ -64,6 +64,7 @@ func (s *serv) getToDsn() string {
 }
 
 func (s *serv) Flag(a app.AppInterface) error {
+	a.CleanCommandLine(false)
 	app.GetHelp().Title = "ksql tools to manage sql migrate、create orm model"
 
 	a.FlagArg("migrate", "migrate sql from dev to prodmigrate sql from dev to prod")
