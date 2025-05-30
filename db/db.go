@@ -94,6 +94,10 @@ func Close() error {
 	return database.Database().Close()
 }
 
+func LogUseFile(path string) {
+	logger.UseFile(path)
+}
+
 func InsertBy(ctx context.Context, conn ksql.ConnectionInterface, table string, data *Data) (int64, error) {
 	op := NewInsert()
 	op.Table(table)
