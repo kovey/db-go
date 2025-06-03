@@ -12,7 +12,7 @@ const (
 	NONE  VersionType = -1
 	MAJOR VersionType = 1
 	MINOR VersionType = 1
-	BUILD VersionType = 1
+	BUILD VersionType = 2
 )
 
 func Version() string {

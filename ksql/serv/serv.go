@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/kovey/cli-go/app"
-	"github.com/kovey/cli-go/gui"
 	"github.com/kovey/db-go/ksql/core"
 	"github.com/kovey/db-go/ksql/diff"
 	"github.com/kovey/db-go/ksql/dir"
@@ -22,7 +21,11 @@ import (
 )
 
 type serv struct {
-	app.ServBase
+	*app.ServBase
+}
+
+func newServ() *serv {
+	return &serv{ServBase: &app.ServBase{}}
 }
 
 func (s *serv) getFromDsn() string {
@@ -64,7 +67,7 @@ func (s *serv) getToDsn() string {
 }
 
 func (s *serv) Flag(a app.AppInterface) error {
-	a.CleanCommandLine(false)
+	a.CleanCommandLineWith(app.Clean_Defalut)
 	app.GetHelp().Title = "ksql tools to manage sql migrate、create orm model"
 
 	a.FlagArg("migrate", "migrate sql from dev to prodmigrate sql from dev to prod")
@@ -72,7 +75,6 @@ func (s *serv) Flag(a app.AppInterface) error {
 	a.FlagArg("migplug", "migrate sql from migration plugins")
 	a.FlagArg("orm", "create orm model from database")
 	a.FlagArg("config", "manage config file")
-	a.FlagArg("version", "show ksql version")
 
 	a.FlagLong("dir", ".env.DIFF_SQL_PATH", app.TYPE_STRING, "sql directory", "migrate")
 	a.FlagLong("driver", ".env.DB_DRIVER", app.TYPE_STRING, "database driver", "migrate")
@@ -458,17 +460,6 @@ func (s *serv) orm(a app.AppInterface) error {
 	return orm.Orm(driverName, fromDsn, dirVal, dbName)
 }
 
-func (s *serv) ver() {
-	ta := gui.NewTable()
-	ta.Add(0, "ksql")
-	ta.Add(0, "migrate tools")
-	ta.Add(1, "version")
-	ta.Add(1, version.Version())
-	ta.Add(2, "author")
-	ta.Add(2, "kovey")
-	ta.Show()
-}
-
 func (s *serv) Run(a app.AppInterface) error {
 	method, err := a.Arg(0, app.TYPE_STRING)
 	if err != nil {
@@ -482,9 +473,6 @@ func (s *serv) Run(a app.AppInterface) error {
 		return s.diff(a)
 	case "migplug":
 		return s.migplug(a)
-	case "version":
-		s.ver()
-		return nil
 	case "orm":
 		return s.orm(a)
 	case "config":
@@ -579,4 +567,8 @@ func (s *serv) mkdir(dir string) error {
 
 func (s *serv) Shutdown(app.AppInterface) error {
 	return nil
+}
+
+func (s *serv) Version() string {
+	return version.Version()
 }

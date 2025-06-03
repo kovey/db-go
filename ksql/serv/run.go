@@ -9,7 +9,7 @@ import (
 func Run() {
 	cli := app.NewApp("ksql")
 	cli.UsageWhenErr()
-	cli.SetServ(&serv{})
+	cli.SetServ(newServ())
 	if err := cli.Run(); err != nil {
 		debug.Erro("run[%s] error: %s", cli.Name(), err.Error())
 	}
