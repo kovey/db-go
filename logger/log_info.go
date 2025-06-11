@@ -24,10 +24,11 @@ type LogInfo struct {
 	BeginTime string `json:"begin_time"`
 	EndTime   string `json:"end_time"`
 	Sql       string `json:"sql"`
+	SpanId    string `json:"span_id"`
 }
 
 func NewLogInfo() *LogInfo {
-	return &LogInfo{}
+	return &LogInfo{SpanId: SpanId()}
 }
 
 func (l *LogInfo) Start(traceId string) {
