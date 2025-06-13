@@ -48,6 +48,14 @@ func (m *Model) SetTable(table string) {
 	m.table = table
 }
 
+func (m *Model) Columns() []string {
+	return nil
+}
+
+func (m *Model) Values() []any {
+	return nil
+}
+
 func (m *Model) Scan(s ksql.ScanInterface, r ksql.RowInterface) error {
 	if err := s.Scan(r.Values()...); err != nil {
 		return err

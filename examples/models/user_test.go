@@ -28,32 +28,16 @@ CREATE TABLE `user` (
 */
 
 import (
-	"context"
-
 	"time"
 
-	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/model"
 )
 
-const (
-	Table_User             = "user"         // 用户表
-	Table_User_Id          = "id"           // 用户id
-	Table_User_Username    = "username"     // 用户名
-	Table_User_Password    = "password"     // 密码
-	Table_User_Age         = "age"          // 年龄
-	Table_User_CreatedTime = "created_time" // 创建时间
-	Table_User_UpdatedTime = "updated_time" // 更新时间
-	Table_User_Email       = "email"        // 邮箱
-	Table_User_UtmSource   = "utm_source"   // 来源
-	Table_User_RegIp       = "reg_ip"       // 注册ip
-)
-
-//go:korm
-type User struct {
+//go:korm query,columns,values,delete,save
+type UserTest struct {
 	*model.Model `db:"-" json:"-"` // model
 	Id           int               `db:"id" json:"id"`                     // 用户id
-	Username     string            `db:"username" json:"username"`         // 用户名
+	UserTestname string            `db:"username" json:"username"`         // 用户名
 	Password     string            `db:"password" json:"password"`         // 密码
 	Age          int               `db:"age" json:"age"`                   // 年龄
 	CreatedTime  time.Time         `db:"created_time" json:"created_time"` // 创建时间
@@ -63,32 +47,6 @@ type User struct {
 	RegIp        string            `db:"reg_ip" json:"reg_ip"`             // 注册ip
 }
 
-func NewUser() *User {
-	return &User{Model: model.NewModel(Table_User, Table_User_Id, model.Type_Int)}
-}
-
-func (self *User) Save(ctx context.Context) error {
-	return self.Model.Save(ctx, self)
-}
-
-func (self *User) Clone() ksql.RowInterface {
-	return NewUser()
-}
-
-//go:korm
-func (self *User) Values() []any {
-	return nil
-}
-
-func (self *User) Columns() []string {
-	return []string{Table_User_Id, Table_User_Username, Table_User_Password, Table_User_Age, Table_User_CreatedTime, Table_User_UpdatedTime, Table_User_Email, Table_User_UtmSource, Table_User_RegIp}
-}
-
-//go:korm
-func (self *User) Delete(ctx context.Context) error {
-	return nil
-}
-
-func (self *User) Query() ksql.BuilderInterface[*User] {
-	return model.Row(self)
+func NewUserTest() *UserTest {
+	return &UserTest{Model: model.NewModel(Table_User, Table_User_Id, model.Type_Int)}
 }

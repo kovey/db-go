@@ -26,9 +26,10 @@ CREATE TABLE `user_ext` (
 import (
 	"context"
 
-	"github.com/kovey/db-go/v3"
-	"github.com/kovey/db-go/v3/model"
 	"time"
+
+	ksql "github.com/kovey/db-go/v3"
+	"github.com/kovey/db-go/v3/model"
 )
 
 const (
@@ -41,6 +42,7 @@ const (
 	Table_UserExt_CreateTime    = "create_time"     //
 )
 
+//go:korm
 type UserExt struct {
 	*model.Model  `db:"-" json:"-"` // model
 	Id            int               `db:"id" json:"id"`                           // 用户ID
@@ -67,14 +69,16 @@ func (self *UserExt) Values() []any {
 	return []any{&self.Id, &self.PrevLoginDate, &self.PrevLoginTime, &self.PrevLoginIp, &self.UpdateTime, &self.CreateTime}
 }
 
+//go:korm
 func (self *UserExt) Columns() []string {
-	return []string{Table_UserExt_Id, Table_UserExt_PrevLoginDate, Table_UserExt_PrevLoginTime, Table_UserExt_PrevLoginIp, Table_UserExt_UpdateTime, Table_UserExt_CreateTime}
+	return nil
 }
 
 func (self *UserExt) Delete(ctx context.Context) error {
 	return self.Model.Delete(ctx, self)
 }
 
+//go:korm
 func (self *UserExt) Query() ksql.BuilderInterface[*UserExt] {
-	return model.Row(self)
+	return nil
 }
