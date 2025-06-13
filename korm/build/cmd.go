@@ -1,7 +1,8 @@
 package build
 
 import (
-	"log"
+	"flag"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -17,15 +18,15 @@ type Cmd struct {
 	ProjectDir string
 }
 
+const (
+	version = "0.0.1"
+)
+
 func (c *Cmd) Init() {
 	c.ToolDir = os.Getenv("GOTOOLDIR")
 	c.ToolPath = os.Args[0]
-	if c.ToolDir == "" {
-		log.Println("GOTOOLDIR is empty")
-	}
-
 	if len(os.Args) < 2 {
-		log.Println("args error")
+		fmt.Fprintf(flag.CommandLine.Output(), "korm version: %s\n", version)
 		os.Exit(0)
 	}
 
@@ -42,9 +43,7 @@ func (c *Cmd) Init() {
 	c.TempDir = path.Join(os.TempDir(), "gobuild_korm_works")
 	c.TempGenDir = c.TempDir
 	c.ProjectDir, _ = os.Getwd()
-	if err := os.MkdirAll(c.TempDir, 0777); err != nil {
-		log.Println("Init() fail, os.MkdirAll tempDir", err)
-	}
+	os.MkdirAll(c.TempDir, 0777)
 }
 
 var cmd = &Cmd{}

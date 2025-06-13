@@ -19,7 +19,6 @@ func Run() {
 	switch strings.TrimSuffix(toolName, ".exe") {
 	case "compile":
 		compile.Compile(cmd.ProjectDir, cmd.TempDir, cmd.ToolArgs)
-	case "link":
 	}
 
 	cmd := exec.Command(cmd.ToolName, cmd.ToolArgs...)
