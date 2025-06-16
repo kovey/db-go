@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	import_context = "context"
-	import_model   = "github.com/kovey/db-go/v3/model"
+	import_context = `"context"`
+	import_model   = `"github.com/kovey/db-go/v3/model"`
 	template_korm  = `package compile
 import(
 	"context"

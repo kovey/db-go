@@ -77,7 +77,7 @@ func main() {
 func leftJoin(ctx context.Context) {
 	var rows []*models.UserExtJoin
 	builder := db.Rows(&rows).Where("u.id", ksql.Gt, 1).Columns(models.NewUserExtJoin().Columns()...).Table("user").As("u")
-	builder.LeftJoin("user_ext").As("e").On("u.id", "=", "e.id")
+	builder.Join("user_ext").As("e").On("u.id", "=", "e.id")
 	if err := builder.All(ctx); err != nil {
 		panic(err)
 	}
