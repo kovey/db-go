@@ -30,6 +30,7 @@ CREATE TABLE `user` (
 import (
 	"time"
 
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/model"
 )
 
@@ -49,4 +50,8 @@ type UserTest struct {
 
 func NewUserTest() *UserTest {
 	return &UserTest{Model: model.NewModel(Table_User, Table_User_Id, model.Type_Int)}
+}
+
+func (u *UserTest) Clone() ksql.RowInterface {
+	return NewUserTest()
 }

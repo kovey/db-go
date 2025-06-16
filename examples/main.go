@@ -61,4 +61,12 @@ func main() {
 	for _, u := range uus {
 		fmt.Printf("uu: %+v\n", u)
 	}
+
+	var uut []*models.UserTest
+	if err := db.Rows(&uut).Where("id", ">", 0).Columns(u.Columns()...).Table(u.Table()).All(ctx); err != nil {
+		panic(err)
+	}
+	for _, u := range uus {
+		fmt.Printf("uut: %+v\n", u)
+	}
 }
