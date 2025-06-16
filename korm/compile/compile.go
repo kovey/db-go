@@ -16,6 +16,7 @@ const (
 	method_delete      = "Delete"
 	method_columns     = "Columns"
 	method_values      = "Values"
+	struct_model       = "Model"
 )
 
 var support_methods = map[string]byte{

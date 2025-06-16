@@ -31,15 +31,20 @@ func getTag(value string) string {
 	return ""
 }
 
-func getColumns(s *ast.TypeSpec) []*_column {
+func getColumns(stInfo *_structInfo) []*_column {
 	var columns []*_column
-	st, ok := s.Type.(*ast.StructType)
+	st, ok := stInfo.ts.Type.(*ast.StructType)
 	if !ok || st.Fields == nil {
 		return columns
 	}
 
 	for _, field := range st.Fields.List {
 		if len(field.Names) == 0 || field.Tag == nil {
+			if star, ok := field.Type.(*ast.StarExpr); ok {
+				if sel, ok := star.X.(*ast.SelectorExpr); ok {
+					stInfo.hasModel = sel.Sel.Name == struct_model
+				}
+			}
 			continue
 		}
 
@@ -72,6 +77,8 @@ type _structInfo struct {
 	tpl        *templateKorm
 	tplFuncs   map[string]*ast.FuncDecl
 	imports    []*ast.ImportSpec
+	hasContext bool
+	hasModel   bool
 }
 
 func (s *_structInfo) initColumns(columns []*_column) error {
@@ -104,6 +111,10 @@ func (s *_structInfo) add(fn *ast.FuncDecl) {
 	s.fns[fn.Name.Name] = &_funcInfo{structName: s.name, recvName: "self", fn: fn, hasGen: true}
 	s.hasChanged = true
 	s.file.Decls = append(s.file.Decls, fn)
+	switch fn.Name.Name {
+	case method_delete, method_save:
+		s.hasContext = true
+	}
 }
 
 func (s *_structInfo) fill() {
@@ -137,7 +148,7 @@ func (s *_structInfo) replace() error {
 		return nil
 	}
 
-	if err := s.initColumns(getColumns(s.ts)); err != nil {
+	if err := s.initColumns(getColumns(s)); err != nil {
 		return err
 	}
 
@@ -151,9 +162,6 @@ func (s *_structInfo) replace() error {
 	}
 
 	if !s.hasGen {
-		if s.hasChanged {
-			s.file.Imports = append(s.file.Imports, s.imports...)
-		}
 		return nil
 	}
 
@@ -172,7 +180,13 @@ func (s *_structInfo) replace() error {
 				continue
 			}
 
-			ims.Specs = append(ims.Specs, im)
+			if s.hasContext && im.Path.Value == import_context {
+				ims.Specs = append(ims.Specs, im)
+			}
+
+			if s.hasModel && im.Path.Value == import_model {
+				ims.Specs = append(ims.Specs, im)
+			}
 		}
 	}
 	return nil

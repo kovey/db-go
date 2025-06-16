@@ -6,6 +6,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
 	"github.com/kovey/db-go/v3/examples/models"
 )
@@ -68,5 +69,20 @@ func main() {
 	}
 	for _, u := range uus {
 		fmt.Printf("uut: %+v\n", u)
+	}
+
+	leftJoin(ctx)
+}
+
+func leftJoin(ctx context.Context) {
+	var rows []*models.UserExtJoin
+	builder := db.Rows(&rows).Where("u.id", ksql.Gt, 1).Columns(models.NewUserExtJoin().Columns()...).Table("user").As("u")
+	builder.LeftJoin("user_ext").As("e").On("u.id", "=", "e.id")
+	if err := builder.All(ctx); err != nil {
+		panic(err)
+	}
+
+	for _, u := range rows {
+		fmt.Printf("uue: %+v\n", u)
 	}
 }
