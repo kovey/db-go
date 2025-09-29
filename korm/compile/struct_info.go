@@ -79,6 +79,7 @@ type _structInfo struct {
 	imports    []*ast.ImportSpec
 	hasContext bool
 	hasModel   bool
+	hasKsql    bool
 }
 
 func (s *_structInfo) initColumns(columns []*_column) error {
@@ -114,6 +115,8 @@ func (s *_structInfo) add(fn *ast.FuncDecl) {
 	switch fn.Name.Name {
 	case method_delete, method_save:
 		s.hasContext = true
+	case method_clone, method_query:
+		s.hasKsql = true
 	}
 }
 
@@ -185,6 +188,10 @@ func (s *_structInfo) replace() error {
 			}
 
 			if s.hasModel && im.Path.Value == import_model {
+				ims.Specs = append(ims.Specs, im)
+			}
+
+			if s.hasKsql && im.Path.Value == import_ksql {
 				ims.Specs = append(ims.Specs, im)
 			}
 		}

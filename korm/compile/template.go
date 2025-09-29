@@ -10,6 +10,7 @@ import (
 const (
 	import_context = `"context"`
 	import_model   = `"github.com/kovey/db-go/v3/model"`
+	import_ksql    = `"github.com/kovey/db-go/v3"`
 	template_korm  = `package compile
 import(
 	"context"
@@ -20,6 +21,10 @@ import(
 
 type {{.Name}} struct {
 {{range .Columns}}{{.Name}} {{.Type}}{{"\r\n"}}{{end}}
+}
+
+func New{{.Name}}() *{{.Name}} {
+	return &{{.Name}}{}
 }
 
 func (self *{{.Name}}) Columns() []string {
@@ -40,6 +45,10 @@ func (self *{{.Name}}) Delete(ctx context.Context) error {
 
 func (self *{{.Name}}) Query() ksql.BuilderInterface[*{{.Name}}] {
 	return model.Row(self)
+}
+
+func (self *{{.Name}}) Clone() ksql.RowInterface {
+	return New{{.Name}}()
 }
 `
 )

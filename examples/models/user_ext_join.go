@@ -3,11 +3,10 @@ package models
 import (
 	"time"
 
-	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/db"
 )
 
-//go:korm values,columns
+//go:korm values,columns,clone
 type UserExtJoin struct {
 	*db.Row
 	Id            int        `db:"u.id" json:"id"`                           // 用户ID
@@ -26,8 +25,4 @@ type UserExtJoin struct {
 
 func NewUserExtJoin() *UserExtJoin {
 	return &UserExtJoin{Row: &db.Row{}}
-}
-
-func (u *UserExtJoin) Clone() ksql.RowInterface {
-	return NewUserExtJoin()
 }

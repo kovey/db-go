@@ -16,6 +16,7 @@ const (
 	method_delete      = "Delete"
 	method_columns     = "Columns"
 	method_values      = "Values"
+	method_clone       = "Clone"
 	struct_model       = "Model"
 )
 
@@ -25,6 +26,7 @@ var support_methods = map[string]byte{
 	method_delete:  1,
 	method_columns: 1,
 	method_values:  1,
+	method_clone:   1,
 }
 
 func isSupport(fnName string) bool {
