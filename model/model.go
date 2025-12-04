@@ -56,6 +56,18 @@ func (m *Model) Values() []any {
 	return nil
 }
 
+func (m *Model) Clone() ksql.RowInterface {
+	return nil
+}
+
+func (m *Model) Save(ctx context.Context) error {
+	return nil
+}
+
+func (m *Model) Delete(ctx context.Context) error {
+	return nil
+}
+
 func (m *Model) Scan(s ksql.ScanInterface, r ksql.RowInterface) error {
 	if err := s.Scan(r.Values()...); err != nil {
 		return err
@@ -239,7 +251,7 @@ func (m *Model) _conn() ksql.ConnectionInterface {
 	return m.conn
 }
 
-func (m *Model) Save(ctx context.Context, model ksql.ModelInterface) error {
+func (m *Model) SaveBy(ctx context.Context, model ksql.ModelInterface) error {
 	if !m.hasChanged(model) {
 		return nil
 	}
@@ -292,7 +304,7 @@ func (m *Model) primaryValue(model ksql.ModelInterface) any {
 	return nil
 }
 
-func (m *Model) Delete(ctx context.Context, model ksql.ModelInterface) error {
+func (m *Model) DeleteBy(ctx context.Context, model ksql.ModelInterface) error {
 	if err := m.OnDeleteBefore(m._conn()); err != nil {
 		return err
 	}

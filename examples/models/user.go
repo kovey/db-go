@@ -68,7 +68,7 @@ func NewUser() *User {
 }
 
 func (self *User) Save(ctx context.Context) error {
-	return self.Model.Save(ctx, self)
+	return self.Model.SaveBy(ctx, self)
 }
 
 func (self *User) Clone() ksql.RowInterface {

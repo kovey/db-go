@@ -34,7 +34,7 @@ type BuilderInterface[T RowInterface] interface {
 	HavingBetween(column string, begin, end any) BuilderInterface[T]
 	HavingNotBetween(column string, begin, end any) BuilderInterface[T]
 	AndHaving(call func(HavingInterface)) BuilderInterface[T]
-	OrHaving(func(HavingInterface)) BuilderInterface[T]
+	OrHaving(call func(HavingInterface)) BuilderInterface[T]
 	Limit(limit int) BuilderInterface[T]
 	Offset(offset int) BuilderInterface[T]
 	Order(column string) BuilderInterface[T]
@@ -46,8 +46,8 @@ type BuilderInterface[T RowInterface] interface {
 	RightJoin(table string) JoinInterface
 	ForUpdate() BuilderInterface[T]
 	For() ForInterface
-	All(context.Context) error
-	First(context.Context) error
+	All(ctx context.Context) error
+	First(ctx context.Context) error
 	Max(ctx context.Context, column string) error
 	Min(ctx context.Context, column string) error
 	Exist(ctx context.Context) (bool, error)

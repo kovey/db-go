@@ -58,7 +58,7 @@ func NewUserExt() *UserExt {
 }
 
 func (self *UserExt) Save(ctx context.Context) error {
-	return self.Model.Save(ctx, self)
+	return self.Model.SaveBy(ctx, self)
 }
 
 func (self *UserExt) Clone() ksql.RowInterface {
@@ -75,7 +75,7 @@ func (self *UserExt) Columns() []string {
 }
 
 func (self *UserExt) Delete(ctx context.Context) error {
-	return self.Model.Delete(ctx, self)
+	return self.Model.DeleteBy(ctx, self)
 }
 
 //go:korm
