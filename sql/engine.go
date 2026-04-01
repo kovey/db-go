@@ -66,42 +66,87 @@ func (e *Engine) value(val any) string {
 	case string:
 		return fmt.Sprintf("%s%s%s", e.quote, tmp, e.quote)
 	case *string:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%s%s%s", e.quote, *tmp, e.quote)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return fmt.Sprintf("%d", tmp)
 	case float32, float64:
 		return fmt.Sprintf("%f", tmp)
 	case *int:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int8:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int16:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int32:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int64:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint8:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint16:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint32:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint64:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *float32:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%f", *tmp)
 	case *float64:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%f", *tmp)
 	case time.Time:
 		return fmt.Sprintf("%s%s%s", e.quote, tmp.Format(e.timeFormat), e.quote)
 	case *time.Time:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%s%s%s", e.quote, tmp.Format(e.timeFormat), e.quote)
 	case bool:
 		return fmt.Sprintf("%t", tmp)
 	case *bool:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%t", *tmp)
 	default:
 		if s, ok := val.(StringInterface); ok {
@@ -117,42 +162,87 @@ func (e *Engine) valueNotQuote(val any) string {
 	case string:
 		return fmt.Sprintf("%s", tmp)
 	case *string:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%s", *tmp)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return fmt.Sprintf("%d", tmp)
 	case float32, float64:
 		return fmt.Sprintf("%f", tmp)
 	case *int:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int8:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int16:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int32:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *int64:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint8:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint16:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint32:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *uint64:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%d", *tmp)
 	case *float32:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%f", *tmp)
 	case *float64:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%f", *tmp)
 	case time.Time:
 		return fmt.Sprintf("%s", tmp.Format(e.timeFormat))
 	case *time.Time:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%s", tmp.Format(e.timeFormat))
 	case bool:
 		return fmt.Sprintf("%t", tmp)
 	case *bool:
+		if tmp == nil {
+			return "NULL"
+		}
 		return fmt.Sprintf("%t", *tmp)
 	default:
 		if s, ok := val.(StringInterface); ok {
