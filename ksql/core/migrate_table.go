@@ -1,20 +1,21 @@
+// Package core
 package core
 
 import (
 	"context"
 
-	"github.com/kovey/db-go/v3"
+	ksql "github.com/kovey/db-go/v3"
 	"github.com/kovey/db-go/v3/model"
 )
 
 const (
-	migrate_table_name = "ksql_migrate_info"
+	migrateTableName = "ksql_migrate_info"
 )
 
 type migrateTable struct {
 	*model.Model
-	Id         int
-	MigrateId  uint64
+	ID         int
+	MigrateID  uint64
 	Name       string
 	Status     int
 	Version    string
@@ -31,7 +32,7 @@ func (m *migrateTable) Clone() ksql.RowInterface {
 }
 
 func (m *migrateTable) Values() []any {
-	return []any{&m.Id, &m.MigrateId, &m.Name, &m.Status, &m.Version, &m.CreateTime, &m.UpdateTime}
+	return []any{&m.ID, &m.MigrateID, &m.Name, &m.Status, &m.Version, &m.CreateTime, &m.UpdateTime}
 }
 
 func (m *migrateTable) Columns() []string {
@@ -39,9 +40,9 @@ func (m *migrateTable) Columns() []string {
 }
 
 func (m *migrateTable) Save(ctx context.Context) error {
-	return m.Model.Save(ctx, m)
+	return m.SaveBy(ctx, m)
 }
 
 func (m *migrateTable) Delete(ctx context.Context) error {
-	return m.Model.Delete(ctx, m)
+	return m.DeleteBy(ctx, m)
 }

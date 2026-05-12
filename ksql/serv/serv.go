@@ -165,21 +165,21 @@ func (s *serv) migplug(a app.AppInterface) error {
 			return fmt.Errorf("-v is empty")
 		}
 
-		var fromDsn = ""
+		fromDsn := ""
 		if from, _ := a.Get("migplug", "up", "from"); from.IsInput() {
 			fromDsn = from.String()
 		} else {
 			fromDsn = s.getFromDsn()
 		}
 
-		var driverName = ""
+		driverName := ""
 		if driver, _ := a.Get("migplug", "up", "driver"); driver.IsInput() {
 			driverName = driver.String()
 		} else {
 			driverName = os.Getenv("DB_DRIVER")
 		}
 
-		var plugin = ""
+		plugin := ""
 		if p, _ := a.Get("migplug", "up", "dir"); p.IsInput() {
 			plugin = p.String()
 		} else {
@@ -194,25 +194,25 @@ func (s *serv) migplug(a app.AppInterface) error {
 			return err
 		}
 
-		return core.LoadPlugin(driverName, fromDsn, filePath, core.Type_Up)
+		return core.LoadPlugin(driverName, fromDsn, filePath, core.TypeUp)
 	case "down":
 		version, _ := a.Get("migplug", "down", "v")
 		if !version.IsInput() {
 			return fmt.Errorf("-v is empty")
 		}
-		var fromDsn = ""
+		fromDsn := ""
 		if from, _ := a.Get("migplug", "down", "from"); from.IsInput() {
 			fromDsn = from.String()
 		} else {
 			fromDsn = s.getFromDsn()
 		}
-		var driverName = ""
+		driverName := ""
 		if driver, _ := a.Get("migplug", "down", "driver"); driver.IsInput() {
 			driverName = driver.String()
 		} else {
 			driverName = os.Getenv("DB_DRIVER")
 		}
-		var plugin = ""
+		plugin := ""
 		if p, _ := a.Get("migplug", "up", "dir"); p.IsInput() {
 			plugin = p.String()
 		} else {
@@ -225,25 +225,25 @@ func (s *serv) migplug(a app.AppInterface) error {
 		if err != nil {
 			return err
 		}
-		return core.LoadPlugin(driverName, fromDsn, filePath, core.Type_Down)
+		return core.LoadPlugin(driverName, fromDsn, filePath, core.TypeDown)
 	case "show":
 		version, _ := a.Get("migplug", "show", "v")
 		if !version.IsInput() {
 			return fmt.Errorf("-v is empty")
 		}
-		var fromDsn = ""
+		fromDsn := ""
 		if from, _ := a.Get("migplug", "show", "from"); from.IsInput() {
 			fromDsn = from.String()
 		} else {
 			fromDsn = s.getFromDsn()
 		}
-		var driverName = ""
+		driverName := ""
 		if driver, _ := a.Get("migplug", "show", "driver"); driver.IsInput() {
 			driverName = driver.String()
 		} else {
 			driverName = os.Getenv("DB_DRIVER")
 		}
-		var plugin = ""
+		plugin := ""
 		if p, _ := a.Get("migplug", "show", "plugin"); p.IsInput() {
 			plugin = p.String()
 		} else {
@@ -275,7 +275,7 @@ func (s *serv) diff(a app.AppInterface) error {
 		return fmt.Errorf("driver[%s] is not mysql", driverName)
 	}
 
-	var dirVal = ""
+	dirVal := ""
 	if dir, _ := a.Get("diff", "dir"); dir.IsInput() {
 		dirVal = dir.String()
 	} else {
@@ -357,7 +357,7 @@ func (s *serv) migrate(a app.AppInterface) error {
 		return fmt.Errorf("driver[%s] is not mysql", driverName)
 	}
 
-	var dirVal = ""
+	dirVal := ""
 	if dir, _ := a.Get("migrate", "dir"); dir.IsInput() {
 		dirVal = dir.String()
 	} else {
@@ -403,13 +403,13 @@ func (s *serv) _make(a app.AppInterface) error {
 	if !version.IsInput() {
 		return fmt.Errorf("-v is empty")
 	}
-	var fromDsn = ""
+	fromDsn := ""
 	if from, _ := a.Get("migplug", "make", "from"); from.IsInput() {
 		fromDsn = from.String()
 	} else {
 		fromDsn = s.getFromDsn()
 	}
-	var dirVal = ""
+	dirVal := ""
 	if dir, _ := a.Get("migplug", "make", "dir"); dir.IsInput() {
 		dirVal = dir.String()
 	}
@@ -419,7 +419,7 @@ func (s *serv) _make(a app.AppInterface) error {
 			return fmt.Errorf("dir is empty")
 		}
 	}
-	var driverName = ""
+	driverName := ""
 	if driver, _ := a.Get("migplug", "make", "driver"); driver.IsInput() {
 		driverName = driver.String()
 	} else {
@@ -435,7 +435,7 @@ func (s *serv) orm(a app.AppInterface) error {
 	} else {
 		fromDsn = s.getFromDsn()
 	}
-	var dirVal = ""
+	dirVal := ""
 	if dir, _ := a.Get("orm", "dir"); dir.IsInput() {
 		dirVal = dir.String()
 	} else {
@@ -490,7 +490,7 @@ func (s *serv) config(a app.AppInterface) error {
 			return nil
 		}
 
-		return os.WriteFile(".env", []byte(config_tpl), 0644)
+		return os.WriteFile(".env", []byte(config_tpl), 0o644)
 	}
 
 	if flag, err := a.Get("config", "e"); err == nil && flag.IsInput() {
@@ -527,7 +527,7 @@ func (s *serv) build(a app.AppInterface) error {
 		return fmt.Errorf("-v is empty")
 	}
 
-	var dirVal = ""
+	dirVal := ""
 	if dir, err := a.Get("migplug", "build", "dir"); err == nil && dir.IsInput() {
 		dirVal = dir.String()
 	} else {
@@ -557,7 +557,7 @@ func (s *serv) build(a app.AppInterface) error {
 }
 
 func (s *serv) mkdir(dir string) error {
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0o755)
 	if err == os.ErrExist {
 		return nil
 	}

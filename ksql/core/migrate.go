@@ -14,8 +14,8 @@ import (
 type MigrateType byte
 
 const (
-	Type_Up   MigrateType = 1
-	Type_Down MigrateType = 2
+	TypeUp   MigrateType = 1
+	TypeDown MigrateType = 2
 )
 
 func Migrate(ctx context.Context, t MigrateType) {
@@ -36,7 +36,7 @@ func Migrate(ctx context.Context, t MigrateType) {
 		}
 
 		switch t {
-		case Type_Up:
+		case TypeUp:
 			if !m.Empty() {
 				return
 			}
@@ -49,7 +49,7 @@ func Migrate(ctx context.Context, t MigrateType) {
 			}
 			Create(ctx, mi)
 			debug.Info("migrate upgrade[%s] success.", mi.Name())
-		case Type_Down:
+		case TypeDown:
 			if m.Empty() {
 				return
 			}
@@ -91,7 +91,7 @@ func Create(ctx context.Context, mi migplug.MigrateInterface) {
 		return
 	}
 
-	m.MigrateId = mi.Id()
+	m.MigrateID = mi.Id()
 	m.Name = mi.Name()
 	m.Status = 0
 	m.Version = mi.Version()
@@ -103,7 +103,7 @@ func Create(ctx context.Context, mi migplug.MigrateInterface) {
 }
 
 func check(ctx context.Context) error {
-	ok, err := db.HasTable(ctx, migrate_table_name)
+	ok, err := db.HasTable(ctx, migrateTableName)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func check(ctx context.Context) error {
 		return nil
 	}
 
-	return db.Table(ctx, migrate_table_name, func(table ksql.TableInterface) {
+	return db.Table(ctx, migrateTableName, func(table ksql.TableInterface) {
 		table.Create()
 		table.AddInt("id").AutoIncrement().Comment("主键").Unsigned()
 		table.AddBigInt("migrate_id").Comment("迁移ID").Unsigned().Default("0")

@@ -132,9 +132,9 @@ func Show(driverName, dsn, path string) error {
 		table.Add(i, mi.Name())
 		table.Add(i, mi.Version())
 		yes := false
-		var upTime = ""
+		upTime := ""
 		for _, migration := range migrations {
-			if migration.MigrateId == key {
+			if migration.MigrateID == key {
 				yes = true
 				upTime = migration.CreateTime
 				break

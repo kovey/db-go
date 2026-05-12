@@ -43,7 +43,7 @@ func New{{.Name}}() *{{.Name}} {
 }
 
 func (self *{{.Name}}) Save(ctx context.Context) error {
-	return self.Model.SaveBy(ctx, self)
+	return self.SaveBy(ctx, self)
 }
 
 func (self *{{.Name}}) Clone() ksql.RowInterface {
@@ -59,7 +59,7 @@ func (self *{{.Name}}) Columns() []string {
 }
 
 func (self *{{.Name}}) Delete(ctx context.Context) error {
-	return self.Model.DeleteBy(ctx, self)
+	return self.DeleteBy(ctx, self)
 }
 
 func (self *{{.Name}}) Query() ksql.BuilderInterface[*{{.Name}}] {
