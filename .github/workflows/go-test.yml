@@ -1,0 +1,112 @@
+name: Go Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # ── 根模块 + korm（纯 mock 测试，无需外部服务）──────────────────
+  test-core:
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.22", "1.23"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('go.sum', 'korm/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+      - name: Test root module
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Test korm
+        run: cd korm && go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage (root)
+        if: matrix.go-version == '1.23'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-root
+          path: coverage.out
+          retention-days: 7
+
+  # ── ksql 模块（需要 MySQL 服务）─────────────────────────────────
+  test-ksql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_dev
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-1.23-ksql-${{ hashFiles('ksql/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-1.23-ksql-
+
+      - name: Wait for MySQL
+        run: |
+          for i in $(seq 1 30); do
+            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
+              echo "MySQL ready"
+              exit 0
+            fi
+            echo "Waiting for MySQL... ($i)"
+            sleep 2
+          done
+          echo "MySQL did not start" >&2
+          exit 1
+
+      - name: Create test database
+        run: |
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_prod;"
+
+      - name: Test ksql
+        run: cd ksql && go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        env:
+          KSQL_DRIVER: mysql
+          KSQL_TODB: test_dev
+          KSQL_TO: "root:root@tcp(127.0.0.1:3306)/test_dev?charset=utf8mb4&parseTime=true"
+          KSQL_FROMDB: test_prod
+          KSQL_FROM: "root:root@tcp(127.0.0.1:3306)/test_prod?charset=utf8mb4&parseTime=true"
+
+      - name: Upload coverage (ksql)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-ksql
+          path: ksql/coverage.out
+          retention-days: 7
