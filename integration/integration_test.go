@@ -195,8 +195,9 @@ func TestTransaction_Commit(t *testing.T) {
 	require.NoError(t, err)
 
 	u := newTestUser()
-	err = db.Model(u).Where("name", ksql.Eq, "tx_user").First(ctx)
-	require.NoError(t, err)
+	if err := db.Model(u).Where("name", ksql.Eq, "tx_user").First(ctx); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestTransaction_Rollback(t *testing.T) {
