@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   # ──────────────────────────────────────────────────────────
-  # Lint & static analysis (runs once, no matrix needed)
+  # Lint & static analysis
   # ──────────────────────────────────────────────────────────
   lint:
     runs-on: ubuntu-latest
@@ -118,11 +118,24 @@ jobs:
           retention-days: 7
 
   # ──────────────────────────────────────────────────────────
-  # MySQL integration tests — root module via testcontainers
+  # Root module integration tests — real MySQL via service container
   # ──────────────────────────────────────────────────────────
   test-integration:
     needs: test-unit
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: testdb
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -131,11 +144,13 @@ jobs:
           go-version: "1.23"
           cache: true
 
-      - name: Run integration tests (testcontainers)
+      - name: Run integration tests
         run: go test -v -race -tags=integration ./integration/
+        env:
+          MYSQL_DSN: "root:test@tcp(127.0.0.1:3306)/testdb?charset=utf8mb4&parseTime=true"
 
   # ──────────────────────────────────────────────────────────
-  # Coverage summary (optional, runs after all test jobs)
+  # Coverage summary
   # ──────────────────────────────────────────────────────────
   coverage:
     needs: [test-unit, test-ksql]
