@@ -159,9 +159,11 @@ func TestCRUD_Delete(t *testing.T) {
 	require.NoError(t, db.Model(u2).Where("id", ksql.Eq, u.Id).First(ctx))
 	require.NoError(t, u2.Delete(ctx))
 
+	// First() returns nil on no rows; the model stays empty
 	u3 := newTestUser()
 	err := db.Model(u3).Where("id", ksql.Eq, u.Id).First(ctx)
-	assert.Error(t, err)
+	require.NoError(t, err)
+	assert.True(t, u3.Empty(), "model should be empty after delete")
 }
 
 func TestCRUD_BatchQuery(t *testing.T) {
@@ -207,6 +209,7 @@ func TestTransaction_Rollback(t *testing.T) {
 
 	_ = db.Transaction(ctx, func(ctx context.Context, conn ksql.ConnectionInterface) error {
 		u := newTestUser()
+		u.WithConn(conn)
 		u.Name = "rolled_back"
 		u.Save(ctx)
 		_, err := db.ExecRaw(ctx, db.Raw("SELECT * FROM nonexistent_table"))

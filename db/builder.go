@@ -286,18 +286,23 @@ func _scanNum[T uint64 | float64](ctx context.Context, conn ksql.ConnectionInter
 }
 
 func (b *Builder[T]) SumFloat(ctx context.Context, column string) (float64, error) {
-	b.Func("SUM", column, column)
-	return _scanNum[float64](ctx, b._conn(), b.query)
+	q := b.query.Clone()
+	q.Func("SUM", column, column)
+	return _scanNum[float64](ctx, b._conn(), q)
 }
 
 func (b *Builder[T]) SumInt(ctx context.Context, column string) (uint64, error) {
-	b.Func("SUM", column, column)
-	return _scanNum[uint64](ctx, b._conn(), b.query)
+	q := b.query.Clone()
+	q.Func("SUM", column, column)
+	return _scanNum[uint64](ctx, b._conn(), q)
 }
 
 func (b *Builder[T]) Count(ctx context.Context) (uint64, error) {
-	b.ColumnsExpress(Raw("COUNT(1) as count"))
-	return _scanNum[uint64](ctx, b._conn(), b.query)
+	// Clone so the COUNT expression replaces columns rather than appending to them,
+	// avoiding only_full_group_by errors in MySQL.
+	q := b.query.Clone()
+	q.ColumnsExpress(Raw("COUNT(1) as count"))
+	return _scanNum[uint64](ctx, b._conn(), q)
 }
 
 func (b *Builder[T]) Exist(ctx context.Context) (bool, error) {
