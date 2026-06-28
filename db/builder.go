@@ -78,7 +78,7 @@ func (b *Builder[T]) WhereIsNull(column string) ksql.BuilderInterface[T] {
 }
 
 func (b *Builder[T]) WhereIsNotNull(column string) ksql.BuilderInterface[T] {
-	b.query.WhereIsNull(column)
+	b.query.WhereIsNotNull(column)
 	return b
 }
 
@@ -138,7 +138,7 @@ func (b *Builder[T]) HavingIsNull(column string) ksql.BuilderInterface[T] {
 }
 
 func (b *Builder[T]) HavingIsNotNull(column string) ksql.BuilderInterface[T] {
-	b.query.HavingIsNull(column)
+	b.query.HavingIsNotNull(column)
 	return b
 }
 

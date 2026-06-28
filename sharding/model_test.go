@@ -36,11 +36,11 @@ func (t *test_model) Values() []any {
 }
 
 func (t *test_model) Save(ctx context.Context) error {
-	return t.Model.Save(ctx, t)
+	return t.Model.SaveBy(ctx, t)
 }
 
 func (t *test_model) Delete(ctx context.Context) error {
-	return t.Model.Delete(ctx, t)
+	return t.Model.DeleteBy(ctx, t)
 }
 
 func TestModel(t *testing.T) {

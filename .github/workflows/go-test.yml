@@ -1,4 +1,4 @@
-name: Go Test
+name: CI
 
 on:
   push:
@@ -6,9 +6,35 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # ── 根模块 + korm（纯 mock 测试，无需外部服务）──────────────────
-  test-core:
+  # ──────────────────────────────────────────────────────────
+  # Lint & static analysis (runs once, no matrix needed)
+  # ──────────────────────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: go vet (root)
+        run: go vet ./...
+
+      - name: go vet (korm)
+        run: cd korm && go vet ./...
+
+  # ──────────────────────────────────────────────────────────
+  # Fast unit tests — root module + korm (no external services)
+  # ──────────────────────────────────────────────────────────
+  test-unit:
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -20,33 +46,33 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('go.sum', 'korm/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.go-version }}-
+          cache: true
 
       - name: Test root module
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Test korm
-        run: cd korm && go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        run: cd korm && go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
-      - name: Upload coverage (root)
+      - name: Upload coverage
         if: matrix.go-version == '1.23'
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-root
-          path: coverage.out
+          name: coverage-unit
+          path: |
+            coverage.out
+            korm/coverage.out
           retention-days: 7
 
-  # ── ksql 模块（需要 MySQL 服务）─────────────────────────────────
+  # ──────────────────────────────────────────────────────────
+  # KSQL integration tests — needs real MySQL via service container
+  # ──────────────────────────────────────────────────────────
   test-ksql:
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.22", "1.23"]
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -57,41 +83,20 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          --health-cmd "mysqladmin ping -h localhost"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: ${{ matrix.go-version }}
+          cache: true
+          cache-dependency-path: ksql/go.sum
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-1.23-ksql-${{ hashFiles('ksql/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-1.23-ksql-
-
-      - name: Wait for MySQL
-        run: |
-          for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
-              echo "MySQL ready"
-              exit 0
-            fi
-            echo "Waiting for MySQL... ($i)"
-            sleep 2
-          done
-          echo "MySQL did not start" >&2
-          exit 1
-
-      - name: Create test database
+      - name: Create additional databases
         run: |
           mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_prod;"
 
@@ -104,9 +109,54 @@ jobs:
           KSQL_FROMDB: test_prod
           KSQL_FROM: "root:root@tcp(127.0.0.1:3306)/test_prod?charset=utf8mb4&parseTime=true"
 
-      - name: Upload coverage (ksql)
+      - name: Upload coverage
+        if: matrix.go-version == '1.23'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-ksql
           path: ksql/coverage.out
           retention-days: 7
+
+  # ──────────────────────────────────────────────────────────
+  # MySQL integration tests — root module via testcontainers
+  # ──────────────────────────────────────────────────────────
+  test-integration:
+    needs: test-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Run integration tests (testcontainers)
+        run: go test -v -race -tags=integration ./integration/
+
+  # ──────────────────────────────────────────────────────────
+  # Coverage summary (optional, runs after all test jobs)
+  # ──────────────────────────────────────────────────────────
+  coverage:
+    needs: [test-unit, test-ksql]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+          path: coverage-artifacts
+
+      - name: Show coverage summary
+        run: |
+          echo "## Coverage Reports" >> $GITHUB_STEP_SUMMARY
+          for f in coverage-artifacts/*.out; do
+            if [ -f "$f" ]; then
+              echo "### $(basename $f)" >> $GITHUB_STEP_SUMMARY
+              go tool cover -func="$f" 2>/dev/null | tail -1 >> $GITHUB_STEP_SUMMARY || true
+            fi
+          done

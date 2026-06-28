@@ -69,7 +69,7 @@ func Init(conf Config) error {
 	db.SetConnMaxIdleTime(conf.MaxIdleTime)
 	db.SetConnMaxLifetime(conf.MaxLifeTime)
 	db.SetMaxIdleConns(conf.MaxIdleConns)
-	db.SetMaxOpenConns(conf.MaxIdleConns)
+	db.SetMaxOpenConns(conf.MaxOpenConns)
 	conn, err := Open(db, conf.DriverName)
 	if err != nil {
 		return err
@@ -213,7 +213,7 @@ func QueryRowBy[T ksql.RowInterface](ctx context.Context, conn ksql.ConnectionIn
 
 	row := stmt.QueryRowContext(ctx, op.Binds()...)
 	if row.Err() != nil {
-		return _err(err, op)
+		return _err(row.Err(), op)
 	}
 
 	if err := model.Scan(row, model); err != nil {

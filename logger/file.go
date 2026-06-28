@@ -43,7 +43,7 @@ func (f *File) Open() error {
 }
 
 func (f *File) Check(now time.Time) error {
-	nowDate := time.Now().Format(time.DateOnly)
+	nowDate := now.Format(time.DateOnly)
 	if f.date == nowDate {
 		return nil
 	}

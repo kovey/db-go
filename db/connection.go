@@ -237,7 +237,7 @@ func (c *Connection) QueryRow(ctx context.Context, op ksql.QueryInterface, model
 
 	row := stmt.QueryRowContext(cc, op.Binds()...)
 	if row.Err() != nil {
-		return _err(err, op)
+		return _err(row.Err(), op)
 	}
 
 	if err := model.Scan(row, model); err != nil {
@@ -271,7 +271,7 @@ func (c *Connection) QueryRowRaw(ctx context.Context, raw ksql.ExpressInterface,
 
 	row := stmt.QueryRowContext(cc, raw.Binds()...)
 	if row.Err() != nil {
-		return _errRaw(err, raw)
+		return _errRaw(row.Err(), raw)
 	}
 
 	if err := model.Scan(row, model); err != nil {
@@ -337,7 +337,7 @@ func (c *Connection) ScanRaw(ctx context.Context, raw ksql.ExpressInterface, dat
 
 	row := stmt.QueryRowContext(cc, raw.Binds()...)
 	if row.Err() != nil {
-		return _errRaw(err, raw)
+		return _errRaw(row.Err(), raw)
 	}
 
 	if err := row.Scan(data...); err != nil {

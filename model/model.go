@@ -321,7 +321,7 @@ func (m *Model) DeleteBy(ctx context.Context, model ksql.ModelInterface) error {
 			return Err_Affect_No_Rows
 		}
 
-		return nil
+		return m.OnDeleteAfter(m._conn())
 	}
 
 	op := db.NewDelete()

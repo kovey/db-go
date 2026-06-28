@@ -86,7 +86,7 @@ func (t *TxErr) Rollback() error {
 }
 
 func (t *TxErr) Commit() error {
-	return fmt.Errorf(strings.Join(t.rollbacks, ";"))
+	return fmt.Errorf(strings.Join(t.commits, ";"))
 }
 
 func (t *TxErr) Error() string {
